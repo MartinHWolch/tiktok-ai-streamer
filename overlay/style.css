@@ -1,0 +1,97 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+    color: #fff;
+}
+
+/* Para OBS: asegúrate de configurar la fuente del navegador 
+   con fondo transparente o usar color de chroma key #00ff00 */
+
+#container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+#alerts {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.alert {
+    background: linear-gradient(135deg, rgba(255,0,80,0.9), rgba(255,64,128,0.9));
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    animation: slideIn 0.5s ease-out, fadeOut 0.5s ease-in 4.5s forwards;
+    font-weight: bold;
+    text-align: center;
+    backdrop-filter: blur(4px);
+}
+
+#messages {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 400px;
+    max-height: 300px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.message {
+    background: rgba(0, 0, 0, 0.6);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border-left: 4px solid #25f4ee;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease-out;
+}
+
+.message .user {
+    color: #25f4ee;
+    font-weight: bold;
+    margin-right: 6px;
+}
+
+#tts-text {
+    position: absolute;
+    bottom: 50%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    opacity: 0;
+    transition: opacity 0.3s;
+    text-align: center;
+    pointer-events: none;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

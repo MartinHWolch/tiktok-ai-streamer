@@ -1,0 +1,11 @@
+{
+  "name": "tiktok-ai-streamer",
+  "version": "1.0.0",
+  "description": "Overlay y panel de control para TikTok AI Streamer",
+  "scripts": {
+    "start": "echo 'Ejecuta python main.py para iniciar el backend. Este package.json es un placeholder.'",
+    "test": "echo 'No hay tests de Node configurados.'"
+  },
+  "keywords": ["tiktok", "streaming", "overlay", "ai"],
+  "license": "MIT"
+}

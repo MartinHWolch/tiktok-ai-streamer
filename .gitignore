@@ -1,0 +1,31 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Audio generado
+audio/*.mp3
+audio/*.wav
+!audio/.gitkeep
+
+# Modelos (muy grandes)
+models/*.onnx
+models/*.bin
+models/piper/
+
+# Dependencias
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Presets TTS (contiene configuraciones del usuario)
+tts_presets.json

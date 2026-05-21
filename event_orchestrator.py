@@ -21,7 +21,20 @@ class EventOrchestrator:
         self.logs = deque(maxlen=config.LOG_MAX_LINES)
         self._presets_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tts_presets.json")
         self._presets = {}
+        self._start_time = time.time()
+        self._stats = {"messages": 0, "gifts": 0, "likes": 0, "joins": 0, "ai_replies": 0, "tts_played": 0}
         self._load_presets()
+
+        # Anti-spam
+        self._user_timestamps = {}
+        self._user_messages = {}
+        self.spam_rate_limit = 2
+        self.spam_window = 3
+        self.spam_dup_window = 30
+        self.spam_enabled = True
+        self.banned_words = []
+        self._banned_words_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "banned_words.json")
+        self._load_banned_words()
 
     def set_ai_client(self, client):
         self.ai_client = client
@@ -53,6 +66,15 @@ class EventOrchestrator:
         event_type = event.get("type")
         user = event.get("user", "unknown")
         
+        if event_type == "message":
+            self._stats["messages"] += 1
+        elif event_type == "gift":
+            self._stats["gifts"] += 1
+        elif event_type == "like":
+            self._stats["likes"] += 1
+        elif event_type == "join":
+            self._stats["joins"] += 1
+        
         self.log(f"TikTok {event_type}: {user}")
         
         if event_type == "message":
@@ -69,6 +91,9 @@ class EventOrchestrator:
     def _process_message(self, event):
         text = event.get("text", "").strip()
         user = event.get("user", "")
+
+        if self._check_spam(user, text):
+            return
         
         if text.startswith("!"):
             self._handle_command(text, user)
@@ -82,6 +107,7 @@ class EventOrchestrator:
                 logger.error(f"AI error: {e}")
         
         if reply:
+            self._stats["ai_replies"] += 1
             self.log(f"AI respondió a {user}: {reply}")
             self.publish("overlay_message", {"user": "Bot", "text": reply, "original_user": user})
             self._trigger_tts(reply)
@@ -152,6 +178,7 @@ class EventOrchestrator:
             logger.info("TTS en cooldown. Texto no reproducido.")
             return
         
+        self._stats["tts_played"] += 1
         self.publish("tts_speak", {"text": text})
         filename = self.tts_client.speak(text)
         if filename:
@@ -234,11 +261,9 @@ class EventOrchestrator:
         if not self.tts_client:
             self.log("TTS no está disponible para prueba")
             return None
-        # Prueba de TTS funciona incluso si TTS global está desactivado
         self.publish("tts_speak", {"text": text})
-        # bypass cooldown para pruebas
         saved = self.tts_client._last_speak
-        self.tts_client._last_speak = 0
+        self.tts_client.reset_cooldown()
         try:
             filename = self.tts_client.speak(text)
         finally:
@@ -252,6 +277,27 @@ class EventOrchestrator:
         if self.tiktok_client:
             return getattr(self.tiktok_client, "simulation_enabled", True)
         return True
+
+    def get_stats(self):
+        uptime = int(time.time() - self._start_time)
+        sim = self.get_tiktok_simulation()
+        tiktok_mode = "simulacion" if sim else "real"
+        tiktok_connected = getattr(self.tiktok_client, "_real_connected", False) if self.tiktok_client else False
+        return {
+            "uptime": uptime,
+            "messages": self._stats["messages"],
+            "gifts": self._stats["gifts"],
+            "likes": self._stats["likes"],
+            "joins": self._stats["joins"],
+            "ai_replies": self._stats["ai_replies"],
+            "tts_played": self._stats["tts_played"],
+            "tts_enabled": self.tts_enabled,
+            "ai_enabled": self.ai_enabled,
+            "tiktok_enabled": self.tiktok_enabled,
+            "tiktok_mode": tiktok_mode,
+            "tiktok_connected": tiktok_connected,
+            "tts_engine": self.get_tts_status().get("engine", "kokoro"),
+        }
 
     def toggle_tiktok(self):
         self.tiktok_enabled = not self.tiktok_enabled
@@ -288,6 +334,101 @@ class EventOrchestrator:
                 callback(event_type, data)
             except Exception as e:
                 logger.error(f"Error en listener {name}: {e}")
+
+    # --- Anti-spam ---
+    def _load_banned_words(self):
+        try:
+            if os.path.exists(self._banned_words_path):
+                with open(self._banned_words_path, "r", encoding="utf-8") as f:
+                    self.banned_words = json.load(f)
+        except Exception:
+            self.banned_words = []
+
+    def _save_banned_words(self):
+        try:
+            with open(self._banned_words_path, "w", encoding="utf-8") as f:
+                json.dump(self.banned_words, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            logger.error(f"Error guardando banned words: {e}")
+
+    def _check_spam(self, user, text):
+        if not self.spam_enabled:
+            return False
+
+        now = time.time()
+        user_lower = user.lower()
+
+        # Banned words
+        if self.banned_words:
+            text_lower = text.lower()
+            for word in self.banned_words:
+                if word.lower() in text_lower:
+                    self.log(f"SPAM bloqueado ({user}): palabra baneada '{word}'")
+                    return True
+
+        # Rate limit
+        timestamps = self._user_timestamps.get(user_lower, [])
+        timestamps = [t for t in timestamps if now - t < self.spam_window]
+        timestamps.append(now)
+        self._user_timestamps[user_lower] = timestamps
+        if len(timestamps) > self.spam_rate_limit:
+            self.log(f"SPAM bloqueado ({user}): rate limit {self.spam_rate_limit}/{self.spam_window}s")
+            return True
+
+        # Duplicate messages
+        recent = self._user_messages.get(user_lower, [])
+        recent = [(t, m) for t, m in recent if now - t < self.spam_dup_window]
+        for _, prev_text in recent:
+            if prev_text.lower().strip() == text.lower().strip():
+                recent.append((now, text))
+                self._user_messages[user_lower] = recent
+                self.log(f"SPAM bloqueado ({user}): mensaje duplicado")
+                return True
+        recent.append((now, text))
+        self._user_messages[user_lower] = recent
+        return False
+
+    def set_spam_enabled(self, enabled):
+        self.spam_enabled = enabled
+        self.log(f"Filtro anti-spam: {'ON' if enabled else 'OFF'}")
+        return enabled
+
+    def set_spam_config(self, rate_limit=None, window=None, dup_window=None):
+        if rate_limit is not None:
+            self.spam_rate_limit = max(1, int(rate_limit))
+        if window is not None:
+            self.spam_window = max(1, int(window))
+        if dup_window is not None:
+            self.spam_dup_window = max(5, int(dup_window))
+        self.log(f"Anti-spam config: {self.spam_rate_limit} msgs/{self.spam_window}s, duplicados {self.spam_dup_window}s")
+        return True
+
+    def get_spam_config(self):
+        return {
+            "enabled": self.spam_enabled,
+            "rate_limit": self.spam_rate_limit,
+            "window": self.spam_window,
+            "dup_window": self.spam_dup_window,
+            "banned_words": self.banned_words,
+        }
+
+    def add_banned_word(self, word):
+        word = word.strip().lower()
+        if word and word not in self.banned_words:
+            self.banned_words.append(word)
+            self._save_banned_words()
+            self.log(f"Palabra baneada agregada: {word}")
+            return True
+        return False
+
+    def remove_banned_word(self, word):
+        word = word.strip().lower()
+        if word in self.banned_words:
+            self.banned_words.remove(word)
+            self._save_banned_words()
+            self.log(f"Palabra baneada eliminada: {word}")
+            return True
+        return False
 
     # --- Presets de TTS ---
     def _load_presets(self):
@@ -334,8 +475,9 @@ class EventOrchestrator:
         if self.tts_client:
             self.tts_client.set_engine(p.get("engine", "kokoro"))
             if p.get("voice_blend"):
-                self.tts_client.voice_blend = p["voice_blend"]
-                self.tts_client.voice = ""
+                with self.tts_client._state_lock:
+                    self.tts_client.voice_blend = p["voice_blend"]
+                    self.tts_client.voice = ""
             else:
                 self.tts_client.set_voice(p.get("voice", ""))
             self.tts_client.set_speed(p.get("speed", 1.0))
@@ -354,11 +496,12 @@ class EventOrchestrator:
     def preview_voice(self, voice_name):
         if not self.tts_client or not self.tts_client._kokoro:
             return None
-        prev_voice = self.tts_client.voice
-        prev_blend = self.tts_client.voice_blend
-        try:
+        with self.tts_client._state_lock:
+            prev_voice = self.tts_client.voice
+            prev_blend = self.tts_client.voice_blend
             self.tts_client.voice = voice_name
             self.tts_client.voice_blend = ""
+        try:
             filename = self.tts_client._speak_kokoro(
                 "Hola, esta es una demostracion de esta voz."
             )
@@ -367,5 +510,6 @@ class EventOrchestrator:
             logger.error(f"Error preview voz: {e}")
             return None
         finally:
-            self.tts_client.voice = prev_voice
-            self.tts_client.voice_blend = prev_blend
+            with self.tts_client._state_lock:
+                self.tts_client.voice = prev_voice
+                self.tts_client.voice_blend = prev_blend

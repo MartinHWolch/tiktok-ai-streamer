@@ -69,6 +69,8 @@ def main():
     except KeyboardInterrupt:
         logger.info("Deteniendo sistema...")
         tiktok.stop()
+        overlay.stop()
+        panel.stop()
 
 if __name__ == "__main__":
     main()

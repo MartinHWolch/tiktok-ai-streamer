@@ -2,6 +2,8 @@ import os
 import json
 import queue
 import logging
+import threading
+import time
 from flask import Flask, send_from_directory, request, jsonify, Response
 
 logger = logging.getLogger(__name__)
@@ -12,6 +14,10 @@ class ControlPanelServer:
         self.config = config
         self.app = Flask(__name__, static_folder=None)
         self.event_queue = queue.Queue()
+        self._running = False
+        self._stream_threads = []
+        self._stream_lock = threading.Lock()
+        self._shutdown_sentinel = object()
         self._setup_routes()
 
     def _setup_routes(self):
@@ -26,9 +32,22 @@ class ControlPanelServer:
         @self.app.route("/stream")
         def stream():
             def event_stream():
-                while True:
-                    msg = self.event_queue.get()
-                    yield f"data: {json.dumps(msg)}\n\n"
+                with self._stream_lock:
+                    self._stream_threads.append(threading.current_thread())
+                try:
+                    while self._running:
+                        try:
+                            msg = self.event_queue.get(timeout=1)
+                            if msg is self._shutdown_sentinel:
+                                break
+                            yield f"data: {json.dumps(msg)}\n\n"
+                        except queue.Empty:
+                            continue
+                finally:
+                    with self._stream_lock:
+                        t = threading.current_thread()
+                        if t in self._stream_threads:
+                            self._stream_threads.remove(t)
             return Response(event_stream(), mimetype="text/event-stream")
 
         @self.app.route("/api/status", methods=["GET"])
@@ -53,6 +72,44 @@ class ControlPanelServer:
         def toggle_tiktok():
             state = self.orchestrator.toggle_tiktok()
             return jsonify({"tiktok_enabled": state})
+
+        @self.app.route("/api/toggle_simulation", methods=["POST"])
+        def toggle_simulation():
+            state = self.orchestrator.toggle_tiktok_simulation()
+            return jsonify({"simulation": state})
+
+        @self.app.route("/api/stats", methods=["GET"])
+        def stats():
+            return jsonify(self.orchestrator.get_stats())
+
+        @self.app.route("/api/setup_status", methods=["GET"])
+        def setup_status():
+            import os as _os
+            kokoro_fp16 = _os.path.exists(self.config.KOKORO_MODEL)
+            kokoro_fp32 = _os.path.exists(self.config.KOKORO_MODEL_FP32)
+            kokoro_voices = _os.path.exists(self.config.KOKORO_VOICES)
+            piper_model = _os.path.exists(self.config.PIPER_MODEL_PATH)
+            groq_configured = bool(self.config.GROQ_API_KEY)
+            tiktok_username = self.config.TIKTOK_USERNAME
+            TikTokLive_installed = False
+            try:
+                from TikTokLive import TikTokLiveClient
+                TikTokLive_installed = True
+            except ImportError:
+                pass
+            return jsonify({
+                "kokoro_fp16": kokoro_fp16,
+                "kokoro_fp32": kokoro_fp32,
+                "kokoro_voices": kokoro_voices,
+                "piper_model": piper_model,
+                "groq_configured": groq_configured,
+                "groq_model": self.config.GROQ_MODEL if groq_configured else "",
+                "tiktok_username": tiktok_username,
+                "TikTokLive_installed": TikTokLive_installed,
+                "tts_enabled": self.orchestrator.tts_enabled,
+                "ai_enabled": self.orchestrator.ai_enabled,
+                "tts_engine": self.config.TTS_ENGINE,
+            })
 
         @self.app.route("/api/simulate_gift", methods=["POST"])
         def simulate_gift():
@@ -163,6 +220,108 @@ class ControlPanelServer:
             filename = self.orchestrator.preview_voice(data.get("voice", ""))
             return jsonify({"filename": filename})
 
+        # --- Spam ---
+        @self.app.route("/api/spam_config", methods=["GET"])
+        def spam_config():
+            return jsonify(self.orchestrator.get_spam_config())
+
+        @self.app.route("/api/spam_toggle", methods=["POST"])
+        def spam_toggle():
+            state = self.orchestrator.set_spam_enabled(not self.orchestrator.spam_enabled)
+            return jsonify({"enabled": state})
+
+        @self.app.route("/api/spam_set", methods=["POST"])
+        def spam_set():
+            data = request.get_json(silent=True) or {}
+            ok = self.orchestrator.set_spam_config(
+                rate_limit=data.get("rate_limit"),
+                window=data.get("window"),
+                dup_window=data.get("dup_window"),
+            )
+            return jsonify({"success": ok})
+
+        @self.app.route("/api/banned_words", methods=["GET"])
+        def banned_words():
+            return jsonify(self.orchestrator.banned_words)
+
+        @self.app.route("/api/banned_words", methods=["POST"])
+        def add_banned_word():
+            data = request.get_json(silent=True) or {}
+            ok = self.orchestrator.add_banned_word(data.get("word", ""))
+            return jsonify({"success": ok, "words": self.orchestrator.banned_words})
+
+        @self.app.route("/api/banned_words", methods=["DELETE"])
+        def remove_banned_word():
+            data = request.get_json(silent=True) or {}
+            ok = self.orchestrator.remove_banned_word(data.get("word", ""))
+            return jsonify({"success": ok, "words": self.orchestrator.banned_words})
+
+        # --- Export / Import ---
+        @self.app.route("/api/export_config", methods=["GET"])
+        def export_config():
+            import os as _os
+            tts_status = self.orchestrator.get_tts_status()
+            spam = self.orchestrator.get_spam_config()
+            presets = self.orchestrator.list_presets()
+            env_vars = {}
+            for key in ["TIKTOK_USERNAME", "GROQ_API_KEY", "GROQ_MODEL", "TTS_ENABLED",
+                         "TTS_COOLDOWN", "TTS_ENGINE", "TTS_VOICE", "TTS_VOICE_BLEND",
+                         "TTS_SPEED", "TTS_LANG", "TTS_PITCH", "TTS_VOLUME",
+                         "OVERLAY_PORT", "PANEL_PORT", "HOST"]:
+                env_vars[key] = _os.getenv(key, "")
+            return jsonify({
+                "env": env_vars,
+                "tts": tts_status,
+                "spam": spam,
+                "presets": presets,
+                "exported_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            })
+
+        @self.app.route("/api/import_config", methods=["POST"])
+        def import_config():
+            data = request.get_json(silent=True) or {}
+            errors = []
+            # Aplicar config TTS
+            tts = data.get("tts", {})
+            if tts:
+                tts_client = self.orchestrator.tts_client
+                if tts_client:
+                    if tts.get("engine"):
+                        tts_client.set_engine(tts["engine"])
+                    if tts.get("voice_blend"):
+                        tts_client.set_voice_blend(tts["voice_blend"])
+                        tts_client.set_voice("")
+                    elif tts.get("voice"):
+                        tts_client.set_voice(tts["voice"])
+                    if tts.get("speed"):
+                        tts_client.set_speed(tts["speed"])
+                    if tts.get("lang"):
+                        tts_client.set_lang(tts["lang"])
+                    if tts.get("pitch") is not None:
+                        tts_client.set_pitch(tts["pitch"])
+                    if tts.get("volume") is not None:
+                        tts_client.set_volume(tts["volume"])
+            # Aplicar spam config
+            spam = data.get("spam", {})
+            if spam:
+                self.orchestrator.spam_enabled = spam.get("enabled", True)
+                if spam.get("rate_limit"):
+                    self.orchestrator.spam_rate_limit = spam["rate_limit"]
+                if spam.get("window"):
+                    self.orchestrator.spam_window = spam["window"]
+                if spam.get("dup_window"):
+                    self.orchestrator.spam_dup_window = spam["dup_window"]
+                if spam.get("banned_words"):
+                    self.orchestrator.banned_words = spam["banned_words"]
+                    self.orchestrator._save_banned_words()
+            # Guardar presets
+            presets = data.get("presets", {})
+            if presets:
+                self.orchestrator._presets.update(presets)
+                self.orchestrator._save_presets()
+            self.orchestrator.log("Configuracion importada correctamente")
+            return jsonify({"success": True, "errors": errors})
+
         @self.app.route("/<path:filename>")
         def static_files(filename):
             return send_from_directory(self.config.PANEL_DIR, filename)
@@ -170,7 +329,19 @@ class ControlPanelServer:
     def handle_event(self, event_type, data):
         self.event_queue.put({"type": event_type, "data": data})
 
+    def start(self):
+        self._running = True
+
+    def stop(self):
+        self._running = False
+        for _ in range(len(self._stream_threads) + 1):
+            try:
+                self.event_queue.put_nowait(self._shutdown_sentinel)
+            except queue.Full:
+                pass
+
     def run(self):
+        self.start()
         logger.info(f"ControlPanelServer iniciado en http://{self.config.HOST}:{self.config.PANEL_PORT}")
         self.app.run(
             host=self.config.HOST,

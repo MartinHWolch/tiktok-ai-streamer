@@ -15,8 +15,8 @@ class TTSClient:
         os.makedirs(self.config.AUDIO_DIR, exist_ok=True)
         self._last_speak = 0
         self._cleanup_lock = threading.Lock()
-        
-        # Estado configurable en runtime
+        self._state_lock = threading.Lock()
+
         self.engine = config.TTS_ENGINE
         self.voice = config.TTS_VOICE
         self.voice_blend = config.TTS_VOICE_BLEND
@@ -25,13 +25,12 @@ class TTSClient:
         self.pitch = config.TTS_PITCH
         self.volume = config.TTS_VOLUME
         self.kokoro_model = config.KOKORO_MODEL
-        
-        # Engines
+
         self._kokoro = None
         self._kokoro_voices = []
         self._kokoro_g2p = None
         self._piper = None
-        
+
         self._init_kokoro()
         self._init_piper()
     
@@ -109,12 +108,14 @@ class TTSClient:
             return None
     
     def _get_kokoro_voice(self):
-        """Devuelve la voz a usar (string o numpy blend)."""
-        if self.voice_blend:
-            blend = self._parse_voice_blend(self.voice_blend)
-            if blend is not None:
-                return blend
-        return self.voice
+        with self._state_lock:
+            blend = self.voice_blend
+            voice = self.voice
+        if blend:
+            result = self._parse_voice_blend(blend)
+            if result is not None:
+                return result
+        return voice
     
     def speak(self, text):
         if not self.enabled:
@@ -128,9 +129,14 @@ class TTSClient:
         
         self._last_speak = now
         
-        if self.engine == "kokoro" and self._kokoro:
+        with self._state_lock:
+            engine = self.engine
+            kokoro = self._kokoro
+            piper = self._piper
+        
+        if engine == "kokoro" and kokoro:
             return self._speak_kokoro(text)
-        elif self.engine == "piper" and self._piper:
+        elif engine == "piper" and piper:
             return self._speak_piper(text)
         else:
             return self._speak_gtts(text)
@@ -249,33 +255,42 @@ class TTSClient:
     def set_enabled(self, enabled):
         self.enabled = enabled
         logger.info(f"TTS enabled: {enabled}")
-    
+
+    def reset_cooldown(self):
+        self._last_speak = 0
+
     def set_engine(self, engine):
         if engine in ("kokoro", "piper", "gtts"):
-            self.engine = engine
+            with self._state_lock:
+                self.engine = engine
             logger.info(f"TTS engine cambiado a: {engine}")
             return True
         return False
     
     def set_voice(self, voice):
-        self.voice = voice
-        self.voice_blend = ""  # reset blend al cambiar voz simple
+        with self._state_lock:
+            self.voice = voice
+            self.voice_blend = ""
         logger.info(f"TTS voice cambiada a: {voice}")
     
     def set_voice_blend(self, blend_str):
-        self.voice_blend = blend_str
+        with self._state_lock:
+            self.voice_blend = blend_str
         logger.info(f"TTS voice blend cambiado a: {blend_str}")
     
     def set_speed(self, speed):
-        self.speed = max(0.5, min(2.0, float(speed)))
+        with self._state_lock:
+            self.speed = max(0.5, min(2.0, float(speed)))
         logger.info(f"TTS speed cambiado a: {self.speed}")
 
     def set_pitch(self, pitch):
-        self.pitch = max(-12.0, min(12.0, float(pitch)))
+        with self._state_lock:
+            self.pitch = max(-12.0, min(12.0, float(pitch)))
         logger.info(f"TTS pitch cambiado a: {self.pitch} semitonos")
 
     def set_volume(self, volume):
-        self.volume = max(0.1, min(3.0, float(volume)))
+        with self._state_lock:
+            self.volume = max(0.1, min(3.0, float(volume)))
         logger.info(f"TTS volume cambiado a: {self.volume}")
 
     def set_kokoro_model(self, model_key):

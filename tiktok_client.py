@@ -5,27 +5,33 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Intentar importar TikTokLive (opcional)
 try:
     from TikTokLive import TikTokLiveClient
-    from TikTokLive.events import ConnectEvent, CommentEvent, GiftEvent, LikeEvent, JoinEvent
+    from TikTokLive.events import ConnectEvent, CommentEvent, GiftEvent, LikeEvent, JoinEvent, DisconnectEvent
     TIKTOK_LIVE_AVAILABLE = True
 except ImportError:
     TikTokLiveClient = None
-    ConnectEvent = CommentEvent = GiftEvent = LikeEvent = JoinEvent = None
+    ConnectEvent = CommentEvent = GiftEvent = LikeEvent = JoinEvent = DisconnectEvent = None
     TIKTOK_LIVE_AVAILABLE = False
     logger.info("TikTokLive no instalado. Modo real no disponible. Ejecuta: pip install TikTokLive")
 
 class TikTokClient:
+    MAX_RECONNECT_ATTEMPTS = 10
+    RECONNECT_BASE_DELAY = 2
+    RECONNECT_MAX_DELAY = 120
+
     def __init__(self, orchestrator, config):
         self.orchestrator = orchestrator
         self.config = config
         self._running = False
-        self._thread = None
         self.simulation_enabled = True
         self._sim_running = False
         self._sim_thread = None
         self._real_client = None
+        self._real_thread = None
+        self._real_connected = False
+        self._reconnect_attempts = 0
+        self._reconnect_lock = threading.Lock()
         
         self.target_username = getattr(config, "TIKTOK_USERNAME", "demo_user")
         
@@ -109,68 +115,92 @@ class TikTokClient:
             self.simulation_enabled = True
             self._start_simulation()
             return
-        
-        try:
-            self._real_client = TikTokLiveClient(unique_id=f"@{self.target_username}")
-            
-            @self._real_client.on(ConnectEvent)
-            async def on_connect(event):
-                logger.info(f"Conectado al live de @{self.target_username}")
-            
-            @self._real_client.on(CommentEvent)
-            async def on_comment(event):
-                self.orchestrator.handle_tiktok_event({
-                    "type": "message",
-                    "user": event.user.nickname or event.user.unique_id,
-                    "text": event.comment,
-                    "timestamp": time.time()
-                })
-            
-            @self._real_client.on(GiftEvent)
-            async def on_gift(event):
-                self.orchestrator.handle_tiktok_event({
-                    "type": "gift",
-                    "user": event.user.nickname or event.user.unique_id,
-                    "gift": event.gift.name if hasattr(event.gift, 'name') else "Regalo",
-                    "amount": event.gift.repeat_count if hasattr(event.gift, 'repeat_count') else 1,
-                    "timestamp": time.time()
-                })
-            
-            @self._real_client.on(LikeEvent)
-            async def on_like(event):
-                self.orchestrator.handle_tiktok_event({
-                    "type": "like",
-                    "user": event.user.nickname or event.user.unique_id,
-                    "count": event.count if hasattr(event, 'count') else 1,
-                    "timestamp": time.time()
-                })
-            
-            @self._real_client.on(JoinEvent)
-            async def on_join(event):
-                self.orchestrator.handle_tiktok_event({
-                    "type": "join",
-                    "user": event.user.nickname or event.user.unique_id,
-                    "timestamp": time.time()
-                })
-            
-            self._real_thread = threading.Thread(target=self._run_real_client, daemon=True)
-            self._real_thread.start()
-        except Exception as e:
-            logger.error(f"Error al iniciar TikTokLive: {e}")
-            self.simulation_enabled = True
-            self._start_simulation()
 
-    def _run_real_client(self):
-        try:
-            import asyncio
-            asyncio.run(self._real_client.run())
-        except Exception as e:
-            logger.error(f"Error en TikTokLive run: {e}")
+        self._real_thread = threading.Thread(target=self._run_real_loop, daemon=True, name="TikTokReal")
+        self._real_thread.start()
+
+    def _run_real_loop(self):
+        while self._running and not self.simulation_enabled:
+            try:
+                self._real_connected = False
+                self._real_client = TikTokLiveClient(unique_id=f"@{self.target_username}")
+
+                @self._real_client.on(ConnectEvent)
+                async def on_connect(event):
+                    logger.info(f"Conectado al live de @{self.target_username}")
+                    self._real_connected = True
+                    with self._reconnect_lock:
+                        self._reconnect_attempts = 0
+
+                @self._real_client.on(DisconnectEvent)
+                async def on_disconnect(event):
+                    logger.warning(f"Desconectado del live de @{self.target_username}")
+                    self._real_connected = False
+
+                @self._real_client.on(CommentEvent)
+                async def on_comment(event):
+                    self.orchestrator.handle_tiktok_event({
+                        "type": "message",
+                        "user": event.user.nickname or event.user.unique_id,
+                        "text": event.comment,
+                        "timestamp": time.time()
+                    })
+
+                @self._real_client.on(GiftEvent)
+                async def on_gift(event):
+                    self.orchestrator.handle_tiktok_event({
+                        "type": "gift",
+                        "user": event.user.nickname or event.user.unique_id,
+                        "gift": event.gift.name if hasattr(event.gift, 'name') else "Regalo",
+                        "amount": event.gift.repeat_count if hasattr(event.gift, 'repeat_count') else 1,
+                        "timestamp": time.time()
+                    })
+
+                @self._real_client.on(LikeEvent)
+                async def on_like(event):
+                    self.orchestrator.handle_tiktok_event({
+                        "type": "like",
+                        "user": event.user.nickname or event.user.unique_id,
+                        "count": event.count if hasattr(event, 'count') else 1,
+                        "timestamp": time.time()
+                    })
+
+                @self._real_client.on(JoinEvent)
+                async def on_join(event):
+                    self.orchestrator.handle_tiktok_event({
+                        "type": "join",
+                        "user": event.user.nickname or event.user.unique_id,
+                        "timestamp": time.time()
+                    })
+
+                import asyncio
+                asyncio.run(self._real_client.run())
+
+            except Exception as e:
+                logger.error(f"Error en TikTokLive: {e}")
+
+            if not self._running or self.simulation_enabled:
+                break
+
+            with self._reconnect_lock:
+                self._reconnect_attempts += 1
+                if self._reconnect_attempts > self.MAX_RECONNECT_ATTEMPTS:
+                    logger.error(f"Demasiados intentos de reconexión ({self.MAX_RECONNECT_ATTEMPTS}). Volviendo a simulación.")
+                    self.simulation_enabled = True
+                    self._start_simulation()
+                    return
+                delay = min(self.RECONNECT_BASE_DELAY * (2 ** (self._reconnect_attempts - 1)), self.RECONNECT_MAX_DELAY)
+            logger.info(f"Reintentando conexión TikTokLive en {delay}s (intento {self._reconnect_attempts}/{self.MAX_RECONNECT_ATTEMPTS})")
+            time.sleep(delay)
 
     def _stop_real(self):
+        self._real_connected = False
         if self._real_client:
             try:
                 self._real_client.stop()
             except Exception as e:
                 logger.warning(f"Error al detener TikTokLive: {e}")
             self._real_client = None
+        if self._real_thread and self._real_thread.is_alive():
+            self._real_thread.join(timeout=5)
+            self._real_thread = None

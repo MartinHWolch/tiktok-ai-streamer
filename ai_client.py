@@ -115,19 +115,15 @@ class AIClient:
                 messages=[
                     {
                         "role": "system",
-                        "content": (
-                            "Eres un asistente de streaming para TikTok. "
-                            "Responde de forma breve, divertida y en español. "
-                            "Máximo 2 oraciones."
-                        )
+                        "content": self.config.AI_SYSTEM_PROMPT
                     },
                     {
                         "role": "user",
                         "content": f"Usuario {user} dijo: {text}"
                     }
                 ],
-                max_tokens=100,
-                temperature=0.7
+                max_tokens=self.config.AI_MAX_TOKENS,
+                temperature=self.config.AI_TEMPERATURE
             )
             reply = response.choices[0].message.content.strip()
             if not reply:

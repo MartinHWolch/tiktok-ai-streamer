@@ -9,6 +9,7 @@ document.querySelectorAll('.channel').forEach(function(ch) {
         if (tab) tab.classList.add('active');
 
         if (ch.dataset.tab === 'setup') loadSetup();
+        if (ch.dataset.tab === 'rules') loadRules();
         if (ch.dataset.tab === 'logs') loadLogs();
     });
 });
@@ -172,6 +173,21 @@ var voiceCountEl = document.getElementById('voice-count');
 
 var allVoices = [];
 var currentVoice = '';
+var voiceGender = 'all';
+
+function getVoiceGender(voiceName) {
+    if (!voiceName) return 'unknown';
+    var parts = voiceName.split('_');
+    if (parts.length >= 2) {
+        var g = parts[0].slice(-1).toLowerCase();
+        if (g === 'f') return 'female';
+        if (g === 'm') return 'male';
+    }
+    var v = voiceName.toLowerCase();
+    if (v.indexOf('_f_') !== -1 || v.startsWith('af_') || v.startsWith('bf_') || v.startsWith('cf_') || v.startsWith('df_') || v.startsWith('ef_') || v.startsWith('ff_') || v.startsWith('gf_') || v.startsWith('hf_') || v.startsWith('if_') || v.startsWith('jf_') || v.startsWith('kf_') || v.startsWith('lf_') || v.startsWith('mf_') || v.startsWith('nf_') || v.startsWith('of_') || v.startsWith('pf_') || v.startsWith('qf_') || v.startsWith('rf_') || v.startsWith('sf_') || v.startsWith('tf_') || v.startsWith('uf_') || v.startsWith('vf_') || v.startsWith('wf_') || v.startsWith('xf_') || v.startsWith('yf_') || v.startsWith('zf_')) return 'female';
+    if (v.indexOf('_m_') !== -1 || v.startsWith('am_') || v.startsWith('bm_') || v.startsWith('cm_') || v.startsWith('dm_') || v.startsWith('em_') || v.startsWith('fm_') || v.startsWith('gm_') || v.startsWith('hm_') || v.startsWith('im_') || v.startsWith('jm_') || v.startsWith('km_') || v.startsWith('lm_') || v.startsWith('mm_') || v.startsWith('nm_') || v.startsWith('om_') || v.startsWith('pm_') || v.startsWith('qm_') || v.startsWith('rm_') || v.startsWith('sm_') || v.startsWith('tm_') || v.startsWith('um_') || v.startsWith('vm_') || v.startsWith('wm_') || v.startsWith('xm_') || v.startsWith('ym_') || v.startsWith('zm_')) return 'male';
+    return 'unknown';
+}
 
 function updateEngineUI(engine) {
     var kOpts = document.querySelectorAll('.kokoro-opt');
@@ -183,43 +199,165 @@ function updateEngineUI(engine) {
 function populateVoices(voices, selectedVoice) {
     allVoices = voices || [];
     currentVoice = selectedVoice || '';
-    voiceCountEl.textContent = allVoices.length + ' voces';
+    voiceGender = 'all';
+    document.querySelectorAll('.gender-btn').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.gender === 'all');
+    });
+    updateVoiceCount();
     renderVoiceOptions();
 }
 
+function updateVoiceCount() {
+    var female = allVoices.filter(function(v) { return getVoiceGender(v) === 'female'; }).length;
+    var male = allVoices.filter(function(v) { return getVoiceGender(v) === 'male'; }).length;
+    var el = document.getElementById('voice-count');
+    if (el) el.textContent = female + ' F | ' + male + ' M';
+}
+
 function renderVoiceOptions(filter) {
-    ttsVoice.innerHTML = '';
+    var dropdown = document.getElementById('voice-dropdown');
+    dropdown.innerHTML = '';
+
     var filtered = allVoices;
-    if (filter) {
-        var q = filter.toLowerCase();
-        filtered = allVoices.filter(function(v) { return v.toLowerCase().indexOf(q) !== -1; });
+
+    if (voiceGender === 'female') {
+        filtered = filtered.filter(function(v) { return getVoiceGender(v) === 'female'; });
+    } else if (voiceGender === 'male') {
+        filtered = filtered.filter(function(v) { return getVoiceGender(v) === 'male'; });
     }
-    filtered.forEach(function(v) {
-        var opt = document.createElement('option');
-        opt.value = v;
-        opt.textContent = v;
-        if (v === currentVoice) opt.selected = true;
-        ttsVoice.appendChild(opt);
-    });
+
+    var q = (filter || '').toLowerCase();
+    if (q) {
+        filtered = filtered.filter(function(v) { return v.toLowerCase().indexOf(q) !== -1; });
+    }
+
     if (filtered.length === 0) {
-        var opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = 'Sin resultados';
-        opt.disabled = true;
-        ttsVoice.appendChild(opt);
+        var empty = document.createElement('div');
+        empty.className = 'voice-option-empty';
+        empty.textContent = 'Sin resultados';
+        dropdown.appendChild(empty);
+    } else {
+        filtered.forEach(function(v) {
+            var item = document.createElement('div');
+            item.className = 'voice-option';
+            if (v === currentVoice) item.classList.add('selected');
+            var gender = getVoiceGender(v);
+            var tag = gender === 'female' ? 'F' : (gender === 'male' ? 'M' : '');
+            item.innerHTML = '<span>' + v + '</span>' + (tag ? '<span class="voice-gender-tag">' + tag + '</span>' : '');
+            item.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                selectVoice(v);
+            });
+            dropdown.appendChild(item);
+        });
     }
 }
 
+function selectVoice(voiceName) {
+    currentVoice = voiceName;
+    var input = document.getElementById('tts-voice-search');
+    input.value = voiceName;
+    input.dataset.selected = voiceName;
+    closeDropdown();
+    postJSON('/api/set_tts_voice', { voice: voiceName }).then(function(res) {
+        if (res && res.success) addLog('TTS voz -> ' + voiceName);
+    });
+}
+
+function openDropdown() {
+    var dropdown = document.getElementById('voice-dropdown');
+    dropdown.classList.add('open');
+    var input = document.getElementById('tts-voice-search');
+    input.select();
+    renderVoiceOptions('');
+}
+
+function closeDropdown() {
+    var dropdown = document.getElementById('voice-dropdown');
+    dropdown.classList.remove('open');
+}
+
+// Toggle dropdown on input click
+document.getElementById('tts-voice-search').addEventListener('click', function() {
+    var dropdown = document.getElementById('voice-dropdown');
+    if (dropdown.classList.contains('open')) {
+        closeDropdown();
+        if (currentVoice) ttsVoiceSearch.value = currentVoice;
+    } else {
+        openDropdown();
+    }
+});
+
+// Filter on input
 ttsVoiceSearch.addEventListener('input', function() {
+    var dropdown = document.getElementById('voice-dropdown');
+    if (!dropdown.classList.contains('open')) openDropdown();
     renderVoiceOptions(ttsVoiceSearch.value);
 });
 
-ttsVoice.addEventListener('change', async function() {
-    var voice = ttsVoice.value;
-    if (!voice) return;
-    currentVoice = voice;
-    var res = await postJSON('/api/set_tts_voice', { voice: voice });
-    if (res && res.success) addLog('TTS voz -> ' + voice);
+// Keyboard navigation
+ttsVoiceSearch.addEventListener('keydown', function(e) {
+    var dropdown = document.getElementById('voice-dropdown');
+    var items = dropdown.querySelectorAll('.voice-option');
+    var active = dropdown.querySelector('.voice-option.active');
+    var idx = Array.from(items).indexOf(active);
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (!dropdown.classList.contains('open')) { openDropdown(); return; }
+        if (active) active.classList.remove('active');
+        var next = idx + 1 < items.length ? idx + 1 : 0;
+        items[next].classList.add('active');
+        items[next].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (!dropdown.classList.contains('open')) { openDropdown(); return; }
+        if (active) active.classList.remove('active');
+        var prev = idx - 1 >= 0 ? idx - 1 : items.length - 1;
+        items[prev].classList.add('active');
+        items[prev].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (active) {
+            selectVoice(active.textContent.replace(/\s[FM]$/, '').trim());
+        } else if (items.length > 0) {
+            selectVoice(items[0].textContent.replace(/\s[FM]$/, '').trim());
+        }
+    } else if (e.key === 'Escape') {
+        closeDropdown();
+        ttsVoiceSearch.value = currentVoice || '';
+    }
+});
+
+// Blur - close dropdown and restore selection
+ttsVoiceSearch.addEventListener('blur', function() {
+    setTimeout(function() {
+        closeDropdown();
+        if (currentVoice) {
+            ttsVoiceSearch.value = currentVoice;
+        }
+    }, 150);
+});
+
+// Close when clicking outside
+document.addEventListener('click', function(e) {
+    var container = document.getElementById('voice-select-container');
+    if (container && !container.contains(e.target)) {
+        closeDropdown();
+        if (currentVoice) {
+            ttsVoiceSearch.value = currentVoice;
+        }
+    }
+});
+
+document.querySelectorAll('.gender-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.gender-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        voiceGender = btn.dataset.gender;
+        ttsVoiceSearch.value = '';
+        renderVoiceOptions();
+    });
 });
 
 ttsEngine.addEventListener('change', async function() {
@@ -289,8 +427,8 @@ ttsLang.addEventListener('change', async function() {
 
 // Voice preview
 btnPreviewVoice.addEventListener('click', async function() {
-    var voice = ttsVoice.value;
-    if (!voice) return;
+    var voice = currentVoice || ttsVoiceSearch.value.trim();
+    if (!voice || voice === 'Sin resultados') return;
     setSpinner(btnPreviewVoice, true);
     var res = await postJSON('/api/preview_voice', { voice: voice });
     setSpinner(btnPreviewVoice, false);
@@ -356,7 +494,7 @@ document.getElementById('btn-load-preset').addEventListener('click', async funct
         addLog('Preset cargado: ' + name);
         var s = res.status;
         if (s.engine) { ttsEngine.value = s.engine; updateEngineUI(s.engine); }
-        if (s.voice) { currentVoice = s.voice; ttsVoiceSearch.value = ''; renderVoiceOptions(); }
+        if (s.voice) { currentVoice = s.voice; ttsVoiceSearch.value = s.voice; document.getElementById('voice-dropdown').innerHTML = ''; }
         if (s.voice_blend) {
             ttsBlend.value = s.voice_blend;
             toggleBlend.checked = true;
@@ -414,19 +552,13 @@ function renderSetup(data) {
         { label: 'Kokoro Voces', ok: data.kokoro_voices, value: data.kokoro_voices ? 'Archivo de voces OK' : 'No encontrado' },
         { label: 'Piper Modelo', ok: data.piper_model, value: data.piper_model ? 'Modelo encontrado' : 'No encontrado' },
         { label: 'Groq API Key', ok: data.groq_configured, value: data.groq_configured ? 'Configurada (' + data.groq_model + ')' : 'No configurada', isWarn: !data.groq_configured },
-        { label: 'TikTokLive', ok: data.tts_enabled || true, value: data.tts_enabled ? 'Instalado' : 'No instalado', isWarn: !data.tts_enabled, actualOk: data.tts_enabled },
-        { label: 'Usuario TikTok', ok: true, value: data.tiktok_username || 'No configurado', isWarn: !data.tiktok_username || data.tiktok_username === 'demo_user', actualOk: data.tiktok_username && data.tiktok_username !== 'demo_user' },
+        { label: 'TikTokLive', ok: data.TikTokLive_installed, value: data.TikTokLive_installed ? 'Instalado' : 'No instalado (pip install TikTokLive)', isWarn: !data.TikTokLive_installed },
+        { label: 'Usuario TikTok', ok: true, value: data.tiktok_username || 'No configurado', isWarn: !data.tiktok_username || data.tiktok_username === 'demo_user' },
         { label: 'TTS Engine', ok: true, value: data.tts_engine ? data.tts_engine.toUpperCase() : 'kokoro' },
     ];
 
-    // Fix TikTokLive check
-    items[5].ok = data.TikTokLive_installed;
-    items[5].value = data.TikTokLive_installed ? 'Instalado' : 'No instalado (pip install TikTokLive)';
-    items[5].isWarn = !data.TikTokLive_installed;
-
     grid.innerHTML = items.map(function(item) {
-        var ok = item.actualOk !== undefined ? item.actualOk : item.ok;
-        var cls = ok ? 'ok' : (item.isWarn ? 'warn' : 'fail');
+        var cls = item.ok ? 'ok' : (item.isWarn ? 'warn' : 'fail');
         return '<div class="setup-item">'
             + '<div class="setup-icon ' + cls + '"></div>'
             + '<div class="setup-info">'
@@ -461,9 +593,31 @@ function refreshStats() {
         });
 }
 
+// ===== Live Chat Helpers =====
+function addChatMsg(user, text, isAI) {
+    var container = document.getElementById('live-chat');
+    if (!container) return;
+    var ph = container.querySelector('.chat-placeholder');
+    if (ph) ph.remove();
+    var div = document.createElement('div');
+    div.className = 'chat-msg' + (isAI ? ' ai-msg' : '');
+    div.innerHTML = '<span class="chat-user">' + escapeHtml(user) + '</span>'
+        + '<span class="chat-text">' + escapeHtml(text) + '</span>';
+    container.appendChild(div);
+    while (container.children.length > 50) {
+        container.firstElementChild.remove();
+    }
+    container.scrollTop = container.scrollHeight;
+}
+
+function escapeHtml(text) {
+    var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
 // ===== SSE =====
 var evtSource = new EventSource('/stream');
-evtSource.onmessage = function(e) {
+function sseOnMessage(e) {
     try {
         var payload = JSON.parse(e.data);
         if (payload.type === 'log') {
@@ -481,8 +635,18 @@ evtSource.onmessage = function(e) {
             addChatMsg(payload.data.user, payload.data.text, isAI);
         }
     } catch(err) { console.error(err); }
-};
-evtSource.onerror = function() { console.error('SSE desconectado'); };
+}
+function sseOnError() {
+    console.error('SSE desconectado, reintentando en 3s...');
+    evtSource.close();
+    setTimeout(function() {
+        evtSource = new EventSource('/stream');
+        evtSource.onmessage = sseOnMessage;
+        evtSource.onerror = sseOnError;
+    }, 3000);
+}
+evtSource.onmessage = sseOnMessage;
+evtSource.onerror = sseOnError;
 
 // ===== Init =====
 fetch('/api/status')
@@ -511,6 +675,9 @@ fetch('/api/tts_status')
             ttsBlend.disabled = false;
         }
         populateVoices(status.kokoro_voices, status.voice);
+        if (status.voice) {
+            ttsVoiceSearch.value = status.voice;
+        }
     });
 
 refreshStats();
@@ -661,3 +828,303 @@ document.getElementById('import-file').addEventListener('change', async function
     }
     this.value = '';
 });
+
+// ===== Event Rules =====
+var actionCounter = 1;
+
+function loadRules() {
+    fetch('/api/event_rules')
+        .then(function(r) { return r.json(); })
+        .then(renderRules);
+}
+
+function renderRules(rules) {
+    var grid = document.getElementById('rules-grid');
+    if (!rules || !rules.length) {
+        grid.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">No hay reglas configuradas. Crea una abajo.</p>';
+        return;
+    }
+    grid.innerHTML = rules.map(function(rule, i) {
+        var triggerLabel = rule.trigger === 'gift' ? 'Regalo: ' + rule.trigger_value : 'Diamantes >= ' + rule.trigger_value;
+        var actionsHtml = rule.actions.map(function(a) {
+            if (a.type === 'tts') return '<span class="rule-action-tag tts-tag">TTS' + (a.voice_preset ? ' [' + a.voice_preset + ']' : '') + ': ' + escapeHtml((a.message || '').substring(0, 25)) + '</span>';
+            if (a.type === 'emoji') return '<span class="rule-action-tag emoji-tag">' + escapeHtml(a.emojis || '🎉') + ' x' + (a.count || 10) + '</span>';
+            return '<span class="rule-action-tag">' + a.type + '</span>';
+        }).join('');
+        return '<div class="rule-card">'
+            + '<div class="rule-info">'
+            + '<span class="rule-gift-name">' + escapeHtml(rule.name) + '</span>'
+            + '<span style="font-size:11px;color:var(--text-muted)">' + escapeHtml(triggerLabel) + '</span>'
+            + '<div class="rule-actions-list">' + actionsHtml + '</div>'
+            + '</div>'
+            + '<div class="rule-btns">'
+            + '<button class="btn-sm-blurple rule-edit" data-index="' + i + '">Editar</button>'
+            + '<button class="btn-sm-blurple rule-test" data-index="' + i + '">Probar</button>'
+            + '<button class="btn-sm-danger rule-delete" data-index="' + i + '">Eliminar</button>'
+            + '</div>'
+            + '</div>';
+    }).join('');
+
+    document.querySelectorAll('.rule-delete').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var idx = btn.dataset.index;
+            if (!confirm('Eliminar esta regla?')) return;
+            fetch('/api/event_rules/' + idx, { method: 'DELETE' })
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
+                    if (res.success) { renderRules(res.rules); addLog('Regla eliminada'); resetRuleForm(); }
+                });
+        });
+    });
+
+    document.querySelectorAll('.rule-test').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+            var idx = parseInt(btn.dataset.index);
+            btn.disabled = true;
+            btn.textContent = '...';
+            addLog('Probando regla indice ' + idx + '...');
+            try {
+                var r = await fetch('/api/event_rules');
+                var rules = await r.json();
+                addLog('Reglas cargadas: ' + rules.length);
+                var rule = rules[idx];
+                if (rule) {
+                    var gift = rule.trigger === 'gift' ? rule.trigger_value : 'TestGift';
+                    var diamonds = rule.trigger === 'diamonds' ? parseInt(rule.trigger_value) || 0 : 0;
+                    addLog('Disparando: gift=' + gift + ' diamonds=' + diamonds);
+                    var res = await postJSON('/api/test_rule', { gift: gift, user: 'TestUser', diamonds: diamonds });
+                    if (res) {
+                        if (res.matched_rules && res.matched_rules.length > 0) {
+                            addLog('Regla probada: ' + rule.name + ' - ' + res.matched_rules.length + ' reglas coincidieron');
+                            res.matched_rules.forEach(function(m) {
+                                addLog('  > ' + m.name + ': ' + m.actions.join(', '));
+                            });
+                        } else {
+                            addLog('Regla probada: ' + rule.name + ' - NINGUNA regla coincidio (verifica el gatillo)');
+                        }
+                        if (!res.tts_enabled) addLog('  [!] TTS esta desactivado en el panel');
+                        if (!res.tiktok_enabled) addLog('  [!] TikTok eventos estan pausados');
+                    } else {
+                        addLog('Error al probar regla (sin respuesta del servidor)');
+                    }
+                } else {
+                    addLog('Regla no encontrada en indice ' + idx);
+                }
+            } catch(e) {
+                addLog('Error probando regla: ' + e.message);
+            }
+            btn.disabled = false;
+            btn.textContent = 'Probar';
+        });
+    });
+
+    document.querySelectorAll('.rule-edit').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var idx = parseInt(btn.dataset.index);
+            fetch('/api/event_rules').then(function(r) { return r.json(); }).then(function(rules) {
+                var rule = rules[idx];
+                if (!rule) return;
+                document.getElementById('rule-edit-index').value = idx;
+                document.getElementById('rule-name').value = rule.name || '';
+                document.getElementById('rule-trigger').value = rule.trigger || 'gift';
+                document.getElementById('rule-trigger-value').value = rule.trigger_value || '';
+                updateTriggerLabel();
+                document.getElementById('rule-form-title').textContent = 'Editar Regla';
+                document.getElementById('btn-cancel-edit').style.display = '';
+                document.getElementById('btn-save-rule').textContent = 'Actualizar Regla';
+
+                // Load actions
+                var editor = document.getElementById('actions-editor');
+                editor.querySelectorAll('.action-row:not(#action-row-template)').forEach(function(r) { r.remove(); });
+                (rule.actions || []).forEach(function(a) { addActionRow(a); });
+            });
+        });
+    });
+}
+
+function updateTriggerLabel() {
+    var trigger = document.getElementById('rule-trigger').value;
+    var label = document.getElementById('rule-trigger-label');
+    var input = document.getElementById('rule-trigger-value');
+    if (trigger === 'gift') {
+        label.textContent = 'Nombre del Regalo';
+        input.placeholder = 'ej: Rosa, Panda, Universo...';
+    } else {
+        label.textContent = 'Valor minimo en Diamantes';
+        input.placeholder = 'ej: 100, 500, 1000...';
+    }
+}
+
+document.getElementById('rule-trigger').addEventListener('change', updateTriggerLabel);
+
+function createActionConfig(type, existingData) {
+    var div = document.createElement('div');
+    div.className = 'action-config';
+    if (type === 'tts') {
+        div.innerHTML = '<div style="display:flex;flex-direction:column;gap:6px;flex:1">'
+            + '<input type="text" class="input-discord action-tts-msg" placeholder="Mensaje TTS..." value="' + escapeHtml(existingData.message || 'Gracias {user} por el {gift}!') + '">'
+            + '<select class="input-discord action-tts-preset"><option value="">Voz por defecto</option></select>'
+            + '</div>';
+        // Load presets
+        fetch('/api/tts_presets').then(function(r) { return r.json(); }).then(function(presets) {
+            var sel = div.querySelector('.action-tts-preset');
+            Object.keys(presets).sort().forEach(function(name) {
+                var opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                if (name === (existingData.voice_preset || '')) opt.selected = true;
+                sel.appendChild(opt);
+            });
+        });
+    } else {
+        div.innerHTML = '<div style="display:flex;gap:6px;flex:1">'
+            + '<input type="text" class="input-discord action-emoji-list" placeholder="Emojis" value="' + escapeHtml(existingData.emojis || '🎉✨') + '" style="flex:1">'
+            + '<input type="number" class="input-discord action-emoji-count" placeholder="Cantidad" value="' + (existingData.count || 10) + '" min="1" max="100" style="width:80px">'
+            + '</div>';
+    }
+    return div;
+}
+
+function addActionRow(existing) {
+    var editor = document.getElementById('actions-editor');
+    var template = document.getElementById('action-row-template');
+    var row = template.cloneNode(true);
+    row.removeAttribute('id');
+    row.style.display = '';
+
+    var existingData = existing || {};
+    var actionType = existingData.type || 'tts';
+    var typeSel = row.querySelector('.action-type');
+    typeSel.value = actionType;
+
+    var configDiv = row.querySelector('.action-config');
+    var newConfig = createActionConfig(actionType, existingData);
+    configDiv.replaceWith(newConfig);
+
+    typeSel.addEventListener('change', function() {
+        var oldConfig = row.querySelector('.action-config');
+        var newConfigDiv = createActionConfig(typeSel.value, {});
+        oldConfig.replaceWith(newConfigDiv);
+    });
+
+    row.querySelector('.action-remove').addEventListener('click', function() {
+        row.remove();
+    });
+
+    editor.appendChild(row);
+}
+
+function getActionsFromForm() {
+    var rows = document.querySelectorAll('#actions-editor .action-row:not(#action-row-template)');
+    var actions = [];
+    rows.forEach(function(row) {
+        var type = row.querySelector('.action-type').value;
+        if (type === 'tts') {
+            var msg = (row.querySelector('.action-tts-msg') || {}).value || '';
+            var preset = (row.querySelector('.action-tts-preset') || {}).value || '';
+            if (msg) actions.push({ type: 'tts', message: msg, voice_preset: preset });
+        } else if (type === 'emoji') {
+            var emojis = (row.querySelector('.action-emoji-list') || {}).value || '🎉';
+            var count = parseInt((row.querySelector('.action-emoji-count') || {}).value || '10') || 10;
+            if (emojis) actions.push({ type: 'emoji', emojis: emojis, count: count });
+        }
+    });
+    return actions;
+}
+
+function resetRuleForm() {
+    document.getElementById('rule-edit-index').value = '-1';
+    document.getElementById('rule-name').value = '';
+    document.getElementById('rule-trigger').value = 'gift';
+    document.getElementById('rule-trigger-value').value = '';
+    updateTriggerLabel();
+    document.getElementById('rule-form-title').textContent = 'Nueva Regla';
+    document.getElementById('btn-cancel-edit').style.display = 'none';
+    document.getElementById('btn-save-rule').textContent = 'Guardar Regla';
+    var editor = document.getElementById('actions-editor');
+    editor.querySelectorAll('.action-row:not(#action-row-template)').forEach(function(r) { r.remove(); });
+    addActionRow({ type: 'tts', message: 'Gracias {user} por el {gift}!' });
+}
+
+document.getElementById('btn-add-action').addEventListener('click', function() {
+    addActionRow({ type: 'tts', message: 'Gracias {user} por el {gift}!' });
+});
+
+document.getElementById('btn-cancel-edit').addEventListener('click', function() {
+    resetRuleForm();
+});
+
+document.getElementById('btn-save-rule').addEventListener('click', async function() {
+    var name = document.getElementById('rule-name').value.trim();
+    var trigger = document.getElementById('rule-trigger').value;
+    var triggerVal = document.getElementById('rule-trigger-value').value.trim();
+    if (!name) { addLog('Escribe un nombre para la regla'); return; }
+    if (!triggerVal) { addLog('Especifica el valor del gatillo'); return; }
+    var actions = getActionsFromForm();
+    if (!actions.length) { addLog('Agrega al menos una accion'); return; }
+
+    var rule = { name: name, trigger: trigger, trigger_value: triggerVal, actions: actions };
+    var editIdx = parseInt(document.getElementById('rule-edit-index').value);
+
+    var url = '/api/event_rules';
+    var method = 'POST';
+    if (editIdx >= 0) {
+        url = '/api/event_rules/' + editIdx;
+        method = 'PUT';
+    }
+
+    var res = await (method === 'POST'
+        ? postJSON(url, rule)
+        : fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rule) }).then(function(r) { return r.json(); }));
+
+    if (res && res.success) {
+        addLog('Regla guardada: ' + name);
+        resetRuleForm();
+        renderRules(res.rules);
+    }
+});
+
+document.getElementById('btn-test-rule').addEventListener('click', async function() {
+    var name = document.getElementById('rule-name').value.trim();
+    var trigger = document.getElementById('rule-trigger').value;
+    var triggerVal = document.getElementById('rule-trigger-value').value.trim();
+    var actions = getActionsFromForm();
+    if (!name || !triggerVal) { addLog('Completa nombre y gatillo'); return; }
+    if (!actions.length) { addLog('Agrega al menos una accion. Acciones encontradas: ' + actions.length); return; }
+
+    addLog('Probando regla: ' + name + ' (' + trigger + '=' + triggerVal + ') con ' + actions.length + ' acciones');
+    var rule = { name: name, trigger: trigger, trigger_value: triggerVal, actions: actions };
+    var saveRes = await postJSON('/api/event_rules', rule);
+    if (!saveRes || !saveRes.success) { addLog('Error al guardar regla temporal'); return; }
+    
+    var gift = trigger === 'gift' ? triggerVal : 'TestGift';
+    var diamonds = trigger === 'diamonds' ? parseInt(triggerVal) || 10 : 0;
+    addLog('Enviando test: gift=' + gift + ' diamonds=' + diamonds);
+    var testRes = await postJSON('/api/test_rule', { gift: gift, user: 'TestUser', diamonds: diamonds });
+    if (testRes) {
+        if (testRes.matched_rules && testRes.matched_rules.length > 0) {
+            addLog('Regla probada: ' + name + ' - ' + testRes.matched_rules.length + ' reglas coincidieron');
+            testRes.matched_rules.forEach(function(m) {
+                addLog('  > ' + m.name + ': ' + m.actions.join(', '));
+            });
+        } else {
+            addLog('Regla probada: ' + name + ' - NINGUNA regla coincidio. Revisa el gatillo.');
+        }
+        if (!testRes.tts_enabled) addLog('  [!] TTS esta desactivado. Activalo en el Dashboard.');
+    } else {
+        addLog('Error del servidor al probar regla');
+    }
+    loadRules();
+});
+
+// Auto-load when tab opened
+(function() {
+    var rulesChannel = document.querySelector('.channel[data-tab="rules"]');
+    if (rulesChannel) {
+        var loaded = false;
+        rulesChannel.addEventListener('click', function() {
+            loadRules();
+            if (!loaded) { resetRuleForm(); loaded = true; }
+        });
+    }
+})();

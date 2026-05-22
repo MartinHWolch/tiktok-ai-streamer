@@ -256,6 +256,80 @@ class ControlPanelServer:
             ok = self.orchestrator.remove_banned_word(data.get("word", ""))
             return jsonify({"success": ok, "words": self.orchestrator.banned_words})
 
+        # --- Event Rules ---
+        @self.app.route("/api/event_rules", methods=["GET"])
+        def event_rules():
+            return jsonify(self.orchestrator.get_event_rules())
+
+        @self.app.route("/api/event_rules", methods=["POST"])
+        def add_event_rule():
+            data = request.get_json(silent=True) or {}
+            result = self.orchestrator.add_event_rule(data)
+            if result is None:
+                return jsonify({"success": False, "error": "Datos invalidos"}), 400
+            return jsonify({"success": True, "rules": self.orchestrator.get_event_rules()})
+
+        @self.app.route("/api/event_rules/<int:index>", methods=["PUT"])
+        def update_event_rule(index):
+            data = request.get_json(silent=True) or {}
+            ok = self.orchestrator.update_event_rule(index, data)
+            return jsonify({"success": ok, "rules": self.orchestrator.get_event_rules()})
+
+        @self.app.route("/api/event_rules/<int:index>", methods=["DELETE"])
+        def delete_event_rule(index):
+            ok = self.orchestrator.delete_event_rule_by_index(index)
+            return jsonify({"success": ok, "rules": self.orchestrator.get_event_rules()})
+
+        @self.app.route("/api/test_rule", methods=["POST"])
+        def test_rule():
+            data = request.get_json(silent=True) or {}
+            gift = data.get("gift", "Test")
+            user = data.get("user", "TestUser")
+            diamonds = data.get("diamonds", 0)
+            
+            matched = []
+            for rule in self.orchestrator._event_rules:
+                trigger = rule.get("trigger", "")
+                trigger_value = str(rule.get("trigger_value", ""))
+                is_match = False
+                if trigger == "gift" and gift.lower() == trigger_value.lower():
+                    is_match = True
+                elif trigger == "diamonds" and diamonds >= int(trigger_value or "0"):
+                    is_match = True
+                if is_match:
+                    actions_summary = [a.get("type") for a in rule.get("actions", [])]
+                    matched.append({"name": rule["name"], "actions": actions_summary})
+            
+            self.orchestrator.handle_tiktok_event({
+                "type": "gift",
+                "user": user,
+                "gift": gift,
+                "amount": 1,
+                "diamond_value": diamonds,
+                "timestamp": time.time()
+            })
+            return jsonify({
+                "status": "ok",
+                "matched_rules": matched,
+                "tts_enabled": self.orchestrator.tts_enabled,
+                "tiktok_enabled": self.orchestrator.tiktok_enabled,
+            })
+
+        @self.app.route("/api/overlay_config", methods=["POST"])
+        def overlay_config():
+            data = request.get_json(silent=True) or {}
+            self.orchestrator.publish("overlay_config", {
+                "background": data.get("background", "transparent"),
+                "debug": data.get("debug", False),
+            })
+            return jsonify({"status": "ok"})
+            return jsonify({
+                "status": "ok",
+                "matched_rules": matched,
+                "tts_enabled": self.orchestrator.tts_enabled,
+                "tiktok_enabled": self.orchestrator.tiktok_enabled,
+            })
+
         # --- Export / Import ---
         @self.app.route("/api/export_config", methods=["GET"])
         def export_config():

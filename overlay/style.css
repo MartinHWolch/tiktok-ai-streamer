@@ -95,3 +95,22 @@ body, html {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* Emoji explosion */
+#emoji-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 10;
+}
+
+.emoji-particle {
+    position: absolute;
+    font-size: 2rem;
+    pointer-events: none;
+    will-change: transform, opacity;
+}

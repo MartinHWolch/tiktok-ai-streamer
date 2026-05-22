@@ -2,6 +2,7 @@ import time
 import logging
 import json
 import os
+import threading
 from collections import deque
 
 logger = logging.getLogger(__name__)
@@ -12,12 +13,13 @@ class EventOrchestrator:
         self.listeners = {}
         self.tts_enabled = config.TTS_ENABLED
         self.ai_enabled = config.AI_ENABLED
-        self.tiktok_enabled = False
+        self.tiktok_enabled = True
         self.ai_client = None
         self.tts_client = None
         self.vtube_client = None
         self.tiktok_client = None
         self._cooldowns = {}
+        self._cooldown_lock = threading.Lock()
         self.logs = deque(maxlen=config.LOG_MAX_LINES)
         self._presets_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tts_presets.json")
         self._presets = {}
@@ -28,13 +30,20 @@ class EventOrchestrator:
         # Anti-spam
         self._user_timestamps = {}
         self._user_messages = {}
+        self._spam_lock = threading.Lock()
         self.spam_rate_limit = 2
         self.spam_window = 3
         self.spam_dup_window = 30
         self.spam_enabled = True
         self.banned_words = []
         self._banned_words_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "banned_words.json")
+        self._last_spam_cleanup = time.time()
         self._load_banned_words()
+
+        # Event rules (gift -> actions)
+        self._event_rules_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "event_rules.json")
+        self._event_rules = {}
+        self._load_event_rules()
 
     def set_ai_client(self, client):
         self.ai_client = client
@@ -154,28 +163,60 @@ class EventOrchestrator:
             self.log(f"Comando desconocido por {user}: {cmd}")
 
     def _process_gift(self, event):
+        gift_name = event.get("gift", "")
+        user = event.get("user", "unknown")
+        amount = event.get("amount", 1)
+        diamond_value = event.get("diamond_value", 0)
+
         self.publish("overlay_alert", {
             "type": "gift",
-            "user": event.get("user"),
-            "gift": event.get("gift"),
-            "amount": event.get("amount", 1)
+            "user": user,
+            "gift": gift_name,
+            "amount": amount
         })
         if self.vtube_client:
             self.publish("vtube_expression", {"expression": "happy"})
 
+        # Dispatch event rules
+        for rule in self._event_rules:
+            trigger = rule.get("trigger", "")
+            trigger_value = str(rule.get("trigger_value", ""))
+
+            matched = False
+            if trigger == "gift" and gift_name.lower() == trigger_value.lower():
+                matched = True
+            elif trigger == "diamonds" and diamond_value >= int(trigger_value or "0"):
+                matched = True
+
+            if matched:
+                self._execute_rule_actions(rule, user, gift_name, diamond_value)
+
+    def _execute_rule_actions(self, rule, user, gift_name, diamond_value):
+        for action in rule.get("actions", []):
+            action_type = action.get("type", "")
+            if action_type == "tts":
+                msg = action.get("message", "")
+                msg = msg.replace("{user}", user).replace("{gift}", gift_name).replace("{diamonds}", str(diamond_value))
+                voice_preset = action.get("voice_preset", "")
+                if voice_preset and self.tts_client:
+                    self.load_preset(voice_preset)
+                self._trigger_tts(msg)
+            elif action_type == "emoji":
+                emojis = action.get("emojis", "🎉")
+                count = action.get("count", 10)
+                self.publish("overlay_emoji", {"emojis": emojis, "count": count})
+
     def _is_cooldown(self, key):
         now = time.time()
-        if key in self._cooldowns:
-            if now - self._cooldowns[key] < self.config.TTS_COOLDOWN:
-                return True
-        self._cooldowns[key] = now
+        with self._cooldown_lock:
+            if key in self._cooldowns:
+                if now - self._cooldowns[key] < self.config.TTS_COOLDOWN:
+                    return True
+            self._cooldowns[key] = now
         return False
 
     def _trigger_tts(self, text):
         if not self.tts_enabled or not self.tts_client:
-            return
-        if self._is_cooldown("tts"):
-            logger.info("TTS en cooldown. Texto no reproducido.")
             return
         
         self._stats["tts_played"] += 1
@@ -358,7 +399,7 @@ class EventOrchestrator:
         now = time.time()
         user_lower = user.lower()
 
-        # Banned words
+        # Banned words (read-only, no lock needed)
         if self.banned_words:
             text_lower = text.lower()
             for word in self.banned_words:
@@ -366,27 +407,44 @@ class EventOrchestrator:
                     self.log(f"SPAM bloqueado ({user}): palabra baneada '{word}'")
                     return True
 
-        # Rate limit
-        timestamps = self._user_timestamps.get(user_lower, [])
-        timestamps = [t for t in timestamps if now - t < self.spam_window]
-        timestamps.append(now)
-        self._user_timestamps[user_lower] = timestamps
-        if len(timestamps) > self.spam_rate_limit:
-            self.log(f"SPAM bloqueado ({user}): rate limit {self.spam_rate_limit}/{self.spam_window}s")
-            return True
+        with self._spam_lock:
+            # Periodic cleanup
+            if now - self._last_spam_cleanup > 300:
+                self._cleanup_spam_data(now)
+                self._last_spam_cleanup = now
 
-        # Duplicate messages
-        recent = self._user_messages.get(user_lower, [])
-        recent = [(t, m) for t, m in recent if now - t < self.spam_dup_window]
-        for _, prev_text in recent:
-            if prev_text.lower().strip() == text.lower().strip():
-                recent.append((now, text))
-                self._user_messages[user_lower] = recent
-                self.log(f"SPAM bloqueado ({user}): mensaje duplicado")
+            # Rate limit
+            timestamps = self._user_timestamps.get(user_lower, [])
+            timestamps = [t for t in timestamps if now - t < self.spam_window]
+            timestamps.append(now)
+            self._user_timestamps[user_lower] = timestamps
+            if len(timestamps) > self.spam_rate_limit:
+                self.log(f"SPAM bloqueado ({user}): rate limit {self.spam_rate_limit}/{self.spam_window}s")
                 return True
-        recent.append((now, text))
-        self._user_messages[user_lower] = recent
+
+            # Duplicate messages
+            recent = self._user_messages.get(user_lower, [])
+            recent = [(t, m) for t, m in recent if now - t < self.spam_dup_window]
+            for _, prev_text in recent:
+                if prev_text.lower().strip() == text.lower().strip():
+                    recent.append((now, text))
+                    self._user_messages[user_lower] = recent
+                    self.log(f"SPAM bloqueado ({user}): mensaje duplicado")
+                    return True
+            recent.append((now, text))
+            self._user_messages[user_lower] = recent
         return False
+
+    def _cleanup_spam_data(self, now):
+        for key in list(self._user_timestamps.keys()):
+            self._user_timestamps[key] = [t for t in self._user_timestamps[key] if now - t < max(self.spam_window, self.spam_dup_window)]
+            if not self._user_timestamps[key]:
+                del self._user_timestamps[key]
+                self._user_messages.pop(key, None)
+        for key in list(self._user_messages.keys()):
+            self._user_messages[key] = [(t, m) for t, m in self._user_messages[key] if now - t < self.spam_dup_window]
+            if not self._user_messages[key]:
+                del self._user_messages[key]
 
     def set_spam_enabled(self, enabled):
         self.spam_enabled = enabled
@@ -427,6 +485,59 @@ class EventOrchestrator:
             self.banned_words.remove(word)
             self._save_banned_words()
             self.log(f"Palabra baneada eliminada: {word}")
+            return True
+        return False
+
+    # --- Event Rules ---
+    def _load_event_rules(self):
+        try:
+            if os.path.exists(self._event_rules_path):
+                with open(self._event_rules_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, list):
+                        self._event_rules = data
+                    else:
+                        self._event_rules = []
+        except Exception:
+            self._event_rules = []
+
+    def _save_event_rules(self):
+        try:
+            with open(self._event_rules_path, "w", encoding="utf-8") as f:
+                json.dump(self._event_rules, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            logger.error(f"Error guardando event rules: {e}")
+
+    def get_event_rules(self):
+        return self._event_rules
+
+    def add_event_rule(self, rule):
+        if not rule.get("name") or not rule.get("trigger") or not rule.get("actions"):
+            return None
+        name = rule["name"].strip()
+        del rule["name"]
+        rule["name"] = name
+        self._event_rules.append(rule)
+        self._save_event_rules()
+        self.log(f"Regla agregada: {name}")
+        return rule
+
+    def update_event_rule(self, index, rule):
+        if index < 0 or index >= len(self._event_rules):
+            return False
+        if not rule.get("name") or not rule.get("trigger") or not rule.get("actions"):
+            return False
+        self._event_rules[index] = rule
+        self._save_event_rules()
+        self.log(f"Regla actualizada: {rule['name']}")
+        return True
+
+    def delete_event_rule_by_index(self, index):
+        if 0 <= index < len(self._event_rules):
+            name = self._event_rules[index].get("name", "")
+            del self._event_rules[index]
+            self._save_event_rules()
+            self.log(f"Regla eliminada: {name}")
             return True
         return False
 

@@ -99,7 +99,12 @@ class TikTokClient:
         if r < 0.6:
             event = {"type": "message", "user": user, "text": random.choice(self.demo_messages), "timestamp": time.time()}
         elif r < 0.8:
-            event = {"type": "gift", "user": user, "gift": random.choice(self.demo_gifts), "amount": random.randint(1, 5), "timestamp": time.time()}
+            gifts_with_diamonds = [
+                ("Rosa", 1), ("Panda", 5), ("Corazon", 10), ("Leon", 50), ("Universo", 100),
+                ("Delfin", 30), ("Avion", 80), ("Cohete", 200), ("Castillo", 500), ("Anillo", 300),
+            ]
+            gift_name, diamonds = random.choice(gifts_with_diamonds)
+            event = {"type": "gift", "user": user, "gift": gift_name, "amount": random.randint(1, 5), "diamond_value": diamonds, "timestamp": time.time()}
         elif r < 0.9:
             event = {"type": "like", "user": user, "count": random.randint(1, 10), "timestamp": time.time()}
         else:
@@ -148,11 +153,13 @@ class TikTokClient:
 
                 @self._real_client.on(GiftEvent)
                 async def on_gift(event):
+                    diamond_value = event.gift.diamond_cost if hasattr(event.gift, 'diamond_cost') else 0
                     self.orchestrator.handle_tiktok_event({
                         "type": "gift",
                         "user": event.user.nickname or event.user.unique_id,
                         "gift": event.gift.name if hasattr(event.gift, 'name') else "Regalo",
                         "amount": event.gift.repeat_count if hasattr(event.gift, 'repeat_count') else 1,
+                        "diamond_value": diamond_value,
                         "timestamp": time.time()
                     })
 

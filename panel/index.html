@@ -30,6 +30,14 @@
                     <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
                     <span>Eventos</span>
                 </div>
+                <div class="channel" data-tab="rules">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M13 10h-2v2H9v2h2v2h2v-2h2v-2h-2v-2zm9-6H2v16h20V4zm-2 14H4V6h16v12z"/></svg>
+                    <span>Reglas</span>
+                </div>
+                <div class="channel" data-tab="overlay">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM9 8h2v8H9zm4 0h2v8h-2z"/></svg>
+                    <span>Overlay</span>
+                </div>
             </div>
             <div class="user-bar">
                 <div class="user-avatar">S</div>
@@ -196,10 +204,15 @@
                     <div class="form-group kokoro-opt">
                         <label for="tts-voice-search">Voz</label>
                         <div class="voice-select-wrapper">
-                            <input type="text" id="tts-voice-search" placeholder="Buscar voz..." autocomplete="off" class="voice-search">
-                            <select id="tts-voice" size="8" class="voice-list">
-                                <option value="">Cargando voces...</option>
-                            </select>
+                            <div class="searchable-select" id="voice-select-container">
+                                <input type="text" id="tts-voice-search" placeholder="Buscar o seleccionar voz..." autocomplete="off" class="voice-search">
+                                <div class="voice-dropdown" id="voice-dropdown"></div>
+                            </div>
+                            <div class="voice-gender-filters">
+                                <button class="gender-btn active" data-gender="all">Todos</button>
+                                <button class="gender-btn" data-gender="female">Femenino</button>
+                                <button class="gender-btn" data-gender="male">Masculino</button>
+                            </div>
                         </div>
                         <div class="voice-actions">
                             <button id="btn-preview-voice" class="btn-sm-blurple">
@@ -354,6 +367,55 @@
                 <h2>Ultimos Eventos</h2>
                 <div class="logs-container">
                     <ul id="log-list"></ul>
+                </div>
+            </section>
+
+            <!-- Rules -->
+            <section class="tab" id="tab-rules">
+                <h2>Reglas de Eventos</h2>
+                <p class="tab-desc">Configura que acciones se ejecutan al recibir regalos o diamantes.</p>
+                <div class="rules-grid" id="rules-grid">
+                    <div class="spinner-lg"></div>
+                </div>
+                <div class="rule-form">
+                    <h3 id="rule-form-title">Nueva Regla</h3>
+                    <input type="hidden" id="rule-edit-index" value="-1">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre de la Regla</label>
+                            <input type="text" id="rule-name" placeholder="ej: Super Rosa, Donacion Grande..." class="input-discord">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Gatillo (Trigger)</label>
+                            <select id="rule-trigger" class="input-discord">
+                                <option value="gift">Regalo Especifico</option>
+                                <option value="diamonds">Valor en Diamantes</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label id="rule-trigger-label">Nombre del Regalo</label>
+                            <input type="text" id="rule-trigger-value" placeholder="ej: Rosa, Panda, Universo..." class="input-discord">
+                        </div>
+                    </div>
+                    <div class="actions-editor" id="actions-editor">
+                        <h4>Acciones</h4>
+                        <div class="action-row" id="action-row-template" style="display:none">
+                            <select class="action-type input-discord">
+                                <option value="tts">TTS (Texto a Voz)</option>
+                                <option value="emoji">Lluvia de Emojis</option>
+                            </select>
+                            <div class="action-config"></div>
+                            <button class="btn-sm-danger action-remove">X</button>
+                        </div>
+                    </div>
+                    <div class="btn-row" style="margin-top:12px">
+                        <button id="btn-add-action" class="btn-sm-blurple">+ Agregar Accion</button>
+                        <button id="btn-test-rule" class="btn-secondary">Probar Regla</button>
+                        <button id="btn-save-rule" class="btn-blurple">Guardar Regla</button>
+                        <button id="btn-cancel-edit" class="btn-sm-danger" style="display:none">Cancelar</button>
+                    </div>
                 </div>
             </section>
         </main>

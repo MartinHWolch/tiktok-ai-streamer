@@ -53,7 +53,6 @@ class TTSClient:
             
             # Inicializar G2P para español
             try:
-                from misaki import espeak
                 from misaki.espeak import EspeakG2P
                 self._kokoro_g2p = EspeakG2P(language=self.lang)
                 logger.info(f"G2P inicializado para idioma: {self.lang}")

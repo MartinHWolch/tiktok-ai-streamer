@@ -29,3 +29,12 @@ Thumbs.db
 
 # Presets TTS (contiene configuraciones del usuario)
 tts_presets.json
+
+# Banned words (contiene datos del usuario)
+banned_words.json
+
+# Event rules (contiene reglas del usuario)
+event_rules.json
+
+# Runtime config (contiene configuraciones del usuario)
+config.json

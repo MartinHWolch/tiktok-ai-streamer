@@ -23,7 +23,7 @@ def _get(key, env_key, default):
     return _config.get(key, default)
 
 class Config:
-    HOST = os.getenv("HOST", "0.0.0.0")
+    HOST = os.getenv("HOST", "127.0.0.1")
     OVERLAY_PORT = int(os.getenv("OVERLAY_PORT", 5000))
     PANEL_PORT = int(os.getenv("PANEL_PORT", 5001))
     AUDIO_DIR = os.path.join(BASE_DIR, "audio")
@@ -58,3 +58,5 @@ class Config:
     AI_MAX_TOKENS = int(_get("ai_max_tokens", "AI_MAX_TOKENS", 100))
     AI_TEMPERATURE = float(_get("ai_temperature", "AI_TEMPERATURE", 0.7))
     AI_SYSTEM_PROMPT = _get("ai_system_prompt", "AI_SYSTEM_PROMPT", "Eres un asistente de streaming para TikTok. Responde de forma breve, divertida y en español. Maximo 2 oraciones.")
+    
+    PANEL_PASSWORD = os.getenv("PANEL_PASSWORD", _config.get("panel_password", ""))

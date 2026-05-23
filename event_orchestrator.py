@@ -35,6 +35,7 @@ class EventOrchestrator:
         self.spam_window = 3
         self.spam_dup_window = 30
         self.spam_enabled = True
+        self._max_spam_users = 1000
         self.banned_words = []
         self._banned_words_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "banned_words.json")
         self._last_spam_cleanup = time.time()
@@ -45,6 +46,13 @@ class EventOrchestrator:
         self._event_rules = {}
         self._load_event_rules()
 
+        # User settings persistence
+        self._user_settings_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_settings.json")
+        self.overlay_bg = "transparent"
+        self.overlay_debug = False
+        self._pending_tts_settings = {}
+        self._load_user_settings()
+
     def set_ai_client(self, client):
         self.ai_client = client
 
@@ -52,12 +60,110 @@ class EventOrchestrator:
         self.tts_client = client
         if self.tts_client:
             self.tts_client.set_enabled(self.tts_enabled)
+            if self._pending_tts_settings:
+                self._apply_tts_settings(self._pending_tts_settings)
+                self._pending_tts_settings.clear()
 
     def set_vtube_client(self, client):
         self.vtube_client = client
 
     def set_tiktok_client(self, client):
         self.tiktok_client = client
+
+    def _load_user_settings(self):
+        try:
+            if os.path.exists(self._user_settings_path):
+                with open(self._user_settings_path, "r", encoding="utf-8") as f:
+                    settings = json.load(f)
+            else:
+                return
+        except Exception:
+            return
+
+        if "tts_enabled" in settings:
+            self.tts_enabled = settings["tts_enabled"]
+        if "ai_enabled" in settings:
+            self.ai_enabled = settings["ai_enabled"]
+        if "tiktok_enabled" in settings:
+            self.tiktok_enabled = settings["tiktok_enabled"]
+        if "spam_enabled" in settings:
+            self.spam_enabled = settings["spam_enabled"]
+        if "spam_rate_limit" in settings:
+            self.spam_rate_limit = settings["spam_rate_limit"]
+        if "spam_window" in settings:
+            self.spam_window = settings["spam_window"]
+        if "spam_dup_window" in settings:
+            self.spam_dup_window = settings["spam_dup_window"]
+        if "overlay_bg" in settings:
+            self.overlay_bg = settings["overlay_bg"]
+        if "overlay_debug" in settings:
+            self.overlay_debug = settings["overlay_debug"]
+
+        tts_keys = ["tts_engine", "tts_voice", "tts_voice_blend", "tts_speed", "tts_lang", "tts_pitch", "tts_volume", "kokoro_model"]
+        self._pending_tts_settings = {k: settings[k] for k in tts_keys if k in settings}
+
+        if self.tts_client and self._pending_tts_settings:
+            self._apply_tts_settings(self._pending_tts_settings)
+            self._pending_tts_settings = {}
+
+        logger.info(f"User settings cargados: {len(settings)} keys")
+
+    def _apply_tts_settings(self, s):
+        t = self.tts_client
+        if not t:
+            return
+        for engine in ("tts_engine", "kokoro"):
+            if engine in s:
+                t.set_engine(s[engine])
+                break
+        if "tts_voice" in s:
+            t.set_voice(s["tts_voice"])
+        if "tts_voice_blend" in s:
+            t.set_voice_blend(s["tts_voice_blend"])
+        if "tts_speed" in s:
+            t.set_speed(s["tts_speed"])
+        if "tts_lang" in s:
+            t.set_lang(s["tts_lang"])
+        if "tts_pitch" in s:
+            t.set_pitch(s["tts_pitch"])
+        if "tts_volume" in s:
+            t.set_volume(s["tts_volume"])
+        if "kokoro_model" in s:
+            t.set_kokoro_model(s["kokoro_model"])
+
+    def _save_user_settings(self):
+        status = self.get_tts_status()
+        settings = {
+            "tts_enabled": self.tts_enabled,
+            "ai_enabled": self.ai_enabled,
+            "tiktok_enabled": self.tiktok_enabled,
+            "spam_enabled": self.spam_enabled,
+            "spam_rate_limit": self.spam_rate_limit,
+            "spam_window": self.spam_window,
+            "spam_dup_window": self.spam_dup_window,
+            "overlay_bg": self.overlay_bg,
+            "overlay_debug": self.overlay_debug,
+            "tts_engine": status.get("engine", "kokoro"),
+            "tts_voice": status.get("voice", ""),
+            "tts_voice_blend": status.get("voice_blend", ""),
+            "tts_speed": status.get("speed", 1.0),
+            "tts_lang": status.get("lang", "es"),
+            "tts_pitch": status.get("pitch", 0),
+            "tts_volume": status.get("volume", 1.0),
+            "kokoro_model": status.get("kokoro_model", ""),
+        }
+        try:
+            with open(self._user_settings_path, "w", encoding="utf-8") as f:
+                json.dump(settings, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            logger.error(f"Error guardando user settings: {e}")
+
+    def set_overlay_config(self, background=None, debug=None):
+        if background is not None:
+            self.overlay_bg = background
+        if debug is not None:
+            self.overlay_debug = debug
+        self._save_user_settings()
 
     def register_listener(self, name, callback):
         self.listeners[name] = callback
@@ -124,27 +230,33 @@ class EventOrchestrator:
         self.publish("overlay_message", {"user": user, "text": text})
 
     def _handle_command(self, text, user):
-        cmd = text.lower().split()[0]
+        parts = text.strip().lower().split(maxsplit=1)
+        if not parts:
+            return
+        cmd = parts[0]
+        arg = parts[1].strip() if len(parts) > 1 else ""
         
         if cmd == "!tts":
-            arg = text.lower().split()[1] if len(text.split()) > 1 else ""
             if arg == "on":
                 self.tts_enabled = True
+                self._save_user_settings()
                 self.log(f"Comando !tts on por {user}")
             elif arg == "off":
                 self.tts_enabled = False
+                self._save_user_settings()
                 self.log(f"Comando !tts off por {user}")
             else:
                 state = self.toggle_tts()
                 self.log(f"Comando !tts toggle por {user} -> {'ON' if state else 'OFF'}")
         
         elif cmd == "!ai":
-            arg = text.lower().split()[1] if len(text.split()) > 1 else ""
             if arg == "on":
                 self.ai_enabled = True
+                self._save_user_settings()
                 self.log(f"Comando !ai on por {user}")
             elif arg == "off":
                 self.ai_enabled = False
+                self._save_user_settings()
                 self.log(f"Comando !ai off por {user}")
             else:
                 state = self.toggle_ai()
@@ -191,8 +303,8 @@ class EventOrchestrator:
             if matched:
                 self._execute_rule_actions(rule, user, gift_name, diamond_value)
 
-    def _execute_rule_actions(self, rule, user, gift_name, diamond_value):
-        for action in rule.get("actions", []):
+    def _execute_actions(self, actions, user, gift_name, diamond_value):
+        for action in actions:
             action_type = action.get("type", "")
             if action_type == "tts":
                 msg = action.get("message", "")
@@ -203,8 +315,16 @@ class EventOrchestrator:
                 self._trigger_tts(msg)
             elif action_type == "emoji":
                 emojis = action.get("emojis", "🎉")
-                count = action.get("count", 10)
+                count = action.get("count", 30)
                 self.publish("overlay_emoji", {"emojis": emojis, "count": count})
+
+    def _execute_rule_actions(self, rule, user, gift_name, diamond_value):
+        self._execute_actions(rule.get("actions", []), user, gift_name, diamond_value)
+
+    def test_actions(self, actions, user, gift_name, diamond_value):
+        """Ejecuta acciones temporales sin guardarlas como regla."""
+        self.log(f"Test actions: {len(actions)} acciones para {user}")
+        self._execute_actions(actions, user, gift_name, diamond_value)
 
     def _is_cooldown(self, key):
         now = time.time()
@@ -230,16 +350,19 @@ class EventOrchestrator:
         if self.tts_client:
             self.tts_client.set_enabled(self.tts_enabled)
         self.log(f"TTS toggled: {self.tts_enabled}")
+        self._save_user_settings()
         return self.tts_enabled
 
     def toggle_ai(self):
         self.ai_enabled = not self.ai_enabled
         self.log(f"AI toggled: {self.ai_enabled}")
+        self._save_user_settings()
         return self.ai_enabled
 
     def set_tts_engine(self, engine):
         if self.tts_client and self.tts_client.set_engine(engine):
             self.log(f"TTS engine cambiado a: {engine}")
+            self._save_user_settings()
             return True
         return False
 
@@ -247,6 +370,7 @@ class EventOrchestrator:
         if self.tts_client:
             self.tts_client.set_voice(voice)
             self.log(f"TTS voice cambiada a: {voice}")
+            self._save_user_settings()
             return True
         return False
 
@@ -254,6 +378,7 @@ class EventOrchestrator:
         if self.tts_client:
             self.tts_client.set_voice_blend(blend)
             self.log(f"TTS voice blend cambiado a: {blend}")
+            self._save_user_settings()
             return True
         return False
 
@@ -261,6 +386,7 @@ class EventOrchestrator:
         if self.tts_client:
             self.tts_client.set_speed(speed)
             self.log(f"TTS speed cambiado a: {speed}")
+            self._save_user_settings()
             return True
         return False
 
@@ -268,6 +394,7 @@ class EventOrchestrator:
         if self.tts_client:
             self.tts_client.set_lang(lang)
             self.log(f"TTS lang cambiado a: {lang}")
+            self._save_user_settings()
             return True
         return False
 
@@ -275,6 +402,7 @@ class EventOrchestrator:
         if self.tts_client:
             self.tts_client.set_pitch(pitch)
             self.log(f"TTS pitch cambiado a: {pitch}")
+            self._save_user_settings()
             return True
         return False
 
@@ -282,6 +410,7 @@ class EventOrchestrator:
         if self.tts_client:
             self.tts_client.set_volume(volume)
             self.log(f"TTS volume cambiado a: {volume}")
+            self._save_user_settings()
             return True
         return False
 
@@ -290,6 +419,7 @@ class EventOrchestrator:
             ok = self.tts_client.set_kokoro_model(model_key)
             if ok:
                 self.log(f"Kokoro modelo cambiado a: {model_key}")
+            self._save_user_settings()
             return ok
         return False
 
@@ -343,6 +473,7 @@ class EventOrchestrator:
     def toggle_tiktok(self):
         self.tiktok_enabled = not self.tiktok_enabled
         self.log(f"TikTok eventos: {'ON' if self.tiktok_enabled else 'OFF'}")
+        self._save_user_settings()
         return self.tiktok_enabled
 
     def toggle_tiktok_simulation(self):
@@ -381,7 +512,12 @@ class EventOrchestrator:
         try:
             if os.path.exists(self._banned_words_path):
                 with open(self._banned_words_path, "r", encoding="utf-8") as f:
-                    self.banned_words = json.load(f)
+                    data = json.load(f)
+                    if isinstance(data, list):
+                        self.banned_words = data
+                    else:
+                        logger.warning("banned_words.json no es una lista, reiniciando")
+                        self.banned_words = []
         except Exception:
             self.banned_words = []
 
@@ -399,15 +535,15 @@ class EventOrchestrator:
         now = time.time()
         user_lower = user.lower()
 
-        # Banned words (read-only, no lock needed)
-        if self.banned_words:
-            text_lower = text.lower()
-            for word in self.banned_words:
-                if word.lower() in text_lower:
-                    self.log(f"SPAM bloqueado ({user}): palabra baneada '{word}'")
-                    return True
-
         with self._spam_lock:
+            # Banned words
+            if self.banned_words:
+                text_lower = text.lower()
+                for word in self.banned_words:
+                    if word.lower() in text_lower:
+                        self.log(f"SPAM bloqueado ({user}): palabra baneada '{word}'")
+                        return True
+
             # Periodic cleanup
             if now - self._last_spam_cleanup > 300:
                 self._cleanup_spam_data(now)
@@ -433,6 +569,14 @@ class EventOrchestrator:
                     return True
             recent.append((now, text))
             self._user_messages[user_lower] = recent
+
+            # Limitar cantidad de usuarios trackeados
+            if len(self._user_timestamps) > self._max_spam_users:
+                oldest = sorted(self._user_timestamps.items(), key=lambda x: x[1][-1] if x[1] else 0)
+                for key, _ in oldest[:len(oldest) - self._max_spam_users]:
+                    del self._user_timestamps[key]
+                    self._user_messages.pop(key, None)
+
         return False
 
     def _cleanup_spam_data(self, now):
@@ -449,6 +593,7 @@ class EventOrchestrator:
     def set_spam_enabled(self, enabled):
         self.spam_enabled = enabled
         self.log(f"Filtro anti-spam: {'ON' if enabled else 'OFF'}")
+        self._save_user_settings()
         return enabled
 
     def set_spam_config(self, rate_limit=None, window=None, dup_window=None):
@@ -459,6 +604,7 @@ class EventOrchestrator:
         if dup_window is not None:
             self.spam_dup_window = max(5, int(dup_window))
         self.log(f"Anti-spam config: {self.spam_rate_limit} msgs/{self.spam_window}s, duplicados {self.spam_dup_window}s")
+        self._save_user_settings()
         return True
 
     def get_spam_config(self):
@@ -546,8 +692,13 @@ class EventOrchestrator:
         try:
             if os.path.exists(self._presets_path):
                 with open(self._presets_path, "r", encoding="utf-8") as f:
-                    self._presets = json.load(f)
-                logger.info(f"Presets cargados: {len(self._presets)}")
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        self._presets = data
+                        logger.info(f"Presets cargados: {len(self._presets)}")
+                    else:
+                        logger.warning("tts_presets.json no es un diccionario, reiniciando")
+                        self._presets = {}
             else:
                 self._presets = {}
         except Exception as e:
@@ -594,6 +745,7 @@ class EventOrchestrator:
             self.tts_client.set_speed(p.get("speed", 1.0))
             self.tts_client.set_lang(p.get("lang", "es"))
         self.log(f"Preset cargado: {name}")
+        self._save_user_settings()
         return True
 
     def delete_preset(self, name):

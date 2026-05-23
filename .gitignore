@@ -38,3 +38,6 @@ event_rules.json
 
 # Runtime config (contiene configuraciones del usuario)
 config.json
+
+# User settings persistidos
+user_settings.json

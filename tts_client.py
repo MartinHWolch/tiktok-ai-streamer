@@ -14,6 +14,7 @@ class TTSClient:
         self.enabled = config.TTS_ENABLED
         os.makedirs(self.config.AUDIO_DIR, exist_ok=True)
         self._last_speak = 0
+        self._cooldown_lock = threading.Lock()
         self._cleanup_lock = threading.Lock()
         self._state_lock = threading.Lock()
 
@@ -121,12 +122,12 @@ class TTSClient:
             logger.info("TTS está deshabilitado.")
             return None
         
-        now = time.time()
-        if now - self._last_speak < self.config.TTS_COOLDOWN:
-            logger.info("TTS en cooldown.")
-            return None
-        
-        self._last_speak = now
+        with self._cooldown_lock:
+            now = time.time()
+            if now - self._last_speak < self.config.TTS_COOLDOWN:
+                logger.info("TTS en cooldown.")
+                return None
+            self._last_speak = now
         
         with self._state_lock:
             engine = self.engine
@@ -168,7 +169,7 @@ class TTSClient:
                     text, voice=voice, speed=self.speed, lang=self.lang
                 )
             
-            filename = f"tts_{int(time.time())}_{uuid.uuid4().hex[:4]}.wav"
+            filename = f"tts_{int(time.time())}_{uuid.uuid4().hex}.wav"
             filepath = os.path.join(self.config.AUDIO_DIR, filename)
             samples = self._apply_effects(samples, sample_rate)
             sf.write(filepath, samples, sample_rate)
@@ -181,7 +182,7 @@ class TTSClient:
     
     def _speak_piper(self, text):
         try:
-            filename = f"tts_{int(time.time())}_{uuid.uuid4().hex[:4]}.wav"
+            filename = f"tts_{int(time.time())}_{uuid.uuid4().hex}.wav"
             filepath = os.path.join(self.config.AUDIO_DIR, filename)
             with wave.open(filepath, 'wb') as f:
                 f.setnchannels(1)
@@ -198,7 +199,7 @@ class TTSClient:
     def _speak_gtts(self, text):
         try:
             from gtts import gTTS
-            filename = f"tts_{int(time.time())}_{uuid.uuid4().hex[:4]}.mp3"
+            filename = f"tts_{int(time.time())}_{uuid.uuid4().hex}.mp3"
             filepath = os.path.join(self.config.AUDIO_DIR, filename)
             tts = gTTS(text=text, lang=self.lang)
             tts.save(filepath)
@@ -234,20 +235,35 @@ class TTSClient:
         with self._cleanup_lock:
             now = time.time()
             max_age = 3600
+            max_files = 100
             deleted = 0
             try:
+                files = []
                 for fname in os.listdir(self.config.AUDIO_DIR):
                     if not (fname.endswith(".mp3") or fname.endswith(".wav")):
                         continue
                     fpath = os.path.join(self.config.AUDIO_DIR, fname)
                     try:
-                        if os.path.isfile(fpath) and (now - os.path.getmtime(fpath)) > max_age:
-                            os.remove(fpath)
-                            deleted += 1
+                        if os.path.isfile(fpath):
+                            mtime = os.path.getmtime(fpath)
+                            if (now - mtime) > max_age:
+                                os.remove(fpath)
+                                deleted += 1
+                            else:
+                                files.append((mtime, fpath))
                     except Exception:
                         pass
+                # Limite de cantidad: mantener solo los 100 más recientes
+                if len(files) > max_files:
+                    files.sort(key=lambda x: x[0])
+                    for _, fpath in files[:len(files) - max_files]:
+                        try:
+                            os.remove(fpath)
+                            deleted += 1
+                        except Exception:
+                            pass
                 if deleted > 0:
-                    logger.info(f"Limpieza TTS: {deleted} archivos antiguos eliminados.")
+                    logger.info(f"Limpieza TTS: {deleted} archivos eliminados.")
             except Exception as e:
                 logger.warning(f"Error limpiando audios viejos: {e}")
     
@@ -256,7 +272,8 @@ class TTSClient:
         logger.info(f"TTS enabled: {enabled}")
 
     def reset_cooldown(self):
-        self._last_speak = 0
+        with self._cooldown_lock:
+            self._last_speak = 0
 
     def set_engine(self, engine):
         if engine in ("kokoro", "piper", "gtts"):
@@ -278,19 +295,28 @@ class TTSClient:
         logger.info(f"TTS voice blend cambiado a: {blend_str}")
     
     def set_speed(self, speed):
-        with self._state_lock:
-            self.speed = max(0.5, min(2.0, float(speed)))
-        logger.info(f"TTS speed cambiado a: {self.speed}")
+        try:
+            with self._state_lock:
+                self.speed = max(0.5, min(2.0, float(speed)))
+            logger.info(f"TTS speed cambiado a: {self.speed}")
+        except (ValueError, TypeError):
+            logger.warning(f"TTS speed invalido: {speed}")
 
     def set_pitch(self, pitch):
-        with self._state_lock:
-            self.pitch = max(-12.0, min(12.0, float(pitch)))
-        logger.info(f"TTS pitch cambiado a: {self.pitch} semitonos")
+        try:
+            with self._state_lock:
+                self.pitch = max(-12.0, min(12.0, float(pitch)))
+            logger.info(f"TTS pitch cambiado a: {self.pitch} semitonos")
+        except (ValueError, TypeError):
+            logger.warning(f"TTS pitch invalido: {pitch}")
 
     def set_volume(self, volume):
-        with self._state_lock:
-            self.volume = max(0.1, min(3.0, float(volume)))
-        logger.info(f"TTS volume cambiado a: {self.volume}")
+        try:
+            with self._state_lock:
+                self.volume = max(0.1, min(3.0, float(volume)))
+            logger.info(f"TTS volume cambiado a: {self.volume}")
+        except (ValueError, TypeError):
+            logger.warning(f"TTS volume invalido: {volume}")
 
     def set_kokoro_model(self, model_key):
         if model_key == "fp16":
@@ -302,22 +328,23 @@ class TTSClient:
         if not os.path.exists(path):
             logger.warning(f"Modelo no encontrado: {path}")
             return False
-        # Guardar estado anterior por si falla
-        prev_kokoro = self._kokoro
-        prev_voices = self._kokoro_voices
-        prev_g2p = self._kokoro_g2p
-        self._kokoro = None
-        self._kokoro_voices = []
-        self._kokoro_g2p = None
-        self.kokoro_model = path
-        self._init_kokoro()
-        if self._kokoro is None:
-            # Restaurar anterior
-            self._kokoro = prev_kokoro
-            self._kokoro_voices = prev_voices
-            self._kokoro_g2p = prev_g2p
-            logger.error(f"Fallo al cargar modelo {model_key}, restaurando anterior")
-            return False
+        with self._state_lock:
+            # Guardar estado anterior por si falla
+            prev_kokoro = self._kokoro
+            prev_voices = self._kokoro_voices
+            prev_g2p = self._kokoro_g2p
+            self._kokoro = None
+            self._kokoro_voices = []
+            self._kokoro_g2p = None
+            self.kokoro_model = path
+            self._init_kokoro()
+            if self._kokoro is None:
+                # Restaurar anterior
+                self._kokoro = prev_kokoro
+                self._kokoro_voices = prev_voices
+                self._kokoro_g2p = prev_g2p
+                logger.error(f"Fallo al cargar modelo {model_key}, restaurando anterior")
+                return False
         logger.info(f"Kokoro modelo cambiado a: {model_key}")
         return True
     

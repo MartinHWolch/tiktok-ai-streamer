@@ -1,26 +1,31 @@
 import os
 import json
-import queue
-import logging
-import threading
 import time
-from flask import Flask, send_from_directory, request, jsonify, Response
+import logging
+from functools import wraps
+from flask import send_from_directory, request, jsonify, Response, make_response
+from sse_server import SseFlaskServer
 
 logger = logging.getLogger(__name__)
 
-class ControlPanelServer:
+class ControlPanelServer(SseFlaskServer):
     def __init__(self, orchestrator, config):
+        super().__init__(config, static_dir=config.PANEL_DIR)
         self.orchestrator = orchestrator
-        self.config = config
-        self.app = Flask(__name__, static_folder=None)
-        self.event_queue = queue.Queue()
-        self._running = False
-        self._stream_threads = []
-        self._stream_lock = threading.Lock()
-        self._shutdown_sentinel = object()
-        self._setup_routes()
+        self._panel_password = getattr(config, 'PANEL_PASSWORD', '') or os.getenv('PANEL_PASSWORD', '')
+        self._setup_panel_routes()
 
-    def _setup_routes(self):
+    def _require_auth(self, f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            if self._panel_password:
+                token = request.headers.get('X-Panel-Token', '')
+                if token != self._panel_password:
+                    return make_response(jsonify({"error": "Unauthorized"}), 401)
+            return f(*args, **kwargs)
+        return decorated
+
+    def _setup_panel_routes(self):
         @self.app.route("/")
         def index():
             return send_from_directory(self.config.PANEL_DIR, "index.html")
@@ -31,26 +36,14 @@ class ControlPanelServer:
 
         @self.app.route("/stream")
         def stream():
-            def event_stream():
-                with self._stream_lock:
-                    self._stream_threads.append(threading.current_thread())
-                try:
-                    while self._running:
-                        try:
-                            msg = self.event_queue.get(timeout=1)
-                            if msg is self._shutdown_sentinel:
-                                break
-                            yield f"data: {json.dumps(msg)}\n\n"
-                        except queue.Empty:
-                            continue
-                finally:
-                    with self._stream_lock:
-                        t = threading.current_thread()
-                        if t in self._stream_threads:
-                            self._stream_threads.remove(t)
-            return Response(event_stream(), mimetype="text/event-stream")
+            return Response(
+                self._event_stream(),
+                mimetype="text/event-stream; charset=utf-8"
+            )
 
+        # --- API: Status & Toggles ---
         @self.app.route("/api/status", methods=["GET"])
+        @self._require_auth
         def status():
             return jsonify({
                 "tts_enabled": self.orchestrator.tts_enabled,
@@ -59,30 +52,36 @@ class ControlPanelServer:
             })
 
         @self.app.route("/api/toggle_tts", methods=["POST"])
+        @self._require_auth
         def toggle_tts():
             state = self.orchestrator.toggle_tts()
             return jsonify({"tts_enabled": state})
 
         @self.app.route("/api/toggle_ai", methods=["POST"])
+        @self._require_auth
         def toggle_ai():
             state = self.orchestrator.toggle_ai()
             return jsonify({"ai_enabled": state})
 
         @self.app.route("/api/toggle_tiktok", methods=["POST"])
+        @self._require_auth
         def toggle_tiktok():
             state = self.orchestrator.toggle_tiktok()
             return jsonify({"tiktok_enabled": state})
 
         @self.app.route("/api/toggle_simulation", methods=["POST"])
+        @self._require_auth
         def toggle_simulation():
             state = self.orchestrator.toggle_tiktok_simulation()
             return jsonify({"simulation": state})
 
         @self.app.route("/api/stats", methods=["GET"])
+        @self._require_auth
         def stats():
             return jsonify(self.orchestrator.get_stats())
 
         @self.app.route("/api/setup_status", methods=["GET"])
+        @self._require_auth
         def setup_status():
             import os as _os
             kokoro_fp16 = _os.path.exists(self.config.KOKORO_MODEL)
@@ -112,6 +111,7 @@ class ControlPanelServer:
             })
 
         @self.app.route("/api/simulate_gift", methods=["POST"])
+        @self._require_auth
         def simulate_gift():
             data = request.get_json(silent=True) or {}
             self.orchestrator.simulate_gift(
@@ -121,6 +121,7 @@ class ControlPanelServer:
             return jsonify({"status": "ok"})
 
         @self.app.route("/api/test_message", methods=["POST"])
+        @self._require_auth
         def test_message():
             data = request.get_json(silent=True) or {}
             self.orchestrator.test_message(
@@ -129,108 +130,128 @@ class ControlPanelServer:
             )
             return jsonify({"status": "ok"})
 
+        # --- API: TTS ---
         @self.app.route("/api/tts_status", methods=["GET"])
+        @self._require_auth
         def tts_status():
             return jsonify(self.orchestrator.get_tts_status())
 
         @self.app.route("/api/set_tts_engine", methods=["POST"])
+        @self._require_auth
         def set_tts_engine():
             data = request.get_json(silent=True) or {}
             success = self.orchestrator.set_tts_engine(data.get("engine", "kokoro"))
             return jsonify({"success": success, "status": self.orchestrator.get_tts_status()})
 
         @self.app.route("/api/set_tts_voice", methods=["POST"])
+        @self._require_auth
         def set_tts_voice():
             data = request.get_json(silent=True) or {}
             success = self.orchestrator.set_tts_voice(data.get("voice", "im_nicola"))
             return jsonify({"success": success, "status": self.orchestrator.get_tts_status()})
 
         @self.app.route("/api/set_tts_voice_blend", methods=["POST"])
+        @self._require_auth
         def set_tts_voice_blend():
             data = request.get_json(silent=True) or {}
             success = self.orchestrator.set_tts_voice_blend(data.get("blend", ""))
             return jsonify({"success": success, "status": self.orchestrator.get_tts_status()})
 
         @self.app.route("/api/set_tts_speed", methods=["POST"])
+        @self._require_auth
         def set_tts_speed():
             data = request.get_json(silent=True) or {}
             success = self.orchestrator.set_tts_speed(data.get("speed", 1.0))
             return jsonify({"success": success, "status": self.orchestrator.get_tts_status()})
 
         @self.app.route("/api/set_tts_lang", methods=["POST"])
+        @self._require_auth
         def set_tts_lang():
             data = request.get_json(silent=True) or {}
             success = self.orchestrator.set_tts_lang(data.get("lang", "es"))
             return jsonify({"success": success, "status": self.orchestrator.get_tts_status()})
 
         @self.app.route("/api/set_tts_pitch", methods=["POST"])
+        @self._require_auth
         def set_tts_pitch():
             data = request.get_json(silent=True) or {}
             success = self.orchestrator.set_tts_pitch(data.get("pitch", 0))
             return jsonify({"success": success, "status": self.orchestrator.get_tts_status()})
 
         @self.app.route("/api/set_tts_volume", methods=["POST"])
+        @self._require_auth
         def set_tts_volume():
             data = request.get_json(silent=True) or {}
             success = self.orchestrator.set_tts_volume(data.get("volume", 1.0))
             return jsonify({"success": success, "status": self.orchestrator.get_tts_status()})
 
         @self.app.route("/api/set_kokoro_model", methods=["POST"])
+        @self._require_auth
         def set_kokoro_model():
             data = request.get_json(silent=True) or {}
             success = self.orchestrator.set_kokoro_model(data.get("model", "fp16"))
             return jsonify({"success": success, "status": self.orchestrator.get_tts_status()})
 
         @self.app.route("/api/test_tts", methods=["POST"])
+        @self._require_auth
         def test_tts():
             data = request.get_json(silent=True) or {}
             filename = self.orchestrator.test_tts(data.get("text", "Prueba de texto a voz"))
             return jsonify({"filename": filename, "status": "ok" if filename else "error"})
 
         @self.app.route("/api/logs", methods=["GET"])
+        @self._require_auth
         def get_logs():
             return jsonify(list(self.orchestrator.logs))
 
-        # --- Presets TTS ---
+        # --- API: Presets ---
         @self.app.route("/api/tts_presets", methods=["GET"])
+        @self._require_auth
         def tts_presets():
             return jsonify(self.orchestrator.list_presets())
 
         @self.app.route("/api/save_preset", methods=["POST"])
+        @self._require_auth
         def save_preset():
             data = request.get_json(silent=True) or {}
             ok = self.orchestrator.save_preset(data.get("name", ""))
             return jsonify({"success": ok, "presets": self.orchestrator.list_presets()})
 
         @self.app.route("/api/load_preset", methods=["POST"])
+        @self._require_auth
         def load_preset():
             data = request.get_json(silent=True) or {}
             ok = self.orchestrator.load_preset(data.get("name", ""))
             return jsonify({"success": ok, "status": self.orchestrator.get_tts_status()})
 
         @self.app.route("/api/delete_preset", methods=["POST"])
+        @self._require_auth
         def delete_preset():
             data = request.get_json(silent=True) or {}
             ok = self.orchestrator.delete_preset(data.get("name", ""))
             return jsonify({"success": ok, "presets": self.orchestrator.list_presets()})
 
         @self.app.route("/api/preview_voice", methods=["POST"])
+        @self._require_auth
         def preview_voice():
             data = request.get_json(silent=True) or {}
             filename = self.orchestrator.preview_voice(data.get("voice", ""))
             return jsonify({"filename": filename})
 
-        # --- Spam ---
+        # --- API: Spam ---
         @self.app.route("/api/spam_config", methods=["GET"])
+        @self._require_auth
         def spam_config():
             return jsonify(self.orchestrator.get_spam_config())
 
         @self.app.route("/api/spam_toggle", methods=["POST"])
+        @self._require_auth
         def spam_toggle():
             state = self.orchestrator.set_spam_enabled(not self.orchestrator.spam_enabled)
             return jsonify({"enabled": state})
 
         @self.app.route("/api/spam_set", methods=["POST"])
+        @self._require_auth
         def spam_set():
             data = request.get_json(silent=True) or {}
             ok = self.orchestrator.set_spam_config(
@@ -241,27 +262,32 @@ class ControlPanelServer:
             return jsonify({"success": ok})
 
         @self.app.route("/api/banned_words", methods=["GET"])
+        @self._require_auth
         def banned_words():
             return jsonify(self.orchestrator.banned_words)
 
         @self.app.route("/api/banned_words", methods=["POST"])
+        @self._require_auth
         def add_banned_word():
             data = request.get_json(silent=True) or {}
             ok = self.orchestrator.add_banned_word(data.get("word", ""))
             return jsonify({"success": ok, "words": self.orchestrator.banned_words})
 
         @self.app.route("/api/banned_words", methods=["DELETE"])
+        @self._require_auth
         def remove_banned_word():
             data = request.get_json(silent=True) or {}
             ok = self.orchestrator.remove_banned_word(data.get("word", ""))
             return jsonify({"success": ok, "words": self.orchestrator.banned_words})
 
-        # --- Event Rules ---
+        # --- API: Event Rules ---
         @self.app.route("/api/event_rules", methods=["GET"])
+        @self._require_auth
         def event_rules():
             return jsonify(self.orchestrator.get_event_rules())
 
         @self.app.route("/api/event_rules", methods=["POST"])
+        @self._require_auth
         def add_event_rule():
             data = request.get_json(silent=True) or {}
             result = self.orchestrator.add_event_rule(data)
@@ -270,17 +296,20 @@ class ControlPanelServer:
             return jsonify({"success": True, "rules": self.orchestrator.get_event_rules()})
 
         @self.app.route("/api/event_rules/<int:index>", methods=["PUT"])
+        @self._require_auth
         def update_event_rule(index):
             data = request.get_json(silent=True) or {}
             ok = self.orchestrator.update_event_rule(index, data)
             return jsonify({"success": ok, "rules": self.orchestrator.get_event_rules()})
 
         @self.app.route("/api/event_rules/<int:index>", methods=["DELETE"])
+        @self._require_auth
         def delete_event_rule(index):
             ok = self.orchestrator.delete_event_rule_by_index(index)
             return jsonify({"success": ok, "rules": self.orchestrator.get_event_rules()})
 
         @self.app.route("/api/test_rule", methods=["POST"])
+        @self._require_auth
         def test_rule():
             data = request.get_json(silent=True) or {}
             gift = data.get("gift", "Test")
@@ -315,23 +344,43 @@ class ControlPanelServer:
                 "tiktok_enabled": self.orchestrator.tiktok_enabled,
             })
 
-        @self.app.route("/api/overlay_config", methods=["POST"])
-        def overlay_config():
+        @self.app.route("/api/test_actions", methods=["POST"])
+        @self._require_auth
+        def test_actions():
             data = request.get_json(silent=True) or {}
-            self.orchestrator.publish("overlay_config", {
-                "background": data.get("background", "transparent"),
-                "debug": data.get("debug", False),
-            })
-            return jsonify({"status": "ok"})
+            actions = data.get("actions", [])
+            gift = data.get("gift", "Test")
+            user = data.get("user", "TestUser")
+            diamonds = data.get("diamonds", 0)
+            
+            if not actions:
+                return jsonify({"success": False, "error": "No hay acciones"}), 400
+            if len(actions) > 20:
+                return jsonify({"success": False, "error": "Maximo 20 acciones permitidas"}), 400
+            
+            self.orchestrator.test_actions(actions, user, gift, diamonds)
             return jsonify({
-                "status": "ok",
-                "matched_rules": matched,
+                "success": True,
                 "tts_enabled": self.orchestrator.tts_enabled,
                 "tiktok_enabled": self.orchestrator.tiktok_enabled,
             })
 
-        # --- Export / Import ---
+        @self.app.route("/api/overlay_config", methods=["POST"])
+        @self._require_auth
+        def overlay_config():
+            data = request.get_json(silent=True) or {}
+            bg = data.get("background", "transparent")
+            debug = data.get("debug", False)
+            self.orchestrator.set_overlay_config(background=bg, debug=debug)
+            self.orchestrator.publish("overlay_config", {
+                "background": bg,
+                "debug": debug,
+            })
+            return jsonify({"status": "ok"})
+
+        # --- API: Export / Import ---
         @self.app.route("/api/export_config", methods=["GET"])
+        @self._require_auth
         def export_config():
             import os as _os
             tts_status = self.orchestrator.get_tts_status()
@@ -342,7 +391,10 @@ class ControlPanelServer:
                          "TTS_COOLDOWN", "TTS_ENGINE", "TTS_VOICE", "TTS_VOICE_BLEND",
                          "TTS_SPEED", "TTS_LANG", "TTS_PITCH", "TTS_VOLUME",
                          "OVERLAY_PORT", "PANEL_PORT", "HOST"]:
-                env_vars[key] = _os.getenv(key, "")
+                val = _os.getenv(key, "")
+                if key == "GROQ_API_KEY" and val:
+                    val = "***REDACTED***"
+                env_vars[key] = val
             return jsonify({
                 "env": env_vars,
                 "tts": tts_status,
@@ -352,6 +404,7 @@ class ControlPanelServer:
             })
 
         @self.app.route("/api/import_config", methods=["POST"])
+        @self._require_auth
         def import_config():
             data = request.get_json(silent=True) or {}
             errors = []
@@ -393,34 +446,13 @@ class ControlPanelServer:
             if presets:
                 self.orchestrator._presets.update(presets)
                 self.orchestrator._save_presets()
+            self.orchestrator._save_user_settings()
             self.orchestrator.log("Configuracion importada correctamente")
             return jsonify({"success": True, "errors": errors})
 
         @self.app.route("/<path:filename>")
         def static_files(filename):
-            return send_from_directory(self.config.PANEL_DIR, filename)
-
-    def handle_event(self, event_type, data):
-        self.event_queue.put({"type": event_type, "data": data})
-
-    def start(self):
-        self._running = True
-
-    def stop(self):
-        self._running = False
-        for _ in range(len(self._stream_threads) + 1):
-            try:
-                self.event_queue.put_nowait(self._shutdown_sentinel)
-            except queue.Full:
-                pass
+            return self._serve_static(filename)
 
     def run(self):
-        self.start()
-        logger.info(f"ControlPanelServer iniciado en http://{self.config.HOST}:{self.config.PANEL_PORT}")
-        self.app.run(
-            host=self.config.HOST,
-            port=self.config.PANEL_PORT,
-            threaded=True,
-            debug=False,
-            use_reloader=False
-        )
+        super().run(host=self.config.HOST, port=self.config.PANEL_PORT)

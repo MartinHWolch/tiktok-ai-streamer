@@ -43,6 +43,64 @@ function setSpinner(el, show) {
     el.disabled = show;
 }
 
+// ===== Toast =====
+var toastContainer = document.getElementById('toast-container');
+var activeToasts = [];
+
+function previewEmojiBurst(emojis, count) {
+    var container = document.createElement('div');
+    container.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9998;overflow:hidden;';
+    document.body.appendChild(container);
+
+    var chars = [];
+    if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+        var seg = new Intl.Segmenter('en', { granularity: 'grapheme' });
+        chars = Array.from(seg.segment(emojis)).map(function(s) { return s.segment; });
+    } else {
+        chars = Array.from(emojis);
+    }
+    if (!chars.length) chars = ['🎉'];
+
+    for (var i = 0; i < count; i++) {
+        var el = document.createElement('div');
+        el.textContent = chars[Math.floor(Math.random() * chars.length)];
+        el.style.cssText = 'position:absolute;font-size:24px;left:' + (10 + Math.random() * 80) + '%;top:' + (10 + Math.random() * 60) + '%;opacity:1;transition:all 1.5s ease-out;';
+        container.appendChild(el);
+        (function(elem) {
+            setTimeout(function() {
+                elem.style.transform = 'translateY(-100px) scale(1.5)';
+                elem.style.opacity = '0';
+            }, 50);
+            setTimeout(function() { elem.remove(); }, 1600);
+        })(el);
+    }
+    setTimeout(function() { container.remove(); }, 2000);
+}
+
+function showToast(message, onUndo) {
+    var toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = '<span class="toast-msg">' + escapeHtml(message) + '</span>'
+        + '<button class="toast-undo">Deshacer</button>';
+    toastContainer.appendChild(toast);
+
+    var undoBtn = toast.querySelector('.toast-undo');
+    var removed = false;
+    undoBtn.addEventListener('click', function() {
+        removed = true;
+        if (onUndo) onUndo();
+        toast.classList.add('toast-out');
+        setTimeout(function() { toast.remove(); }, 300);
+    });
+
+    setTimeout(function() {
+        if (!removed) {
+            toast.classList.add('toast-out');
+            setTimeout(function() { toast.remove(); }, 300);
+        }
+    }, 5000);
+}
+
 // ===== Log =====
 var logList = document.getElementById('log-list');
 
@@ -58,12 +116,37 @@ function addLog(text) {
     console.log(text);
 }
 
+var logFilter = 'all';
+var allLogs = [];
+
+function applyLogFilter() {
+    logList.innerHTML = '';
+    allLogs.forEach(function(entry) {
+        var text = entry.toLowerCase();
+        var show = false;
+        if (logFilter === 'all') {
+            show = true;
+        } else if (logFilter === 'message') {
+            show = text.indexOf('message') !== -1 || text.indexOf('mensaje') !== -1;
+        } else if (logFilter === 'gift') {
+            show = text.indexOf('gift') !== -1 || text.indexOf('regalo') !== -1;
+        } else if (logFilter === 'like') {
+            show = text.indexOf('like') !== -1;
+        } else if (logFilter === 'join') {
+            show = text.indexOf('join') !== -1 || text.indexOf('se unio') !== -1;
+        } else if (logFilter === 'system') {
+            show = text.indexOf('sistema') !== -1 || text.indexOf('comando') !== -1 || text.indexOf('config') !== -1 || text.indexOf('regla') !== -1 || text.indexOf('tts') !== -1 || text.indexOf('ai') !== -1;
+        }
+        if (show) addLogSilent(entry);
+    });
+}
+
 function loadLogs() {
     fetch('/api/logs')
         .then(function(r) { return r.json(); })
         .then(function(logs) {
-            logList.innerHTML = '';
-            logs.reverse().forEach(function(l) { addLogSilent(l); });
+            allLogs = logs;
+            applyLogFilter();
         });
 }
 
@@ -177,15 +260,9 @@ var voiceGender = 'all';
 
 function getVoiceGender(voiceName) {
     if (!voiceName) return 'unknown';
-    var parts = voiceName.split('_');
-    if (parts.length >= 2) {
-        var g = parts[0].slice(-1).toLowerCase();
-        if (g === 'f') return 'female';
-        if (g === 'm') return 'male';
-    }
     var v = voiceName.toLowerCase();
-    if (v.indexOf('_f_') !== -1 || v.startsWith('af_') || v.startsWith('bf_') || v.startsWith('cf_') || v.startsWith('df_') || v.startsWith('ef_') || v.startsWith('ff_') || v.startsWith('gf_') || v.startsWith('hf_') || v.startsWith('if_') || v.startsWith('jf_') || v.startsWith('kf_') || v.startsWith('lf_') || v.startsWith('mf_') || v.startsWith('nf_') || v.startsWith('of_') || v.startsWith('pf_') || v.startsWith('qf_') || v.startsWith('rf_') || v.startsWith('sf_') || v.startsWith('tf_') || v.startsWith('uf_') || v.startsWith('vf_') || v.startsWith('wf_') || v.startsWith('xf_') || v.startsWith('yf_') || v.startsWith('zf_')) return 'female';
-    if (v.indexOf('_m_') !== -1 || v.startsWith('am_') || v.startsWith('bm_') || v.startsWith('cm_') || v.startsWith('dm_') || v.startsWith('em_') || v.startsWith('fm_') || v.startsWith('gm_') || v.startsWith('hm_') || v.startsWith('im_') || v.startsWith('jm_') || v.startsWith('km_') || v.startsWith('lm_') || v.startsWith('mm_') || v.startsWith('nm_') || v.startsWith('om_') || v.startsWith('pm_') || v.startsWith('qm_') || v.startsWith('rm_') || v.startsWith('sm_') || v.startsWith('tm_') || v.startsWith('um_') || v.startsWith('vm_') || v.startsWith('wm_') || v.startsWith('xm_') || v.startsWith('ym_') || v.startsWith('zm_')) return 'male';
+    if (/[a-z]_f_/i.test(v) || /^[a-z]f_/i.test(v)) return 'female';
+    if (/[a-z]_m_/i.test(v) || /^[a-z]m_/i.test(v)) return 'male';
     return 'unknown';
 }
 
@@ -513,11 +590,31 @@ document.getElementById('btn-load-preset').addEventListener('click', async funct
 document.getElementById('btn-delete-preset').addEventListener('click', async function() {
     var name = presetSelect.value;
     if (!name) { addLog('Selecciona un preset para eliminar'); return; }
-    if (!confirm('Eliminar preset "' + name + '"?')) return;
+
+    // Obtener datos del preset antes de eliminar
+    var presetData = null;
+    try {
+        var r = await fetch('/api/tts_presets');
+        var presets = await r.json();
+        presetData = presets[name];
+    } catch(e) {}
+
     var res = await postJSON('/api/delete_preset', { name: name });
     if (res && res.success) {
         addLog('Preset eliminado: ' + name);
         loadPresetList();
+        if (presetData) {
+            showToast('Preset "' + name + '" eliminado', function() {
+                postJSON('/api/save_preset', { name: name }).then(function(saveRes) {
+                    if (saveRes && saveRes.success) {
+                        // Re-aplicar los datos originales
+                        var tts_client = null; // no tenemos acceso directo, pero podemos recargar
+                        loadPresetList();
+                        addLog('Preset "' + name + '" restaurado');
+                    }
+                });
+            });
+        }
     }
 });
 
@@ -629,6 +726,10 @@ function sseOnMessage(e) {
                 addChatMsg(user, d.text, false);
             } else if (d.type === 'gift') {
                 addChatMsg('GIFT', user + ' envió ' + (d.gift || '?') + ' x' + (d.amount || 1), false);
+            } else if (d.type === 'like') {
+                addChatMsg('LIKE', user + ' dio ' + (d.count || 1) + ' likes', false);
+            } else if (d.type === 'join') {
+                addChatMsg('JOIN', user + ' se unió', false);
             }
         } else if (payload.type === 'overlay_message' && payload.data) {
             var isAI = payload.data.original_user ? true : false;
@@ -739,6 +840,16 @@ function saveSpamConfig() {
         dup_window: parseInt(spamDup.value),
     });
 }
+
+// Log filters
+document.querySelectorAll('.log-filter').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.log-filter').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        logFilter = btn.dataset.filter;
+        applyLogFilter();
+    });
+});
 
 document.getElementById('btn-add-banned').addEventListener('click', async function() {
     var word = bannedInput.value.trim();
@@ -866,14 +977,26 @@ function renderRules(rules) {
     }).join('');
 
     document.querySelectorAll('.rule-delete').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var idx = btn.dataset.index;
-            if (!confirm('Eliminar esta regla?')) return;
-            fetch('/api/event_rules/' + idx, { method: 'DELETE' })
-                .then(function(r) { return r.json(); })
-                .then(function(res) {
-                    if (res.success) { renderRules(res.rules); addLog('Regla eliminada'); resetRuleForm(); }
+        btn.addEventListener('click', async function() {
+            var idx = parseInt(btn.dataset.index);
+            var ruleToDelete = rules[idx];
+            if (!ruleToDelete) return;
+
+            var res = await fetch('/api/event_rules/' + idx, { method: 'DELETE' });
+            var data = await res.json();
+            if (data.success) {
+                renderRules(data.rules);
+                addLog('Regla eliminada');
+                resetRuleForm();
+                showToast('Regla "' + ruleToDelete.name + '" eliminada', function() {
+                    postJSON('/api/event_rules', ruleToDelete).then(function(r) {
+                        if (r && r.success) {
+                            renderRules(r.rules);
+                            addLog('Regla "' + ruleToDelete.name + '" restaurada');
+                        }
+                    });
                 });
+            }
         });
     });
 
@@ -977,10 +1100,17 @@ function createActionConfig(type, existingData) {
             });
         });
     } else {
-        div.innerHTML = '<div style="display:flex;gap:6px;flex:1">'
-            + '<input type="text" class="input-discord action-emoji-list" placeholder="Emojis" value="' + escapeHtml(existingData.emojis || '🎉✨') + '" style="flex:1">'
-            + '<input type="number" class="input-discord action-emoji-count" placeholder="Cantidad" value="' + (existingData.count || 10) + '" min="1" max="100" style="width:80px">'
+        div.innerHTML = '<div style="display:flex;gap:6px;flex:1;align-items:center">'
+            + '<input type="text" class="input-discord action-emoji-list" placeholder="Emojis" value="' + escapeHtml(existingData.emojis || '🎉') + '" style="flex:1">'
+            + '<input type="number" class="input-discord action-emoji-count" placeholder="Cantidad" value="' + (existingData.count || 30) + '" min="1" max="200" style="width:80px">'
+            + '<button type="button" class="btn-sm-blurple emoji-preview-btn" title="Previsualizar">👁</button>'
             + '</div>';
+        var previewBtn = div.querySelector('.emoji-preview-btn');
+        previewBtn.addEventListener('click', function() {
+            var emojis = div.querySelector('.action-emoji-list').value || '🎉';
+            var count = parseInt(div.querySelector('.action-emoji-count').value) || 10;
+            previewEmojiBurst(emojis, Math.min(count, 15));
+        });
     }
     return div;
 }
@@ -1003,7 +1133,14 @@ function addActionRow(existing) {
 
     typeSel.addEventListener('change', function() {
         var oldConfig = row.querySelector('.action-config');
-        var newConfigDiv = createActionConfig(typeSel.value, {});
+        var preserved = {};
+        var msgInput = oldConfig.querySelector('.action-tts-msg');
+        var emojiInput = oldConfig.querySelector('.action-emoji-list');
+        var countInput = oldConfig.querySelector('.action-emoji-count');
+        if (msgInput) preserved.message = msgInput.value;
+        if (emojiInput) preserved.emojis = emojiInput.value;
+        if (countInput) preserved.count = countInput.value;
+        var newConfigDiv = createActionConfig(typeSel.value, preserved);
         oldConfig.replaceWith(newConfigDiv);
     });
 
@@ -1025,8 +1162,17 @@ function getActionsFromForm() {
             if (msg) actions.push({ type: 'tts', message: msg, voice_preset: preset });
         } else if (type === 'emoji') {
             var emojis = (row.querySelector('.action-emoji-list') || {}).value || '🎉';
-            var count = parseInt((row.querySelector('.action-emoji-count') || {}).value || '10') || 10;
-            if (emojis) actions.push({ type: 'emoji', emojis: emojis, count: count });
+            var count = parseInt((row.querySelector('.action-emoji-count') || {}).value || '30') || 30;
+            if (emojis) {
+                var hasNonAscii = false;
+                for (var k = 0; k < emojis.length; k++) {
+                    if (emojis.charCodeAt(k) > 127) { hasNonAscii = true; break; }
+                }
+                if (!hasNonAscii) {
+                    addLog('Advertencia: el campo de emojis solo contiene texto ASCII ("' + emojis + '"). Se usaran emojis por defecto en el overlay.');
+                }
+                actions.push({ type: 'emoji', emojis: emojis, count: count });
+            }
         }
     });
     return actions;
@@ -1064,7 +1210,9 @@ document.getElementById('btn-save-rule').addEventListener('click', async functio
     if (!actions.length) { addLog('Agrega al menos una accion'); return; }
 
     var rule = { name: name, trigger: trigger, trigger_value: triggerVal, actions: actions };
-    var editIdx = parseInt(document.getElementById('rule-edit-index').value);
+    var editIdxStr = document.getElementById('rule-edit-index').value;
+    var editIdx = parseInt(editIdxStr, 10);
+    if (isNaN(editIdx)) editIdx = -1;
 
     var url = '/api/event_rules';
     var method = 'POST';
@@ -1073,14 +1221,17 @@ document.getElementById('btn-save-rule').addEventListener('click', async functio
         method = 'PUT';
     }
 
+    addLog((method === 'PUT' ? 'Actualizando' : 'Creando') + ' regla "' + name + '"...');
     var res = await (method === 'POST'
         ? postJSON(url, rule)
         : fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rule) }).then(function(r) { return r.json(); }));
 
     if (res && res.success) {
-        addLog('Regla guardada: ' + name);
+        addLog(method === 'PUT' ? 'Regla actualizada: ' + name : 'Regla creada: ' + name);
         resetRuleForm();
         renderRules(res.rules);
+    } else {
+        addLog('Error al guardar regla: ' + (res ? (res.error || 'desconocido') : 'sin respuesta'));
     }
 });
 
@@ -1093,28 +1244,48 @@ document.getElementById('btn-test-rule').addEventListener('click', async functio
     if (!actions.length) { addLog('Agrega al menos una accion. Acciones encontradas: ' + actions.length); return; }
 
     addLog('Probando regla: ' + name + ' (' + trigger + '=' + triggerVal + ') con ' + actions.length + ' acciones');
-    var rule = { name: name, trigger: trigger, trigger_value: triggerVal, actions: actions };
-    var saveRes = await postJSON('/api/event_rules', rule);
-    if (!saveRes || !saveRes.success) { addLog('Error al guardar regla temporal'); return; }
-    
     var gift = trigger === 'gift' ? triggerVal : 'TestGift';
     var diamonds = trigger === 'diamonds' ? parseInt(triggerVal) || 10 : 0;
-    addLog('Enviando test: gift=' + gift + ' diamonds=' + diamonds);
-    var testRes = await postJSON('/api/test_rule', { gift: gift, user: 'TestUser', diamonds: diamonds });
-    if (testRes) {
-        if (testRes.matched_rules && testRes.matched_rules.length > 0) {
-            addLog('Regla probada: ' + name + ' - ' + testRes.matched_rules.length + ' reglas coincidieron');
-            testRes.matched_rules.forEach(function(m) {
-                addLog('  > ' + m.name + ': ' + m.actions.join(', '));
-            });
-        } else {
-            addLog('Regla probada: ' + name + ' - NINGUNA regla coincidio. Revisa el gatillo.');
-        }
+    
+    var testRes = await postJSON('/api/test_actions', { 
+        gift: gift, 
+        user: 'TestUser', 
+        diamonds: diamonds, 
+        actions: actions 
+    });
+    if (testRes && testRes.success) {
+        addLog('Regla probada OK. Revisa el overlay.');
         if (!testRes.tts_enabled) addLog('  [!] TTS esta desactivado. Activalo en el Dashboard.');
     } else {
-        addLog('Error del servidor al probar regla');
+        addLog('Error al probar regla: ' + (testRes ? (testRes.error || 'desconocido') : 'sin respuesta'));
     }
-    loadRules();
+});
+
+// ===== Overlay Config =====
+document.getElementById('btn-set-bg').addEventListener('click', async function() {
+    var color = document.getElementById('overlay-bg-color').value;
+    await postJSON('/api/overlay_config', { background: color, debug: false });
+    addLog('Overlay fondo cambiado a ' + color);
+});
+
+document.getElementById('btn-bg-transparent').addEventListener('click', async function() {
+    await postJSON('/api/overlay_config', { background: 'transparent', debug: false });
+    addLog('Overlay fondo: transparente');
+});
+
+document.getElementById('toggle-debug').addEventListener('change', async function() {
+    var enabled = document.getElementById('toggle-debug').checked;
+    await postJSON('/api/overlay_config', { debug: enabled });
+    addLog('Overlay debug: ' + (enabled ? 'ON' : 'OFF'));
+});
+
+document.getElementById('btn-test-events').addEventListener('click', async function() {
+    addLog('Enviando eventos de prueba al overlay...');
+    // Test gift
+    await postJSON('/api/test_rule', { gift: 'Rosa', user: 'Test', diamonds: 1 });
+    // Test message
+    await postJSON('/api/test_message', { user: 'Test', text: 'Hola desde prueba de overlay' });
+    addLog('Eventos de prueba enviados al overlay');
 });
 
 // Auto-load when tab opened
@@ -1128,3 +1299,89 @@ document.getElementById('btn-test-rule').addEventListener('click', async functio
         });
     }
 })();
+
+// ===== Init: cargar valores del servidor =====
+async function initPanel() {
+    // Auth token si existe
+    var token = localStorage.getItem('panelToken') || '';
+    if (token) {
+        var originalPostJSON = postJSON;
+        postJSON = function(url, data) {
+            return fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Panel-Token': token },
+                body: data ? JSON.stringify(data) : '{}'
+            })
+            .then(function(r) {
+                if (r.status === 401) {
+                    localStorage.removeItem('panelToken');
+                    window.location.reload();
+                    throw new Error('Unauthorized');
+                }
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .catch(function(e) {
+                addLogSilent('Error: ' + e.message);
+                return null;
+            });
+        };
+    }
+
+    // Verificar auth
+    try {
+        var r = await fetch('/api/status', { headers: token ? { 'X-Panel-Token': token } : {} });
+        if (r.status === 401) {
+            var pwd = prompt('Este panel requiere contraseña. Ingresala:');
+            if (!pwd) return;
+            var r2 = await fetch('/api/status', { headers: { 'X-Panel-Token': pwd } });
+            if (r2.status === 401) { alert('Contraseña incorrecta'); return; }
+            localStorage.setItem('panelToken', pwd);
+            window.location.reload();
+            return;
+        }
+    } catch (e) { console.error('Auth check failed:', e); }
+
+    // Toggles + stats
+    try {
+        var status = await (await fetch('/api/status', { headers: token ? { 'X-Panel-Token': token } : {} })).json();
+        toggleTts.checked = status.tts_enabled;
+        updateBadge(ttsBadge, status.tts_enabled, 'ACTIVADO', 'DESACTIVADO');
+        toggleAi.checked = status.ai_enabled;
+        updateBadge(aiBadge, status.ai_enabled, 'ACTIVADO', 'DESACTIVADO');
+        toggleTiktok.checked = status.tiktok_enabled;
+        updateBadge(tiktokBadge, status.tiktok_enabled, 'ACTIVADO', 'PAUSADO');
+    } catch (e) { console.error('Status init failed:', e); }
+
+    // TTS config
+    try {
+        var tts = await (await fetch('/api/tts_status', { headers: token ? { 'X-Panel-Token': token } : {} })).json();
+        if (tts.engine) { ttsEngine.value = tts.engine; updateEngineUI(tts.engine); }
+        if (tts.voice) { currentVoice = tts.voice; ttsVoiceSearch.value = tts.voice; }
+        if (tts.voice_blend) { ttsVoiceSearch.value = tts.voice_blend; }
+        if (tts.speed !== undefined) { ttsSpeed.value = tts.speed; speedValueEl.textContent = tts.speed.toFixed(1); }
+        if (tts.pitch !== undefined) { ttsPitch.value = tts.pitch; pitchValueEl.textContent = parseInt(tts.pitch); }
+        if (tts.volume !== undefined) { ttsVolume.value = tts.volume; volumeValueEl.textContent = tts.volume.toFixed(1); }
+        if (tts.lang) ttsLang.value = tts.lang;
+    } catch (e) { console.error('TTS init failed:', e); }
+
+    // Spam config
+    try {
+        var spam = await (await fetch('/api/spam_config', { headers: token ? { 'X-Panel-Token': token } : {} })).json();
+        toggleSpam.checked = spam.enabled;
+        spamRate.value = spam.rate_limit;
+        spamWindow.value = spam.window;
+        spamDup.value = spam.dup_window;
+        updateSpamBadge(spam.enabled);
+    } catch (e) { console.error('Spam init failed:', e); }
+
+    // Stats (simulation mode)
+    try {
+        var stats = await (await fetch('/api/stats', { headers: token ? { 'X-Panel-Token': token } : {} })).json();
+        if (stats.tiktok_mode) updateModeUI(stats.tiktok_mode === 'simulacion');
+    } catch (e) { console.error('Stats init failed:', e); }
+
+    refreshStats();
+}
+
+initPanel();

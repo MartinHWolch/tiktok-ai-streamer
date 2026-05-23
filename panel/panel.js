@@ -611,8 +611,17 @@ document.getElementById('btn-delete-preset').addEventListener('click', async fun
                         var tts_client = null; // no tenemos acceso directo, pero podemos recargar
                         loadPresetList();
                         addLog('Preset "' + name + '" restaurado');
-                    }
-                });
+        } else if (type === 'sfx') {
+            var sfxFile = (row.querySelector('.action-sfx-file') || {}).value || '';
+            if (sfxFile) actions.push({ type: 'sfx', file: sfxFile });
+        } else if (type === 'vtube_expr') {
+            var expr = (row.querySelector('.action-vtube-expr') || {}).value || '';
+            if (expr) actions.push({ type: 'vtube_expr', expression: expr });
+        } else if (type === 'vtube_hotkey') {
+            var hk = (row.querySelector('.action-vtube-hotkey') || {}).value || '';
+            if (hk) actions.push({ type: 'vtube_hotkey', hotkey: hk });
+        }
+    });
             });
         }
     }
@@ -628,6 +637,72 @@ document.getElementById('btn-message').addEventListener('click', async function(
     await postJSON('/api/test_message', { user: 'Admin', text: 'Hola desde el panel' });
     addLog('Mensaje de prueba enviado.');
 });
+
+document.getElementById('btn-bulk').addEventListener('click', async function() {
+    addLog('Generando 20 eventos aleatorios...');
+    var res = await postJSON('/api/simulate_bulk', { count: 20 });
+    if (res && res.success) {
+        addLog('Simulacion masiva: ' + res.events_generated + ' eventos generados.');
+        setTimeout(refreshStats, 500);
+    }
+});
+
+// ===== VTube Studio =====
+var vtsStatusBadge = document.getElementById('vtube-status-badge');
+var vtsModel = document.getElementById('vtube-model');
+
+function refreshVtsStatus() {
+    fetch('/api/vtube_status').then(function(r) { return r.json(); }).then(function(s) {
+        if (s.connected && s.authenticated) {
+            vtsStatusBadge.textContent = 'Conectado';
+            vtsStatusBadge.className = 'status-badge online';
+            vtsModel.textContent = s.model ? 'Modelo: ' + s.model : '';
+            document.getElementById('btn-vtube-connect').style.display = 'none';
+            document.getElementById('btn-vtube-disconnect').style.display = '';
+        } else if (s.connected) {
+            vtsStatusBadge.textContent = 'Esperando auth...';
+            vtsStatusBadge.className = 'status-badge warning';
+            vtsModel.textContent = 'Click Permitir en VTube Studio';
+        } else {
+            vtsStatusBadge.textContent = 'Desconectado';
+            vtsStatusBadge.className = 'status-badge offline';
+            vtsModel.textContent = '';
+            document.getElementById('btn-vtube-connect').style.display = '';
+            document.getElementById('btn-vtube-disconnect').style.display = 'none';
+        }
+    }).catch(function() {
+        vtsStatusBadge.textContent = 'Desconectado';
+        vtsStatusBadge.className = 'status-badge offline';
+    });
+}
+
+document.getElementById('btn-vtube-connect').addEventListener('click', async function() {
+    var res = await postJSON('/api/vtube_connect');
+    if (res && res.success) {
+        addLog('VTube Studio: conectando... (click Permitir en VTS)');
+        setTimeout(refreshVtsStatus, 2000);
+    } else {
+        addLog('VTube Studio: error al conectar. VTS esta abierto?');
+    }
+});
+
+document.getElementById('btn-vtube-disconnect').addEventListener('click', async function() {
+    await postJSON('/api/vtube_disconnect');
+    refreshVtsStatus();
+    addLog('VTube Studio: desconectado');
+});
+
+document.getElementById('btn-vtube-test').addEventListener('click', async function() {
+    var res = await postJSON('/api/vtube_expression', { expression: 'happy' });
+    if (res && res.success) {
+        addLog('VTube Studio: expresion happy activada');
+    } else {
+        addLog('VTube Studio: no se pudo activar expresion');
+    }
+});
+
+refreshVtsStatus();
+setInterval(refreshVtsStatus, 15000);
 
 // ===== Setup =====
 function loadSetup() {
@@ -960,6 +1035,9 @@ function renderRules(rules) {
         var actionsHtml = rule.actions.map(function(a) {
             if (a.type === 'tts') return '<span class="rule-action-tag tts-tag">TTS' + (a.voice_preset ? ' [' + a.voice_preset + ']' : '') + ': ' + escapeHtml((a.message || '').substring(0, 25)) + '</span>';
             if (a.type === 'emoji') return '<span class="rule-action-tag emoji-tag">' + escapeHtml(a.emojis || '🎉') + ' x' + (a.count || 10) + '</span>';
+            if (a.type === 'sfx') return '<span class="rule-action-tag sfx-tag">SFX: ' + escapeHtml(a.file || '?') + '</span>';
+            if (a.type === 'vtube_expr') return '<span class="rule-action-tag vtube-tag">VTS: ' + escapeHtml(a.expression || '?') + '</span>';
+            if (a.type === 'vtube_hotkey') return '<span class="rule-action-tag vtube-tag">VTS HK: ' + escapeHtml(a.hotkey || '?') + '</span>';
             return '<span class="rule-action-tag">' + a.type + '</span>';
         }).join('');
         return '<div class="rule-card">'
@@ -1022,7 +1100,43 @@ function renderRules(rules) {
                             res.matched_rules.forEach(function(m) {
                                 addLog('  > ' + m.name + ': ' + m.actions.join(', '));
                             });
-                        } else {
+    } else if (type === 'sfx') {
+        div.innerHTML = '<div style="display:flex;gap:6px;flex:1">'
+            + '<select class="input-discord action-sfx-file" style="flex:1"><option value="">-- Selecciona archivo --</option></select>'
+            + '</div>';
+        fetch('/api/sfx_files').then(function(r) { return r.json(); }).then(function(files) {
+            var sel = div.querySelector('.action-sfx-file');
+            (files || []).forEach(function(f) {
+                var opt = document.createElement('option');
+                opt.value = f;
+                opt.textContent = f;
+                if (f === (existingData.file || '')) opt.selected = true;
+                sel.appendChild(opt);
+            });
+        });
+    } else if (type === 'vtube_expr') {
+        div.innerHTML = '<div style="display:flex;gap:6px;flex:1">'
+            + '<input type="text" class="input-discord action-vtube-expr" placeholder="Nombre de expresion (ej: happy, angry, Fun)" value="' + escapeHtml(existingData.expression || 'happy') + '" style="flex:1" list="vtube-expr-list">'
+            + '<datalist id="vtube-expr-list"></datalist>'
+            + '</div>';
+        fetch('/api/vtube_status').then(function(r) { return r.json(); }).then(function(s) {
+            var dl = div.querySelector('#vtube-expr-list');
+            (s.expressions || []).forEach(function(e) {
+                var opt = document.createElement('option'); opt.value = e; dl.appendChild(opt);
+            });
+        });
+    } else if (type === 'vtube_hotkey') {
+        div.innerHTML = '<div style="display:flex;gap:6px;flex:1">'
+            + '<input type="text" class="input-discord action-vtube-hotkey" placeholder="Nombre del hotkey" value="' + escapeHtml(existingData.hotkey || '') + '" style="flex:1" list="vtube-hk-list">'
+            + '<datalist id="vtube-hk-list"></datalist>'
+            + '</div>';
+        fetch('/api/vtube_status').then(function(r) { return r.json(); }).then(function(s) {
+            var dl = div.querySelector('#vtube-hk-list');
+            (s.hotkeys || []).forEach(function(h) {
+                var opt = document.createElement('option'); opt.value = h; dl.appendChild(opt);
+            });
+        });
+    } else {
                             addLog('Regla probada: ' + rule.name + ' - NINGUNA regla coincidio (verifica el gatillo)');
                         }
                         if (!res.tts_enabled) addLog('  [!] TTS esta desactivado en el panel');
@@ -1137,9 +1251,15 @@ function addActionRow(existing) {
         var msgInput = oldConfig.querySelector('.action-tts-msg');
         var emojiInput = oldConfig.querySelector('.action-emoji-list');
         var countInput = oldConfig.querySelector('.action-emoji-count');
+        var sfxSel = oldConfig.querySelector('.action-sfx-file');
+        var exprInput = oldConfig.querySelector('.action-vtube-expr');
+        var hkInput = oldConfig.querySelector('.action-vtube-hotkey');
         if (msgInput) preserved.message = msgInput.value;
         if (emojiInput) preserved.emojis = emojiInput.value;
         if (countInput) preserved.count = countInput.value;
+        if (sfxSel) preserved.file = sfxSel.value;
+        if (exprInput) preserved.expression = exprInput.value;
+        if (hkInput) preserved.hotkey = hkInput.value;
         var newConfigDiv = createActionConfig(typeSel.value, preserved);
         oldConfig.replaceWith(newConfigDiv);
     });

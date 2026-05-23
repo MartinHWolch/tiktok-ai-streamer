@@ -885,6 +885,19 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .rule-action-tag.tts-tag { color: var(--blurple); border: 1px solid rgba(88,101,242,0.3); }
 .rule-action-tag.emoji-tag { color: var(--green); border: 1px solid rgba(35,165,90,0.3); }
+.rule-action-tag.sfx-tag { color: var(--yellow); border: 1px solid rgba(240,178,50,0.3); }
+.rule-action-tag.vtube-tag { color: var(--blurple); border: 1px solid rgba(88,101,242,0.3); }
+
+/* Status badges */
+.status-badge {
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.status-badge.online { background: rgba(35,165,90,0.15); color: var(--green); }
+.status-badge.offline { background: rgba(218,55,60,0.15); color: var(--red); }
+.status-badge.warning { background: rgba(240,178,50,0.15); color: var(--yellow); }
 
 .rule-form {
     background: var(--bg-secondary);

@@ -99,6 +99,20 @@
                     </div>
                 </div>
 
+                <div class="config-section" style="margin-top:16px">
+                    <h3>VTube Studio</h3>
+                    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                        <span id="vtube-status-badge" class="status-badge offline">Desconectado</span>
+                        <span id="vtube-model" style="color:var(--text-muted);font-size:13px"></span>
+                        <button id="btn-vtube-connect" class="btn-sm-blurple">Conectar</button>
+                        <button id="btn-vtube-disconnect" class="btn-sm-danger" style="display:none">Desconectar</button>
+                        <button id="btn-vtube-test" class="btn-sm-blurple" title="Probar expresion happy">Test Expresion</button>
+                    </div>
+                    <p style="font-size:11px;color:var(--text-muted);margin-top:4px">
+                        Al conectar, VTube Studio mostrara un popup. Hace click en PERMITIR.
+                    </p>
+                </div>
+
                 <div class="toggles-section">
                     <h3>Control Rapido</h3>
                     <div class="toggles-inline">
@@ -159,6 +173,10 @@
                         <button class="btn-secondary" id="btn-message">
                             <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
                             Mensaje de Prueba
+                        </button>
+                        <button class="btn-secondary" id="btn-bulk" title="Genera eventos aleatorios para probar leaderboard">
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                            Simulacion Masiva
                         </button>
                     </div>
                 </div>
@@ -443,6 +461,9 @@
                             <select class="action-type input-discord">
                                 <option value="tts">TTS (Texto a Voz)</option>
                                 <option value="emoji">Lluvia de Emojis</option>
+                                <option value="sfx">Sonido (SFX)</option>
+                                <option value="vtube_expr">VTube Expresión</option>
+                                <option value="vtube_hotkey">VTube Hotkey</option>
                             </select>
                             <div class="action-config"></div>
                             <button class="btn-sm-danger action-remove">X</button>

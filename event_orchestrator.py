@@ -2,8 +2,10 @@ import time
 import logging
 import json
 import os
+import shutil
 import threading
 from collections import deque
+from points_manager import PointsManager
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +55,22 @@ class EventOrchestrator:
         self._pending_tts_settings = {}
         self._load_user_settings()
 
+        # Points system
+        self.points = PointsManager(os.path.dirname(os.path.abspath(__file__)))
+
+        # Welcome messages
+        self.welcome_enabled = True
+        self.welcome_template = "Bienvenido {user} al stream!"
+
+        # SFX sounds
+        self._sfx_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "sfx_config.json")
+        self.sfx_config = {}
+        self._sfx_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sfx")
+        self._load_sfx()
+
+        # Backup on startup
+        self._backup_on_startup()
+
     def set_ai_client(self, client):
         self.ai_client = client
 
@@ -98,6 +116,10 @@ class EventOrchestrator:
             self.overlay_bg = settings["overlay_bg"]
         if "overlay_debug" in settings:
             self.overlay_debug = settings["overlay_debug"]
+        if "welcome_enabled" in settings:
+            self.welcome_enabled = settings["welcome_enabled"]
+        if "welcome_template" in settings:
+            self.welcome_template = settings["welcome_template"]
 
         tts_keys = ["tts_engine", "tts_voice", "tts_voice_blend", "tts_speed", "tts_lang", "tts_pitch", "tts_volume", "kokoro_model"]
         self._pending_tts_settings = {k: settings[k] for k in tts_keys if k in settings}
@@ -143,6 +165,8 @@ class EventOrchestrator:
             "spam_dup_window": self.spam_dup_window,
             "overlay_bg": self.overlay_bg,
             "overlay_debug": self.overlay_debug,
+            "welcome_enabled": self.welcome_enabled,
+            "welcome_template": self.welcome_template,
             "tts_engine": status.get("engine", "kokoro"),
             "tts_voice": status.get("voice", ""),
             "tts_voice_blend": status.get("voice_blend", ""),
@@ -165,6 +189,92 @@ class EventOrchestrator:
             self.overlay_debug = debug
         self._save_user_settings()
 
+    # --- SFX ---
+    def _load_sfx(self):
+        try:
+            os.makedirs(os.path.dirname(self._sfx_path), exist_ok=True)
+            os.makedirs(self._sfx_dir, exist_ok=True)
+            if os.path.exists(self._sfx_path):
+                with open(self._sfx_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        self.sfx_config = data
+        except Exception as e:
+            logger.warning(f"Error cargando SFX: {e}")
+
+    def _save_sfx(self):
+        try:
+            os.makedirs(os.path.dirname(self._sfx_path), exist_ok=True)
+            with open(self._sfx_path, "w", encoding="utf-8") as f:
+                json.dump(self.sfx_config, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            logger.error(f"Error guardando SFX: {e}")
+
+    def get_sfx_config(self):
+        return dict(self.sfx_config)
+
+    def set_sfx(self, event_type, filename):
+        self.sfx_config[event_type] = filename
+        self._save_sfx()
+        self.log(f"SFX {event_type} -> {filename}")
+
+    def remove_sfx(self, event_type):
+        if event_type in self.sfx_config:
+            del self.sfx_config[event_type]
+            self._save_sfx()
+            self.log(f"SFX {event_type} removido")
+
+    def list_sfx_files(self):
+        try:
+            os.makedirs(self._sfx_dir, exist_ok=True)
+            return [f for f in os.listdir(self._sfx_dir) if f.endswith((".mp3", ".wav", ".ogg", ".m4a"))]
+        except Exception:
+            return []
+
+    # --- Backup ---
+    def _backup_on_startup(self):
+        try:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            backup_dir = os.path.join(base_dir, "backups", time.strftime("%Y-%m-%d"))
+            os.makedirs(backup_dir, exist_ok=True)
+            for fname in ["user_settings.json", "event_rules.json", "banned_words.json",
+                          "tts_presets.json", "config.json"]:
+                src = os.path.join(base_dir, fname)
+                if os.path.exists(src):
+                    dst = os.path.join(backup_dir, fname)
+                    if not os.path.exists(dst):
+                        shutil.copy2(src, dst)
+            # Limpiar backups viejos (>30 dias)
+            backups_root = os.path.join(base_dir, "backups")
+            if os.path.exists(backups_root):
+                now = time.time()
+                for d in os.listdir(backups_root):
+                    dpath = os.path.join(backups_root, d)
+                    if os.path.isdir(dpath) and (now - os.path.getmtime(dpath)) > 30 * 86400:
+                        shutil.rmtree(dpath)
+            logger.info("Backup de configuraciones creado")
+        except Exception as e:
+            logger.warning(f"Error en backup: {e}")
+
+    # --- Leaderboard / Points ---
+    def get_leaderboard(self, limit=10):
+        return self.points.get_top(limit)
+
+    def get_user_points(self, user):
+        return self.points.get(user or "")
+
+    def _save_welcome_to_settings(self):
+        with self._spam_lock:
+            pass  # no-op, _save_user_settings handles this
+
+    def set_welcome_config(self, enabled=None, template=None):
+        if enabled is not None:
+            self.welcome_enabled = enabled
+        if template is not None and template.strip():
+            self.welcome_template = template
+        self._save_user_settings()
+        self.log(f"Welcome config: {'ON' if self.welcome_enabled else 'OFF'} - {self.welcome_template}")
+
     def register_listener(self, name, callback):
         self.listeners[name] = callback
         logger.info(f"Listener registrado: {name}")
@@ -183,22 +293,33 @@ class EventOrchestrator:
         
         if event_type == "message":
             self._stats["messages"] += 1
+            self.points.add(user, 1)
         elif event_type == "gift":
             self._stats["gifts"] += 1
+            diamonds = event.get("diamond_value", 0)
+            self.points.add(user, max(1, diamonds))
         elif event_type == "like":
             self._stats["likes"] += 1
+            self.points.add(user, 1)
         elif event_type == "join":
             self._stats["joins"] += 1
+            if self.welcome_enabled and self.tts_client and self.tts_enabled:
+                welcome_msg = self.welcome_template.replace("{user}", user)
+                self._trigger_tts(welcome_msg)
         
         self.log(f"TikTok {event_type}: {user}")
         
         if event_type == "message":
+            self._trigger_sfx("message")
             self._process_message(event)
         elif event_type == "gift":
+            self._trigger_sfx("gift")
             self._process_gift(event)
         elif event_type == "like":
+            self._trigger_sfx("like")
             self.publish("overlay_alert", {"type": "like", "user": user, "count": event.get("count", 1)})
         elif event_type == "join":
+            self._trigger_sfx("join")
             self.publish("overlay_alert", {"type": "join", "user": user})
         
         self.publish("tiktok_event", event)
@@ -266,8 +387,26 @@ class EventOrchestrator:
             self.publish("tts_skip", {})
             self.log(f"Comando !skip por {user}")
         
+        elif cmd == "!puntos":
+            pts = self.points.get(user)
+            reply = f"Tienes {pts} puntos" + ("!" if pts > 1000 else ".")
+            self.publish("overlay_alert", {"type": "info", "user": user, "text": reply})
+            self.log(f"Comando !puntos por {user}: {pts}")
+        
+        elif cmd == "!top":
+            top = self.points.get_top(5)
+            if top:
+                lines = ["Top 5 puntos:"]
+                for i, entry in enumerate(top, 1):
+                    lines.append(f"{i}. {entry['user']} - {entry['points']}pts")
+                reply = " | ".join(lines)
+            else:
+                reply = "No hay puntos todavia. Participa en el chat!"
+            self.publish("overlay_alert", {"type": "info", "user": "Sistema", "text": reply})
+            self.log(f"Comando !top por {user}")
+        
         elif cmd == "!help":
-            help_text = "Comandos: !tts on/off, !ai on/off, !skip, !help"
+            help_text = "Comandos: !tts on/off, !ai on/off, !skip, !puntos, !top, !help"
             self.publish("overlay_alert", {"type": "info", "user": "Sistema", "text": help_text})
             self.log(f"Comando !help por {user}")
         
@@ -317,6 +456,20 @@ class EventOrchestrator:
                 emojis = action.get("emojis", "🎉")
                 count = action.get("count", 30)
                 self.publish("overlay_emoji", {"emojis": emojis, "count": count})
+            elif action_type == "sfx":
+                sfx_file = action.get("file", "")
+                if sfx_file:
+                    self.publish("play_sfx", {"file": sfx_file})
+            elif action_type == "vtube_expr":
+                expr = action.get("expression", "happy")
+                if self.vtube_client:
+                    self.vtube_client.trigger_expression(expr)
+                    self.log(f"VTube expresión: {expr}")
+            elif action_type == "vtube_hotkey":
+                hk = action.get("hotkey", "")
+                if hk and self.vtube_client:
+                    self.vtube_client.trigger_hotkey(hk)
+                    self.log(f"VTube hotkey: {hk}")
 
     def _execute_rule_actions(self, rule, user, gift_name, diamond_value):
         self._execute_actions(rule.get("actions", []), user, gift_name, diamond_value)
@@ -344,6 +497,11 @@ class EventOrchestrator:
         filename = self.tts_client.speak(text)
         if filename:
             self.publish("tts_audio", {"url": f"/audio/{filename}"})
+
+    def _trigger_sfx(self, event_type):
+        sfx_file = self.sfx_config.get(event_type)
+        if sfx_file:
+            self.publish("play_sfx", {"file": sfx_file})
 
     def toggle_tts(self):
         self.tts_enabled = not self.tts_enabled

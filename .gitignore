@@ -41,3 +41,16 @@ config.json
 
 # User settings persistidos
 user_settings.json
+
+# Points data
+data/points.json
+
+# SFX config
+data/sfx_config.json
+
+# Backups
+backups/
+
+# SFX audio files (keep directory structure)
+sfx/*
+!sfx/.gitkeep

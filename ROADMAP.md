@@ -56,14 +56,14 @@
 
 | # | Feature | Estado | Notas |
 |---|---|---|---|
-| 27 | **Leaderboard de viewers** | 🔲 | Top donadores/mensajeros en overlay. Comando `!top` |
-| 28 | **Sistema de puntos/coins** | 🔲 | Cada msg/gift/like da puntos. `!puntos`, se persisten en JSON |
-| 29 | **Sonidos de alerta (SFX)** | 🔲 | Reproducir `.mp3` personalizado por tipo de evento en el overlay |
+| 27 | **Leaderboard de viewers** | ✅ | Comando `!top`, endpoint `/api/leaderboard` |
+| 28 | **Sistema de puntos/coins** | ✅ | `points_manager.py`, `!puntos`, persiste en `data/points.json` |
+| 29 | **Sonidos de alerta (SFX)** | ✅ | `data/sfx_config.json`, overlay `playSfx()`, carpeta `sfx/` |
 | 30 | **Integración OBS WebSocket** | 🔲 | Cambiar escenas automáticamente por evento (gift grande → escena) |
 | 31 | **Custom CSS en overlay** | 🔲 | Textarea en panel → inyectar `<style>` en overlay |
-| 32 | **Mensajes de bienvenida** | 🔲 | TTS automático cuando alguien se une al live |
+| 32 | **Mensajes de bienvenida** | ✅ | TTS al unirse, template configurable `{user}` |
 | 33 | **Gestión de hotkeys** | 🔲 | Atajos de teclado configurables (Ctrl+T, etc.) |
-| 34 | **Backup automático** | 🔲 | Archivos JSON backupeados con timestamp cada día |
+| 34 | **Backup automático** | ✅ | `backups/YYYY-MM-DD/`, cleanup >30 días |
 
 ## Tier 2 — Calidad de vida
 
@@ -109,7 +109,8 @@
 | Batch 1: Seguridad + Estabilidad | 1–10, 12, 13 | ✅ |
 | Batch 2: UX/UI + Robustez | 14–24 | ✅ |
 | Batch 3: Arquitectura + Preview + Filtros | 25–26 | ✅ |
-| Batch 4: Tier 1 | 27–34 | 🔲 |
+| Batch 4: Tier 1 (Puntos + Leaderboard + SFX + Welcome + Backup) | 27–29, 32, 34 | ✅ |
+| Batch 5: Tier 1 (pendiente) | 30, 31, 33 | 🔲 |
 
 ---
 

@@ -130,6 +130,49 @@ class ControlPanelServer(SseFlaskServer):
             )
             return jsonify({"status": "ok"})
 
+        @self.app.route("/api/simulate_bulk", methods=["POST"])
+        @self._require_auth
+        def simulate_bulk():
+            import random
+            data = request.get_json(silent=True) or {}
+            count = min(int(data.get("count", 10)), 50)
+            names = ["Juan", "Maria", "Carlos", "Ana", "Luis", "Sofia", "Pedro", "Elena",
+                     "Diego", "Valeria", "Mateo", "Lucia", "Andres", "Paula", "Gabriel",
+                     "Carmen", "Rafael", "Isabel", "Fernando", "Gloria"]
+            gifts = ["Rosa", "Panda", "Dinosaurio", "Corazon", "Estrella", "Galaxia",
+                     "Universo", "Cohete", "Diamante", "Corona"]
+            diamonds_map = {"Rosa": 1, "Panda": 5, "Dinosaurio": 10, "Corazon": 5,
+                           "Estrella": 10, "Galaxia": 100, "Universo": 500,
+                           "Cohete": 200, "Diamante": 50, "Corona": 300}
+            msgs = ["hola!", "que tal?", "buen stream!", "me encanta!", "🔥🔥🔥",
+                    "jajaja", "vamos!", "gg", "que buen contenido", "sigue asi!"]
+            for _ in range(count):
+                user = random.choice(names)
+                r = random.random()
+                if r < 0.45:
+                    name = random.choice(gifts)
+                    self.orchestrator.handle_tiktok_event({
+                        "type": "gift", "user": user, "gift": name, "amount": 1,
+                        "diamond_value": diamonds_map.get(name, 1), "timestamp": time.time()
+                    })
+                elif r < 0.8:
+                    self.orchestrator.handle_tiktok_event({
+                        "type": "message", "user": user,
+                        "text": random.choice(msgs), "timestamp": time.time()
+                    })
+                elif r < 0.95:
+                    self.orchestrator.handle_tiktok_event({
+                        "type": "like", "user": user,
+                        "count": random.randint(1, 10), "timestamp": time.time()
+                    })
+                else:
+                    self.orchestrator.handle_tiktok_event({
+                        "type": "join", "user": user, "timestamp": time.time()
+                    })
+                time.sleep(0.01)
+            self.orchestrator.log(f"Simulacion masiva: {count} eventos generados")
+            return jsonify({"success": True, "events_generated": count})
+
         # --- API: TTS ---
         @self.app.route("/api/tts_status", methods=["GET"])
         @self._require_auth
@@ -449,6 +492,120 @@ class ControlPanelServer(SseFlaskServer):
             self.orchestrator._save_user_settings()
             self.orchestrator.log("Configuracion importada correctamente")
             return jsonify({"success": True, "errors": errors})
+
+        # --- API: Points / Leaderboard ---
+        @self.app.route("/api/points", methods=["GET"])
+        @self._require_auth
+        def points():
+            user = request.args.get("user", "")
+            return jsonify({"user": user, "points": self.orchestrator.get_user_points(user)})
+
+        @self.app.route("/api/leaderboard", methods=["GET"])
+        @self._require_auth
+        def leaderboard():
+            limit = int(request.args.get("limit", 10))
+            return jsonify(self.orchestrator.get_leaderboard(limit))
+
+        # --- API: Welcome Config ---
+        @self.app.route("/api/welcome_config", methods=["GET"])
+        @self._require_auth
+        def welcome_config_get():
+            return jsonify({
+                "enabled": self.orchestrator.welcome_enabled,
+                "template": self.orchestrator.welcome_template,
+            })
+
+        @self.app.route("/api/welcome_config", methods=["POST"])
+        @self._require_auth
+        def welcome_config_post():
+            data = request.get_json(silent=True) or {}
+            self.orchestrator.set_welcome_config(
+                enabled=data.get("enabled"),
+                template=data.get("template"),
+            )
+            return jsonify({"success": True})
+
+        # --- API: VTube Studio ---
+        @self.app.route("/api/vtube_status", methods=["GET"])
+        @self._require_auth
+        def vtube_status():
+            if self.orchestrator.vtube_client:
+                return jsonify(self.orchestrator.vtube_client.get_status())
+            return jsonify({"connected": False, "enabled": False})
+
+        @self.app.route("/api/vtube_connect", methods=["POST"])
+        @self._require_auth
+        def vtube_connect():
+            if self.orchestrator.vtube_client:
+                ok = self.orchestrator.vtube_client.connect()
+                return jsonify({"success": ok})
+            return jsonify({"success": False, "error": "VTube client no disponible"})
+
+        @self.app.route("/api/vtube_disconnect", methods=["POST"])
+        @self._require_auth
+        def vtube_disconnect():
+            if self.orchestrator.vtube_client:
+                self.orchestrator.vtube_client.disconnect()
+                return jsonify({"success": True})
+            return jsonify({"success": False})
+
+        @self.app.route("/api/vtube_expression", methods=["POST"])
+        @self._require_auth
+        def vtube_expression():
+            data = request.get_json(silent=True) or {}
+            expr = data.get("expression", "happy")
+            if self.orchestrator.vtube_client:
+                ok = self.orchestrator.vtube_client.trigger_expression(expr)
+                return jsonify({"success": ok, "expression": expr})
+            return jsonify({"success": False, "error": "VTube client no disponible"})
+
+        @self.app.route("/api/vtube_hotkey", methods=["POST"])
+        @self._require_auth
+        def vtube_hotkey():
+            data = request.get_json(silent=True) or {}
+            hk = data.get("hotkey", "")
+            if not hk:
+                return jsonify({"success": False, "error": "Falta nombre de hotkey"}), 400
+            if self.orchestrator.vtube_client:
+                ok = self.orchestrator.vtube_client.trigger_hotkey(hk)
+                return jsonify({"success": ok, "hotkey": hk})
+            return jsonify({"success": False, "error": "VTube client no disponible"})
+
+        # --- API: SFX ---
+        @self.app.route("/api/sfx_files", methods=["GET"])
+        @self._require_auth
+        def sfx_files():
+            return jsonify(self.orchestrator.list_sfx_files())
+
+        @self.app.route("/api/sfx_config", methods=["GET"])
+        @self._require_auth
+        def sfx_config_get():
+            return jsonify(self.orchestrator.get_sfx_config())
+
+        @self.app.route("/api/sfx_config", methods=["POST"])
+        @self._require_auth
+        def sfx_config_post():
+            data = request.get_json(silent=True) or {}
+            event_type = data.get("event", "")
+            filename = data.get("file", "")
+            if not event_type or not filename:
+                return jsonify({"success": False, "error": "Faltan event o file"}), 400
+            self.orchestrator.set_sfx(event_type, filename)
+            return jsonify({"success": True})
+
+        @self.app.route("/api/sfx_config", methods=["DELETE"])
+        @self._require_auth
+        def sfx_config_delete():
+            data = request.get_json(silent=True) or {}
+            event_type = data.get("event", "")
+            if not event_type:
+                return jsonify({"success": False, "error": "Falta event"}), 400
+            self.orchestrator.remove_sfx(event_type)
+            return jsonify({"success": True})
+
+        @self.app.route("/sfx/<path:filename>")
+        def serve_sfx(filename):
+            return send_from_directory(self.orchestrator._sfx_dir, filename)
 
         @self.app.route("/<path:filename>")
         def static_files(filename):

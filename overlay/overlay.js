@@ -8,6 +8,15 @@ ttsAudio.volume = 1.0;
 var ttsQueue = [];
 var ttsPlaying = false;
 
+// Reproductor de SFX
+function playSfx(file) {
+    var sfx = new Audio("/sfx/" + file);
+    sfx.volume = 0.7;
+    sfx.play().catch(function(e) {
+        console.warn("[Overlay] SFX error:", file, e.message);
+    });
+}
+
 function processTtsQueue() {
     if (ttsPlaying || ttsQueue.length === 0) return;
     ttsPlaying = true;
@@ -220,6 +229,9 @@ function sseOnMessage(e) {
         } else if (type === "tts_skip") {
             console.log("[Overlay] TTS skip");
             skipTts();
+        } else if (type === "play_sfx") {
+            console.log("[Overlay] SFX:", data.file);
+            playSfx(data.file);
         } else if (type === "overlay_emoji") {
             var raw = data.emojis || "🎉";
             console.log("[Overlay] Emoji event recibido:", raw, "count:", data.count);

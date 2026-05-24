@@ -6,6 +6,7 @@ import shutil
 import threading
 from collections import deque
 from points_manager import PointsManager
+from pipeline import ResponsePipeline, ResponseItem
 
 logger = logging.getLogger(__name__)
 
@@ -68,11 +69,16 @@ class EventOrchestrator:
         self._sfx_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sfx")
         self._load_sfx()
 
+        # Response pipeline (cola 2-etapas: gen -> TTS)
+        self.pipeline = ResponsePipeline()
+        self._pipeline_callbacks_wired = False
+
         # Backup on startup
         self._backup_on_startup()
 
     def set_ai_client(self, client):
         self.ai_client = client
+        self._wire_pipeline()
 
     def set_tts_client(self, client):
         self.tts_client = client
@@ -81,12 +87,67 @@ class EventOrchestrator:
             if self._pending_tts_settings:
                 self._apply_tts_settings(self._pending_tts_settings)
                 self._pending_tts_settings.clear()
+        self._wire_pipeline()
 
     def set_vtube_client(self, client):
         self.vtube_client = client
+        self._wire_pipeline()
 
     def set_tiktok_client(self, client):
         self.tiktok_client = client
+
+    def _wire_pipeline(self):
+        """Conecta el pipeline con los servicios disponibles."""
+        p = self.pipeline
+
+        # AI callback: generar respuesta
+        if self.ai_client and not p.ai_generate:
+            def ai_gen(text, user):
+                try:
+                    return self.ai_client.generate_reply(text, user)
+                except Exception as e:
+                    logger.error(f"Pipeline AI error: {e}")
+                    return None
+            p.ai_generate = ai_gen
+
+        # TTS callback: generar audio
+        if self.tts_client and not p.tts_speak:
+            def tts_gen(text):
+                if not self.tts_enabled:
+                    return None
+                try:
+                    self.publish("tts_speak", {"text": text})
+                    filename = self.tts_client.speak(text)
+                    if filename:
+                        self.publish("tts_audio", {"url": f"/audio/{filename}"})
+                    return filename
+                except Exception as e:
+                    logger.error(f"Pipeline TTS error: {e}")
+                    return None
+            p.tts_speak = tts_gen
+
+        # SFX callback
+        if not p.dispatch_sfx:
+            def _sfx(name):
+                if name:
+                    self.publish("play_sfx", {"file": name})
+            p.dispatch_sfx = _sfx
+
+        # Emotion callback (VTube) - solo para emociones explicitas, no "neutral"
+        if not p.dispatch_emotion:
+            def _emotion(expr):
+                if self.vtube_client and expr and expr != "neutral":
+                    self.vtube_client.trigger_expression(expr)
+            p.dispatch_emotion = _emotion
+
+        # Panel notify callback
+        if not p.on_change:
+            def _on_change(pipeline):
+                self.publish("pipeline_state", pipeline.get_state())
+            p.on_change = _on_change
+
+        if not p._running:
+            p.start()
 
     def _load_user_settings(self):
         try:
@@ -121,7 +182,7 @@ class EventOrchestrator:
         if "welcome_template" in settings:
             self.welcome_template = settings["welcome_template"]
 
-        tts_keys = ["tts_engine", "tts_voice", "tts_voice_blend", "tts_speed", "tts_lang", "tts_pitch", "tts_volume", "kokoro_model"]
+        tts_keys = ["tts_engine", "tts_voice", "tts_voice_blend", "tts_edge_voice", "tts_speed", "tts_lang", "tts_pitch", "tts_volume", "kokoro_model"]
         self._pending_tts_settings = {k: settings[k] for k in tts_keys if k in settings}
 
         if self.tts_client and self._pending_tts_settings:
@@ -142,6 +203,8 @@ class EventOrchestrator:
             t.set_voice(s["tts_voice"])
         if "tts_voice_blend" in s:
             t.set_voice_blend(s["tts_voice_blend"])
+        if "tts_edge_voice" in s:
+            t.set_edge_voice(s["tts_edge_voice"])
         if "tts_speed" in s:
             t.set_speed(s["tts_speed"])
         if "tts_lang" in s:
@@ -170,6 +233,7 @@ class EventOrchestrator:
             "tts_engine": status.get("engine", "kokoro"),
             "tts_voice": status.get("voice", ""),
             "tts_voice_blend": status.get("voice_blend", ""),
+            "tts_edge_voice": status.get("edge_voice", ""),
             "tts_speed": status.get("speed", 1.0),
             "tts_lang": status.get("lang", "es"),
             "tts_pitch": status.get("pitch", 0),
@@ -305,7 +369,9 @@ class EventOrchestrator:
             self._stats["joins"] += 1
             if self.welcome_enabled and self.tts_client and self.tts_enabled:
                 welcome_msg = self.welcome_template.replace("{user}", user)
-                self._trigger_tts(welcome_msg)
+                item = ResponseItem(user=user, trigger="join", text=welcome_msg, emotion="happy")
+                item.status = "queued"
+                self.pipeline.enqueue_tts(item)
         
         self.log(f"TikTok {event_type}: {user}")
         
@@ -344,11 +410,30 @@ class EventOrchestrator:
         
         if reply:
             self._stats["ai_replies"] += 1
-            self.log(f"AI respondió a {user}: {reply}")
+            self.log(f"AI respondio a {user}: {reply}")
+            # JSON estructurado: detectar si la IA devolvio formato pipeline
+            emotion, sfx = self._parse_ai_metadata(reply)
             self.publish("overlay_message", {"user": "Bot", "text": reply, "original_user": user})
-            self._trigger_tts(reply)
+            # Encolar en el pipeline 2-etapas
+            item = ResponseItem(user=user, trigger="chat", original_text=text,
+                              text=reply, emotion=emotion, sfx=sfx)
+            item.status = "queued"
+            self.pipeline.enqueue_tts(item)
         
         self.publish("overlay_message", {"user": user, "text": text})
+
+    def _parse_ai_metadata(self, reply):
+        """Extrae emotion/sfx de metadatos en respuesta AI (formato [emotion:happy][sfx:ding])."""
+        emotion = "neutral"
+        sfx = None
+        import re
+        em = re.search(r'\[emotion:(\w+)\]', reply)
+        if em:
+            emotion = em.group(1)
+        sm = re.search(r'\[sfx:(\w+)\]', reply)
+        if sm:
+            sfx = sm.group(1)
+        return emotion, sfx
 
     def _handle_command(self, text, user):
         parts = text.strip().lower().split(maxsplit=1)
@@ -384,6 +469,7 @@ class EventOrchestrator:
                 self.log(f"Comando !ai toggle por {user} -> {'ON' if state else 'OFF'}")
         
         elif cmd == "!skip":
+            self.pipeline.skip_current()
             self.publish("tts_skip", {})
             self.log(f"Comando !skip por {user}")
         
@@ -451,7 +537,11 @@ class EventOrchestrator:
                 voice_preset = action.get("voice_preset", "")
                 if voice_preset and self.tts_client:
                     self.load_preset(voice_preset)
-                self._trigger_tts(msg)
+                # Encolar en el pipeline 2-etapas
+                item = ResponseItem(user=user, trigger="gift", original_text=gift_name,
+                                  text=msg, emotion="happy")
+                item.status = "queued"
+                self.pipeline.enqueue_tts(item)
             elif action_type == "emoji":
                 emojis = action.get("emojis", "🎉")
                 count = action.get("count", 30)
@@ -540,6 +630,14 @@ class EventOrchestrator:
             return True
         return False
 
+    def set_tts_edge_voice(self, voice):
+        if self.tts_client:
+            self.tts_client.set_edge_voice(voice)
+            self.log(f"TTS edge voice cambiado a: {voice}")
+            self._save_user_settings()
+            return True
+        return False
+
     def set_tts_speed(self, speed):
         if self.tts_client:
             self.tts_client.set_speed(speed)
@@ -585,6 +683,9 @@ class EventOrchestrator:
         if self.tts_client:
             return self.tts_client.get_status()
         return {}
+
+    def get_pipeline_state(self):
+        return self.pipeline.get_state()
 
     def test_tts(self, text="Prueba de texto a voz"):
         if not self.tts_client:
@@ -881,6 +982,7 @@ class EventOrchestrator:
             "engine": status.get("engine", "kokoro"),
             "voice": status.get("voice", ""),
             "voice_blend": status.get("voice_blend", ""),
+            "edge_voice": status.get("edge_voice", ""),
             "speed": status.get("speed", 1.0),
             "lang": status.get("lang", "es"),
         }
@@ -902,6 +1004,8 @@ class EventOrchestrator:
                 self.tts_client.set_voice(p.get("voice", ""))
             self.tts_client.set_speed(p.get("speed", 1.0))
             self.tts_client.set_lang(p.get("lang", "es"))
+            if p.get("edge_voice"):
+                self.tts_client.set_edge_voice(p["edge_voice"])
         self.log(f"Preset cargado: {name}")
         self._save_user_settings()
         return True

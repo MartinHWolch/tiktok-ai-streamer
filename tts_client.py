@@ -26,6 +26,7 @@ class TTSClient:
         self.pitch = config.TTS_PITCH
         self.volume = config.TTS_VOLUME
         self.kokoro_model = config.KOKORO_MODEL
+        self.edge_voice = getattr(config, 'TTS_EDGE_VOICE', 'es-MX-DaliaNeural')
 
         self._kokoro = None
         self._kokoro_voices = []
@@ -138,6 +139,8 @@ class TTSClient:
             return self._speak_kokoro(text)
         elif engine == "piper" and piper:
             return self._speak_piper(text)
+        elif engine == "edge":
+            return self._speak_edge(text)
         else:
             return self._speak_gtts(text)
     
@@ -210,6 +213,32 @@ class TTSClient:
             logger.error(f"Error gTTS: {e}")
             return None
     
+    def _speak_edge(self, text):
+        try:
+            import edge_tts, asyncio
+            filename = f"tts_{int(time.time())}_{uuid.uuid4().hex}.mp3"
+            filepath = os.path.join(self.config.AUDIO_DIR, filename)
+
+            # Convertir sliders a formato SSML de Edge
+            rate = f"{(self.speed - 1.0) * 100:+.0f}%"
+            pitch_hz = f"{int(self.pitch * 5):+d}Hz"
+            volume_pct = f"{(self.volume - 1.0) * 100:+.0f}%"
+
+            async def _gen():
+                comm = edge_tts.Communicate(
+                    text, self.edge_voice,
+                    rate=rate, pitch=pitch_hz, volume=volume_pct
+                )
+                await comm.save(filepath)
+
+            asyncio.run(_gen())
+            logger.info(f"Edge TTS generado: {filepath} (rate={rate}, pitch={pitch_hz}, vol={volume_pct})")
+            self._cleanup_old_audio()
+            return filename
+        except Exception as e:
+            logger.error(f"Error Edge TTS: {e}")
+            return self._speak_gtts(text)
+
     def _apply_effects(self, samples, sample_rate):
         if self.pitch == 0 and self.volume == 1.0:
             return samples
@@ -276,7 +305,7 @@ class TTSClient:
             self._last_speak = 0
 
     def set_engine(self, engine):
-        if engine in ("kokoro", "piper", "gtts"):
+        if engine in ("kokoro", "piper", "gtts", "edge"):
             with self._state_lock:
                 self.engine = engine
             logger.info(f"TTS engine cambiado a: {engine}")
@@ -293,6 +322,11 @@ class TTSClient:
         with self._state_lock:
             self.voice_blend = blend_str
         logger.info(f"TTS voice blend cambiado a: {blend_str}")
+
+    def set_edge_voice(self, voice):
+        with self._state_lock:
+            self.edge_voice = voice
+        logger.info(f"TTS edge voice cambiado a: {voice}")
     
     def set_speed(self, speed):
         try:
@@ -375,6 +409,7 @@ class TTSClient:
             "kokoro_available": self._kokoro is not None,
             "piper_available": self._piper is not None,
             "kokoro_voices": self._kokoro_voices if self._kokoro else [],
+            "edge_voice": self.edge_voice,
         }
     
     def handle_event(self, event_type, data):

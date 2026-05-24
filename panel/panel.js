@@ -271,6 +271,10 @@ function updateEngineUI(engine) {
     kOpts.forEach(function(el) {
         el.classList.toggle('hidden', engine !== 'kokoro');
     });
+    var eOpts = document.querySelectorAll('.edge-opt');
+    eOpts.forEach(function(el) {
+        el.style.display = (engine === 'edge') ? '' : 'none';
+    });
 }
 
 function populateVoices(voices, selectedVoice) {
@@ -462,6 +466,14 @@ ttsBlend.addEventListener('change', async function() {
     }
 });
 
+var edgeVoiceSelect = document.getElementById('tts-edge-voice');
+if (edgeVoiceSelect) {
+    edgeVoiceSelect.addEventListener('change', async function() {
+        var res = await postJSON('/api/set_tts_edge_voice', { voice: edgeVoiceSelect.value });
+        if (res && res.success) addLog('TTS edge voice -> ' + edgeVoiceSelect.value);
+    });
+}
+
 ttsSpeed.addEventListener('input', function() { speedValueEl.textContent = parseFloat(ttsSpeed.value).toFixed(1); });
 ttsSpeed.addEventListener('change', async function() {
     var speed = parseFloat(ttsSpeed.value);
@@ -583,6 +595,7 @@ document.getElementById('btn-load-preset').addEventListener('click', async funct
         }
         if (s.speed !== undefined) { ttsSpeed.value = s.speed; speedValueEl.textContent = s.speed.toFixed(1); }
         if (s.lang) ttsLang.value = s.lang;
+        if (s.edge_voice && edgeVoiceSelect) edgeVoiceSelect.value = s.edge_voice;
         populateVoices(s.kokoro_voices, s.voice);
     }
 });
@@ -839,6 +852,8 @@ function sseOnMessage(e) {
         } else if (payload.type === 'overlay_message' && payload.data) {
             var isAI = payload.data.original_user ? true : false;
             addChatMsg(payload.data.user, payload.data.text, isAI);
+        } else if (payload.type === 'pipeline_state' && payload.data) {
+            renderPipeline(payload.data);
         }
     } catch(err) { console.error(err); }
 }
@@ -875,6 +890,7 @@ fetch('/api/tts_status')
         if (status.pitch !== undefined) { ttsPitch.value = status.pitch; pitchValueEl.textContent = parseInt(status.pitch); }
         if (status.volume !== undefined) { ttsVolume.value = status.volume; volumeValueEl.textContent = status.volume.toFixed(1); }
         if (status.kokoro_model) { kokoroModel.value = status.kokoro_model; kokoroModel.dataset.current = status.kokoro_model; }
+        if (status.edge_voice && edgeVoiceSelect) { edgeVoiceSelect.value = status.edge_voice; }
         if (status.voice_blend) {
             ttsBlend.value = status.voice_blend;
             toggleBlend.checked = true;
@@ -1560,6 +1576,54 @@ async function initPanel() {
     } catch (e) { console.error('Stats init failed:', e); }
 
     refreshStats();
+}
+
+// --- Pipeline Queue Visual ---
+
+var pipelineEl = document.getElementById('pipeline-queue');
+var pipelineHistoryEl = document.getElementById('pipeline-history');
+
+function renderPipeline(state) {
+    if (!pipelineEl) return;
+
+    var html = '';
+    var stIcon = { generating: '⏳', queued: '📝', playing: '🔊', done: '✅', error: '❌' };
+
+    // Currently playing
+    if (state.playing) {
+        var p = state.playing;
+        html += '<div class="pipeline-item playing">';
+        html += '<span class="pipeline-status">' + (stIcon[p.status] || '⬜') + '</span>';
+        html += '<span class="pipeline-user">' + escapeHtml(p.user) + '</span>';
+        html += '<span class="pipeline-text">' + escapeHtml(p.text) + '</span>';
+        if (p.emotion && p.emotion !== 'neutral') html += '<span class="pipeline-tag emotion">' + escapeHtml(p.emotion) + '</span>';
+        if (p.sfx) html += '<span class="pipeline-tag sfx">' + escapeHtml(p.sfx) + '</span>';
+        html += '</div>';
+    }
+
+    // TTS queue
+    (state.tts_queue || []).forEach(function(p) {
+        html += '<div class="pipeline-item queued">';
+        html += '<span class="pipeline-status">' + (stIcon[p.status] || '⬜') + '</span>';
+        html += '<span class="pipeline-user">' + escapeHtml(p.user) + '</span>';
+        html += '<span class="pipeline-text">' + escapeHtml(p.text) + '</span>';
+        if (p.emotion && p.emotion !== 'neutral') html += '<span class="pipeline-tag emotion">' + escapeHtml(p.emotion) + '</span>';
+        if (p.sfx) html += '<span class="pipeline-tag sfx">' + escapeHtml(p.sfx) + '</span>';
+        html += '</div>';
+    });
+
+    pipelineEl.innerHTML = html || '<div class="pipeline-empty">Cola vacia</div>';
+
+    // History
+    var histHtml = '';
+    (state.history || []).slice().reverse().forEach(function(p) {
+        histHtml += '<div class="pipeline-item done">';
+        histHtml += '<span class="pipeline-status">' + (stIcon[p.status] || '⬜') + '</span>';
+        histHtml += '<span class="pipeline-user">' + escapeHtml(p.user) + '</span>';
+        histHtml += '<span class="pipeline-text">' + escapeHtml(p.text) + '</span>';
+        histHtml += '</div>';
+    });
+    if (pipelineHistoryEl) pipelineHistoryEl.innerHTML = histHtml || '<div class="pipeline-empty">Sin historial</div>';
 }
 
 initPanel();

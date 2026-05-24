@@ -179,6 +179,11 @@ class ControlPanelServer(SseFlaskServer):
         def tts_status():
             return jsonify(self.orchestrator.get_tts_status())
 
+        @self.app.route("/api/pipeline_state", methods=["GET"])
+        @self._require_auth
+        def pipeline_state():
+            return jsonify(self.orchestrator.get_pipeline_state())
+
         @self.app.route("/api/set_tts_engine", methods=["POST"])
         @self._require_auth
         def set_tts_engine():
@@ -198,6 +203,13 @@ class ControlPanelServer(SseFlaskServer):
         def set_tts_voice_blend():
             data = request.get_json(silent=True) or {}
             success = self.orchestrator.set_tts_voice_blend(data.get("blend", ""))
+            return jsonify({"success": success, "status": self.orchestrator.get_tts_status()})
+
+        @self.app.route("/api/set_tts_edge_voice", methods=["POST"])
+        @self._require_auth
+        def set_tts_edge_voice():
+            data = request.get_json(silent=True) or {}
+            success = self.orchestrator.set_tts_edge_voice(data.get("voice", "es-MX-DaliaNeural"))
             return jsonify({"success": success, "status": self.orchestrator.get_tts_status()})
 
         @self.app.route("/api/set_tts_speed", methods=["POST"])

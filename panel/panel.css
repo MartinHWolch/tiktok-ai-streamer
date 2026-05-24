@@ -1297,3 +1297,58 @@ body.theme-midnight .form-group input[type="range"]::-webkit-slider-thumb { back
 .toast-undo:hover {
     background: rgba(88,101,242,0.1);
 }
+
+/* ===== Pipeline Queue ===== */
+.pipeline-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-bottom: 2px;
+}
+.pipeline-item.playing {
+    background: rgba(88,101,242,0.15);
+    border-left: 3px solid #5865f2;
+}
+.pipeline-item.queued {
+    background: rgba(255,255,255,0.03);
+    border-left: 3px solid #4e5058;
+}
+.pipeline-item.done {
+    background: rgba(35,165,90,0.08);
+    border-left: 3px solid #23a55a;
+    opacity: 0.7;
+}
+.pipeline-status { font-size: 14px; min-width: 20px; }
+.pipeline-user {
+    color: var(--text-muted);
+    min-width: 60px;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.pipeline-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-primary);
+}
+.pipeline-tag {
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.pipeline-tag.emotion { background: rgba(235,69,158,0.15); color: #eb459e; }
+.pipeline-tag.sfx { background: rgba(254,179,45,0.15); color: #feb32d; }
+.pipeline-empty {
+    color: var(--text-muted);
+    font-size: 12px;
+    text-align: center;
+    padding: 8px;
+}

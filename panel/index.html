@@ -196,6 +196,19 @@
                         <div class="chat-placeholder">Esperando mensajes...</div>
                     </div>
                 </div>
+
+                <div class="pipeline-section" style="margin-top:16px">
+                    <h3>Cola de Respuestas</h3>
+                    <div id="pipeline-queue" style="max-height:200px;overflow-y:auto">
+                        <div class="pipeline-empty">Cola vacia</div>
+                    </div>
+                    <details style="margin-top:8px">
+                        <summary style="cursor:pointer;color:var(--text-muted);font-size:12px">Historial</summary>
+                        <div id="pipeline-history" style="max-height:150px;overflow-y:auto;margin-top:4px">
+                            <div class="pipeline-empty">Sin historial</div>
+                        </div>
+                    </details>
+                </div>
             </section>
 
             <!-- TTS Config -->
@@ -207,6 +220,7 @@
                             <label for="tts-engine">Motor TTS</label>
                             <select id="tts-engine">
                                 <option value="kokoro">Kokoro ONNX</option>
+                                <option value="edge">Edge TTS</option>
                                 <option value="piper">Piper</option>
                                 <option value="gtts">gTTS</option>
                             </select>
@@ -250,6 +264,30 @@
                         </div>
                     </div>
 
+                    <div class="form-group edge-opt" style="display:none">
+                        <label for="tts-edge-voice">Voz Edge TTS</label>
+                        <select id="tts-edge-voice">
+                            <option value="es-MX-DaliaNeural">Dalia (MX) - Femenina</option>
+                            <option value="es-MX-JorgeNeural">Jorge (MX) - Masculina</option>
+                            <option value="es-AR-ElenaNeural">Elena (AR) - Femenina</option>
+                            <option value="es-AR-TomasNeural">Tomas (AR) - Masculina</option>
+                            <option value="es-CO-SalomeNeural">Salome (CO) - Femenina</option>
+                            <option value="es-CO-GonzaloNeural">Gonzalo (CO) - Masculina</option>
+                            <option value="es-ES-ElviraNeural">Elvira (ES) - Femenina</option>
+                            <option value="es-ES-AlvaroNeural">Alvaro (ES) - Masculina</option>
+                            <option value="es-CL-CatalinaNeural">Catalina (CL) - Femenina</option>
+                            <option value="es-CL-LorenzoNeural">Lorenzo (CL) - Masculina</option>
+                            <option value="es-PE-CamilaNeural">Camila (PE) - Femenina</option>
+                            <option value="es-PE-AlexNeural">Alex (PE) - Masculina</option>
+                            <option value="es-VE-PaolaNeural">Paola (VE) - Femenina</option>
+                            <option value="es-VE-SebastianNeural">Sebastian (VE) - Masculina</option>
+                            <option value="es-US-PalomaNeural">Paloma (US) - Femenina</option>
+                            <option value="es-US-AlonsoNeural">Alonso (US) - Masculina</option>
+                            <option value="es-HN-KarlaNeural">Karla (HN) - Femenina</option>
+                            <option value="es-HN-CarlosNeural">Carlos (HN) - Masculina</option>
+                        </select>
+                    </div>
+
                     <div class="form-group full-width kokoro-opt">
                         <div class="blend-header">
                             <label class="switch-small">
@@ -262,7 +300,7 @@
                         <small>Formula: voz1*0.5 + voz2*0.5</small>
                     </div>
 
-                    <div class="sliders-grid kokoro-opt">
+                    <div class="sliders-grid">
                         <div class="form-group">
                             <label>Velocidad <span id="speed-value">1.0</span>x</label>
                             <input type="range" id="tts-speed" min="0.5" max="2.0" step="0.1" value="1.0">

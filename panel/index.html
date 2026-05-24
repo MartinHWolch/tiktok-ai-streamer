@@ -106,7 +106,16 @@
                         <span id="vtube-model" style="color:var(--text-muted);font-size:13px"></span>
                         <button id="btn-vtube-connect" class="btn-sm-blurple">Conectar</button>
                         <button id="btn-vtube-disconnect" class="btn-sm-danger" style="display:none">Desconectar</button>
-                        <button id="btn-vtube-test" class="btn-sm-blurple" title="Probar expresion happy">Test Expresion</button>
+                    </div>
+                    <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                        <select id="vtube-expr-select" class="input-discord" style="width:160px;font-size:12px">
+                            <option value="">-- Expresion --</option>
+                        </select>
+                        <button id="btn-vtube-test-expr" class="btn-sm-blurple">Probar</button>
+                        <select id="vtube-hk-select" class="input-discord" style="width:160px;font-size:12px">
+                            <option value="">-- Hotkey --</option>
+                        </select>
+                        <button id="btn-vtube-test-hk" class="btn-sm-blurple">Probar</button>
                     </div>
                     <p style="font-size:11px;color:var(--text-muted);margin-top:4px">
                         Al conectar, VTube Studio mostrara un popup. Hace click en PERMITIR.

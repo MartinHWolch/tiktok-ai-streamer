@@ -656,9 +656,32 @@ function refreshVtsStatus() {
         if (s.connected && s.authenticated) {
             vtsStatusBadge.textContent = 'Conectado';
             vtsStatusBadge.className = 'status-badge online';
-            vtsModel.textContent = s.model ? 'Modelo: ' + s.model : '';
+            var info = s.model ? 'Modelo: ' + s.model : '';
+            if (s.expressions && s.expressions.length) info += ' | Expr: ' + s.expressions.join(', ');
+            vtsModel.textContent = info;
             document.getElementById('btn-vtube-connect').style.display = 'none';
             document.getElementById('btn-vtube-disconnect').style.display = '';
+
+            // Poblar dropdown de expresiones
+            var exprSel = document.getElementById('vtube-expr-select');
+            if (exprSel.options.length <= 1) {
+                var presets = ['happy','very_happy','angry','furious','surprised','shocked','sad','crying','wink','blush','neutral','laughing','scared','sleepy','smug','curious','tongue_out','focused'];
+                presets.forEach(function(p) {
+                    var o = document.createElement('option'); o.value = p; o.textContent = p + ' (preset)'; exprSel.appendChild(o);
+                });
+                (s.expressions || []).forEach(function(e) {
+                    if (presets.indexOf(e) === -1) {
+                        var o = document.createElement('option'); o.value = e; o.textContent = e + ' (modelo)'; exprSel.appendChild(o);
+                    }
+                });
+            }
+            // Poblar dropdown de hotkeys
+            var hkSel = document.getElementById('vtube-hk-select');
+            if (hkSel.options.length <= 1) {
+                (s.hotkeys || []).forEach(function(h) {
+                    var o = document.createElement('option'); o.value = h; o.textContent = h; hkSel.appendChild(o);
+                });
+            }
         } else if (s.connected) {
             vtsStatusBadge.textContent = 'Esperando auth...';
             vtsStatusBadge.className = 'status-badge warning';
@@ -692,13 +715,20 @@ document.getElementById('btn-vtube-disconnect').addEventListener('click', async 
     addLog('VTube Studio: desconectado');
 });
 
-document.getElementById('btn-vtube-test').addEventListener('click', async function() {
-    var res = await postJSON('/api/vtube_expression', { expression: 'happy' });
-    if (res && res.success) {
-        addLog('VTube Studio: expresion happy activada');
-    } else {
-        addLog('VTube Studio: no se pudo activar expresion');
-    }
+document.getElementById('btn-vtube-test-expr').addEventListener('click', async function() {
+    var expr = document.getElementById('vtube-expr-select').value;
+    if (!expr) { addLog('VTS: selecciona una expresion'); return; }
+    var res = await postJSON('/api/vtube_expression', { expression: expr });
+    if (res && res.success) addLog('VTS: expresion "' + expr + '" OK');
+    else addLog('VTS: fallo expresion "' + expr + '"');
+});
+
+document.getElementById('btn-vtube-test-hk').addEventListener('click', async function() {
+    var hk = document.getElementById('vtube-hk-select').value;
+    if (!hk) { addLog('VTS: selecciona un hotkey'); return; }
+    var res = await postJSON('/api/vtube_hotkey', { hotkey: hk });
+    if (res && res.success) addLog('VTS: hotkey "' + hk + '" OK');
+    else addLog('VTS: fallo hotkey "' + hk + '"');
 });
 
 refreshVtsStatus();
@@ -1115,25 +1145,53 @@ function renderRules(rules) {
             });
         });
     } else if (type === 'vtube_expr') {
-        div.innerHTML = '<div style="display:flex;gap:6px;flex:1">'
-            + '<input type="text" class="input-discord action-vtube-expr" placeholder="Nombre de expresion (ej: happy, angry, Fun)" value="' + escapeHtml(existingData.expression || 'happy') + '" style="flex:1" list="vtube-expr-list">'
-            + '<datalist id="vtube-expr-list"></datalist>'
+        div.innerHTML = '<div style="display:flex;gap:6px;flex:1;align-items:center">'
+            + '<select class="input-discord action-vtube-expr" style="flex:1"><option value="">-- Expresion --</option></select>'
+            + '<button type="button" class="btn-sm-blurple vtube-test-btn" title="Probar expresion">Test</button>'
             + '</div>';
+        var sel = div.querySelector('.action-vtube-expr');
+        var presets = ['happy','very_happy','angry','furious','surprised','shocked','sad','crying','wink','blush','neutral','laughing','scared','sleepy','smug','curious','tongue_out','focused'];
+        presets.forEach(function(p) {
+            var opt = document.createElement('option'); opt.value = p; opt.textContent = p + ' (preset)';
+            if (p === (existingData.expression || '')) opt.selected = true;
+            sel.appendChild(opt);
+        });
         fetch('/api/vtube_status').then(function(r) { return r.json(); }).then(function(s) {
-            var dl = div.querySelector('#vtube-expr-list');
             (s.expressions || []).forEach(function(e) {
-                var opt = document.createElement('option'); opt.value = e; dl.appendChild(opt);
+                if (presets.indexOf(e) === -1) {
+                    var opt = document.createElement('option'); opt.value = e; opt.textContent = e + ' (modelo)';
+                    if (e === (existingData.expression || '')) opt.selected = true;
+                    sel.appendChild(opt);
+                }
+            });
+        });
+        div.querySelector('.vtube-test-btn').addEventListener('click', function() {
+            var expr = sel.value;
+            if (!expr) { addLog('Selecciona una expresion primero'); return; }
+            postJSON('/api/vtube_expression', { expression: expr }).then(function(r) {
+                if (r && r.success) addLog('VTS: expresion "' + expr + '" OK');
+                else addLog('VTS: fallo expresion "' + expr + '"');
             });
         });
     } else if (type === 'vtube_hotkey') {
-        div.innerHTML = '<div style="display:flex;gap:6px;flex:1">'
-            + '<input type="text" class="input-discord action-vtube-hotkey" placeholder="Nombre del hotkey" value="' + escapeHtml(existingData.hotkey || '') + '" style="flex:1" list="vtube-hk-list">'
-            + '<datalist id="vtube-hk-list"></datalist>'
+        div.innerHTML = '<div style="display:flex;gap:6px;flex:1;align-items:center">'
+            + '<select class="input-discord action-vtube-hotkey" style="flex:1"><option value="">-- Hotkey --</option></select>'
+            + '<button type="button" class="btn-sm-blurple vtube-test-btn" title="Probar hotkey">Test</button>'
             + '</div>';
+        var hkSel = div.querySelector('.action-vtube-hotkey');
         fetch('/api/vtube_status').then(function(r) { return r.json(); }).then(function(s) {
-            var dl = div.querySelector('#vtube-hk-list');
             (s.hotkeys || []).forEach(function(h) {
-                var opt = document.createElement('option'); opt.value = h; dl.appendChild(opt);
+                var opt = document.createElement('option'); opt.value = h; opt.textContent = h;
+                if (h === (existingData.hotkey || '')) opt.selected = true;
+                hkSel.appendChild(opt);
+            });
+        });
+        div.querySelector('.vtube-test-btn').addEventListener('click', function() {
+            var hk = hkSel.value;
+            if (!hk) { addLog('Selecciona un hotkey primero'); return; }
+            postJSON('/api/vtube_hotkey', { hotkey: hk }).then(function(r) {
+                if (r && r.success) addLog('VTS: hotkey "' + hk + '" OK');
+                else addLog('VTS: fallo hotkey "' + hk + '"');
             });
         });
     } else {

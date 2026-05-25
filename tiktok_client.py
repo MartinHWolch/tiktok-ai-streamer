@@ -32,6 +32,7 @@ class TikTokClient:
         self._real_connected = False
         self._reconnect_attempts = 0
         self._reconnect_lock = threading.Lock()
+        self.simulation_speed = 1.0  # 1.0 = normal, <1 = mas rapido, >1 = mas lento
         
         self.target_username = getattr(config, "TIKTOK_USERNAME", "demo_user")
         
@@ -87,7 +88,8 @@ class TikTokClient:
 
     def _sim_loop(self):
         while self._sim_running and self._running:
-            time.sleep(self.config.SIMULATION_INTERVAL)
+            interval = self.config.SIMULATION_INTERVAL * self.simulation_speed
+            time.sleep(max(0.5, interval))
             if not self._sim_running or not self._running:
                 break
             self._emit_random_event()

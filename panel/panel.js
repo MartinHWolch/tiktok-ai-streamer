@@ -221,6 +221,20 @@ btnToggleSim.addEventListener('click', async function() {
     }
 });
 
+// Simulation speed slider
+var speedSlider = document.getElementById('sim-speed-slider');
+var speedLabel = document.getElementById('speed-label');
+if (speedSlider && speedLabel) {
+    speedSlider.addEventListener('input', function() {
+        speedLabel.textContent = parseFloat(speedSlider.value).toFixed(1) + 'x';
+    });
+    speedSlider.addEventListener('change', async function() {
+        var speed = parseFloat(speedSlider.value);
+        await postJSON('/api/simulation_speed', {speed: speed});
+        addLog('Velocidad simulacion -> ' + speed.toFixed(1) + 'x');
+    });
+}
+
 function updateModeUI(isSim) {
     if (isSim) {
         modeLabel.textContent = 'Simulacion';
@@ -854,6 +868,7 @@ function sseOnMessage(e) {
             addChatMsg(payload.data.user, payload.data.text, isAI);
         } else if (payload.type === 'pipeline_state' && payload.data) {
             renderPipeline(payload.data);
+            renderAiLog(payload.data);
         }
     } catch(err) { console.error(err); }
 }
@@ -1587,43 +1602,173 @@ function renderPipeline(state) {
     if (!pipelineEl) return;
 
     var html = '';
-    var stIcon = { generating: '⏳', queued: '📝', playing: '🔊', done: '✅', error: '❌' };
+    var stIcon = { received: '📥', generating: '⏳', generated: '✅', tts_queued: '📝', making_tts: '⏳', playback_queued: '📝', playing: '🔊', done: '✔️', error: '❌', skipped: '⏭️' };
 
-    // Currently playing
-    if (state.playing) {
-        var p = state.playing;
-        html += '<div class="pipeline-item playing">';
-        html += '<span class="pipeline-status">' + (stIcon[p.status] || '⬜') + '</span>';
-        html += '<span class="pipeline-user">' + escapeHtml(p.user) + '</span>';
-        html += '<span class="pipeline-text">' + escapeHtml(p.text) + '</span>';
-        if (p.emotion && p.emotion !== 'neutral') html += '<span class="pipeline-tag emotion">' + escapeHtml(p.emotion) + '</span>';
-        if (p.sfx) html += '<span class="pipeline-tag sfx">' + escapeHtml(p.sfx) + '</span>';
-        html += '</div>';
+    // --- Seccion: Recibidos / Generando IA ---
+    html += '<div class="pipeline-section-title">📥 Entrantes</div>';
+    var incomingHas = false;
+
+    if (state.generating) {
+        incomingHas = true;
+        html += renderPipelineItem(state.generating, stIcon, 'playing');
     }
-
-    // TTS queue
-    (state.tts_queue || []).forEach(function(p) {
-        html += '<div class="pipeline-item queued">';
-        html += '<span class="pipeline-status">' + (stIcon[p.status] || '⬜') + '</span>';
-        html += '<span class="pipeline-user">' + escapeHtml(p.user) + '</span>';
-        html += '<span class="pipeline-text">' + escapeHtml(p.text) + '</span>';
-        if (p.emotion && p.emotion !== 'neutral') html += '<span class="pipeline-tag emotion">' + escapeHtml(p.emotion) + '</span>';
-        if (p.sfx) html += '<span class="pipeline-tag sfx">' + escapeHtml(p.sfx) + '</span>';
-        html += '</div>';
+    (state.incoming_queue || []).forEach(function(p) {
+        incomingHas = true;
+        html += renderPipelineItem(p, stIcon, 'queued');
     });
+    if (!incomingHas) html += '<div class="pipeline-empty">Sin mensajes entrantes</div>';
 
-    pipelineEl.innerHTML = html || '<div class="pipeline-empty">Cola vacia</div>';
+    // --- Seccion: Generados / Esperando TTS ---
+    html += '<div class="pipeline-section-title">⚙️ Generados</div>';
+    var genHas = false;
 
-    // History
+    if (state.making_tts) {
+        genHas = true;
+        html += renderPipelineItem(state.making_tts, stIcon, 'playing');
+    }
+    (state.generated_queue || []).forEach(function(p) {
+        genHas = true;
+        html += renderPipelineItem(p, stIcon, 'queued');
+    });
+    if (!genHas) html += '<div class="pipeline-empty">Sin respuestas generadas</div>';
+
+    // --- Seccion: Reproduciendo ---
+    html += '<div class="pipeline-section-title">🎤 Reproduciendo</div>';
+    var playHas = false;
+
+    if (state.playing) {
+        playHas = true;
+        html += renderPipelineItem(state.playing, stIcon, 'playing');
+    }
+    (state.playback_queue || []).forEach(function(p) {
+        playHas = true;
+        html += renderPipelineItem(p, stIcon, 'queued');
+    });
+    if (!playHas) html += '<div class="pipeline-empty">Sin reproduccion</div>';
+
+    pipelineEl.innerHTML = html;
+
+    // --- Historial ---
     var histHtml = '';
     (state.history || []).slice().reverse().forEach(function(p) {
         histHtml += '<div class="pipeline-item done">';
         histHtml += '<span class="pipeline-status">' + (stIcon[p.status] || '⬜') + '</span>';
         histHtml += '<span class="pipeline-user">' + escapeHtml(p.user) + '</span>';
         histHtml += '<span class="pipeline-text">' + escapeHtml(p.text) + '</span>';
+        var wait = '';
+        if (p.queued_at && p.played_at) {
+            var secs = (p.played_at - p.queued_at).toFixed(1);
+            wait = ' <span style="color:var(--text-muted);font-size:10px">(espera ' + secs + 's)</span>';
+        }
+        if (p.played_at) histHtml += '<span class="pipeline-time">' + formatTimeAgo(p.played_at) + wait + '</span>';
+        else if (p.timestamp) histHtml += '<span class="pipeline-time">' + formatTimeAgo(p.timestamp) + '</span>';
         histHtml += '</div>';
     });
     if (pipelineHistoryEl) pipelineHistoryEl.innerHTML = histHtml || '<div class="pipeline-empty">Sin historial</div>';
 }
 
-initPanel();
+function renderPipelineItem(p, stIcon, cssClass) {
+    var h = '<div class="pipeline-item ' + cssClass + '">';
+    h += '<span class="pipeline-status">' + (stIcon[p.status] || '⬜') + '</span>';
+    h += '<span class="pipeline-user">' + escapeHtml(p.user) + '</span>';
+    h += '<span class="pipeline-text">' + escapeHtml(p.text || (p.status === 'generating' ? 'Pensando...' : '')) + '</span>';
+    if (p.emotion && p.emotion !== 'neutral') h += '<span class="pipeline-tag emotion">' + escapeHtml(p.emotion) + '</span>';
+    if (p.sfx) h += '<span class="pipeline-tag sfx">' + escapeHtml(p.sfx) + '</span>';
+    if (p.played_at) h += '<span class="pipeline-time">' + formatTimeAgo(p.played_at) + '</span>';
+    else if (p.queued_at) h += '<span class="pipeline-time">' + formatTimeAgo(p.queued_at) + '</span>';
+    else if (p.timestamp) h += '<span class="pipeline-time">' + formatTimeAgo(p.timestamp) + '</span>';
+    h += '</div>';
+    return h;
+}
+
+function formatTimeAgo(ts) {
+    var diff = (Date.now() / 1000) - ts;
+    if (diff < 5) return 'ahora';
+    if (diff < 60) return Math.floor(diff) + 's';
+    return Math.floor(diff / 60) + 'm' + Math.floor(diff % 60) + 's';
+}
+
+// --- AI Log ---
+
+var aiLogIncomingEl = document.getElementById('ai-log-incoming');
+var aiLogGeneratedEl = document.getElementById('ai-log-generated');
+var aiLogPlaybackEl = document.getElementById('ai-log-playback');
+
+function renderAiLog(state) {
+    if (!aiLogIncomingEl || !aiLogGeneratedEl || !aiLogPlaybackEl) return;
+
+    var statusClass = {
+        received: '', generating: '', generated: 'generated',
+        tts_queued: 'generated', making_tts: 'generated',
+        playback_queued: 'played', playing: 'played', done: 'played', error: 'error', skipped: 'error'
+    };
+    var statusLabel = {
+        received: 'Recibido', generating: 'Generando', generated: 'Generado',
+        tts_queued: 'TTS Encolado', making_tts: 'Generando TTS',
+        playback_queued: 'Esperando reproduccion', playing: 'Reproduciendo', done: 'Completado', error: 'Error', skipped: 'Saltado'
+    };
+
+    function renderItem(p, extraMeta) {
+        var cls = statusClass[p.status] || '';
+        var h = '<div class="ai-log-item ' + cls + '">';
+        h += '<div class="log-header">';
+        h += '<span class="log-user">' + escapeHtml(p.user) + '</span>';
+        var ts = p.played_at || p.tts_at || p.generated_at || p.received_at || 0;
+        h += '<span class="log-time">' + formatTimeAgo(ts) + '</span>';
+        h += '</div>';
+        h += '<div class="log-text">' + escapeHtml(p.text || p.original_text || 'Sin texto') + '</div>';
+        h += '<div class="log-meta">';
+        h += '<span>' + (statusLabel[p.status] || p.status) + '</span>';
+        if (p.emotion && p.emotion !== 'neutral') h += '<span>Emocion: ' + escapeHtml(p.emotion) + '</span>';
+        if (extraMeta) h += extraMeta;
+        h += '</div>';
+        h += '</div>';
+        return h;
+    }
+
+    // --- INCOMING: cola activa + historial ---
+    var incomingHtml = '';
+    // Cola activa
+    (state.generating ? [state.generating] : []).forEach(function(p) {
+        incomingHtml += renderItem(p, '<span style="color:#f23f42">Generando IA...</span>');
+    });
+    (state.incoming_queue || []).forEach(function(p) {
+        incomingHtml += renderItem(p);
+    });
+    // Historial
+    (state.incoming_log || []).slice().reverse().forEach(function(p) {
+        incomingHtml += renderItem(p);
+    });
+    aiLogIncomingEl.innerHTML = incomingHtml || '<div class="ai-log-empty">Sin mensajes entrantes</div>';
+
+    // --- GENERATED: cola activa + historial ---
+    var generatedHtml = '';
+    (state.making_tts ? [state.making_tts] : []).forEach(function(p) {
+        generatedHtml += renderItem(p, '<span style="color:#f23f42">Generando audio...</span>');
+    });
+    (state.generated_queue || []).forEach(function(p) {
+        generatedHtml += renderItem(p);
+    });
+    (state.generated_log || []).slice().reverse().forEach(function(p) {
+        generatedHtml += renderItem(p);
+    });
+    aiLogGeneratedEl.innerHTML = generatedHtml || '<div class="ai-log-empty">Sin respuestas generadas</div>';
+
+    // --- PLAYBACK: cola activa + historial ---
+    var playbackHtml = '';
+    (state.playing ? [state.playing] : []).forEach(function(p) {
+        playbackHtml += renderItem(p, '<span style="color:#23a55a">Reproduciendo ahora</span>');
+    });
+    (state.playback_queue || []).forEach(function(p) {
+        playbackHtml += renderItem(p);
+    });
+    (state.playback_log || []).slice().reverse().forEach(function(p) {
+        var extra = '';
+        if (p.received_at && p.played_at) {
+            var total = (p.played_at - p.received_at).toFixed(1);
+            extra = '<span>Tiempo total: ' + total + 's</span>';
+        }
+        playbackHtml += renderItem(p, extra);
+    });
+    aiLogPlaybackEl.innerHTML = playbackHtml || '<div class="ai-log-empty">Sin reproducciones</div>';
+}

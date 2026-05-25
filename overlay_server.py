@@ -1,6 +1,6 @@
 import json
 import logging
-from flask import send_from_directory, Response
+from flask import send_from_directory, Response, request, jsonify
 from sse_server import SseFlaskServer
 
 logger = logging.getLogger(__name__)
@@ -23,6 +23,33 @@ class OverlayServer(SseFlaskServer):
         @self.app.route("/audio/<path:filename>")
         def audio_files(filename):
             return send_from_directory(self.config.AUDIO_DIR, filename)
+
+        @self.app.route("/api/vtube_mouth", methods=["POST"])
+        def vtube_mouth():
+            data = request.get_json(silent=True) or {}
+            open_val = float(data.get("open", 0))
+            if self.orchestrator.vtube_client:
+                ok = self.orchestrator.vtube_client._inject_params(
+                    {"MouthOpen": open_val, "MouthSmile": 0.02}, silent=True
+                )
+                return jsonify({"success": ok, "open": open_val})
+            return jsonify({"success": False})
+
+        @self.app.route("/api/playback_started", methods=["POST"])
+        def playback_started():
+            data = request.get_json(silent=True) or {}
+            item_id = data.get("item_id", "")
+            if item_id:
+                self.orchestrator.pipeline.mark_playback_started(item_id)
+            return jsonify({"success": True})
+
+        @self.app.route("/api/playback_done", methods=["POST"])
+        def playback_done():
+            data = request.get_json(silent=True) or {}
+            item_id = data.get("item_id", "")
+            if item_id:
+                self.orchestrator.pipeline.mark_playback_done(item_id)
+            return jsonify({"success": True})
 
         @self.app.route("/stream")
         def stream():

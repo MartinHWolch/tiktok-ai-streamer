@@ -6,7 +6,7 @@ import shutil
 import threading
 from collections import deque
 from points_manager import PointsManager
-from pipeline import ResponsePipeline, ResponseItem
+from pipeline import ResponsePipeline
 
 logger = logging.getLogger(__name__)
 
@@ -100,11 +100,18 @@ class EventOrchestrator:
         """Conecta el pipeline con los servicios disponibles."""
         p = self.pipeline
 
-        # AI callback: generar respuesta
+        # AI callback: generar respuesta estructurada
         if self.ai_client and not p.ai_generate:
             def ai_gen(text, user):
                 try:
-                    return self.ai_client.generate_reply(text, user)
+                    reply = self.ai_client.generate_reply(text, user)
+                    if not reply:
+                        return None
+                    self._stats["ai_replies"] += 1
+                    self.log(f"AI respondio a {user}: {reply}")
+                    emotion, sfx = self._parse_ai_metadata(reply)
+                    self.publish("overlay_message", {"user": "Bot", "text": reply, "original_user": user})
+                    return {"text": reply, "emotion": emotion, "sfx": sfx}
                 except Exception as e:
                     logger.error(f"Pipeline AI error: {e}")
                     return None
@@ -112,14 +119,15 @@ class EventOrchestrator:
 
         # TTS callback: generar audio
         if self.tts_client and not p.tts_speak:
-            def tts_gen(text):
-                if not self.tts_enabled:
-                    return None
+            def tts_gen(item):
                 try:
-                    self.publish("tts_speak", {"text": text})
-                    filename = self.tts_client.speak(text)
+                    self.publish("tts_speak", {"text": item.text})
+                    filename = self.tts_client.speak(item.text)
                     if filename:
-                        self.publish("tts_audio", {"url": f"/audio/{filename}"})
+                        self.publish("tts_audio", {"url": f"/audio/{filename}", "item_id": item.id})
+                        logger.info(f"Pipeline TTS: {filename}")
+                    else:
+                        logger.warning("Pipeline TTS: speak() devolvio None")
                     return filename
                 except Exception as e:
                     logger.error(f"Pipeline TTS error: {e}")
@@ -139,6 +147,18 @@ class EventOrchestrator:
                 if self.vtube_client and expr and expr != "neutral":
                     self.vtube_client.trigger_expression(expr)
             p.dispatch_emotion = _emotion
+
+        # Mouth sync: abrir/cerrar boca del avatar con el TTS
+        if not p.mouth_open_fn:
+            def mouth_open():
+                if self.vtube_client:
+                    self.vtube_client._inject_params({"MouthOpen": 0.8, "MouthSmile": 0.1}, silent=True)
+            p.mouth_open_fn = mouth_open
+        if not p.mouth_close_fn:
+            def mouth_close():
+                if self.vtube_client:
+                    self.vtube_client._inject_params({"MouthOpen": 0.0, "MouthSmile": 0.0}, silent=True)
+            p.mouth_close_fn = mouth_close
 
         # Panel notify callback
         if not p.on_change:
@@ -367,11 +387,10 @@ class EventOrchestrator:
             self.points.add(user, 1)
         elif event_type == "join":
             self._stats["joins"] += 1
-            if self.welcome_enabled and self.tts_client and self.tts_enabled:
+            if self.welcome_enabled and self.tts_enabled:
                 welcome_msg = self.welcome_template.replace("{user}", user)
-                item = ResponseItem(user=user, trigger="join", text=welcome_msg, emotion="happy")
-                item.status = "queued"
-                self.pipeline.enqueue_tts(item)
+                # Saltar IA: encolar directo a generated para TTS
+                self.pipeline.enqueue_direct_tts(user=user, trigger="join", text=welcome_msg, emotion="happy")
         
         self.log(f"TikTok {event_type}: {user}")
         
@@ -401,26 +420,10 @@ class EventOrchestrator:
             self._handle_command(text, user)
             return
         
-        reply = None
-        if self.ai_enabled and self.ai_client:
-            try:
-                reply = self.ai_client.generate_reply(text, user)
-            except Exception as e:
-                logger.error(f"AI error: {e}")
-        
-        if reply:
-            self._stats["ai_replies"] += 1
-            self.log(f"AI respondio a {user}: {reply}")
-            # JSON estructurado: detectar si la IA devolvio formato pipeline
-            emotion, sfx = self._parse_ai_metadata(reply)
-            self.publish("overlay_message", {"user": "Bot", "text": reply, "original_user": user})
-            # Encolar en el pipeline 2-etapas
-            item = ResponseItem(user=user, trigger="chat", original_text=text,
-                              text=reply, emotion=emotion, sfx=sfx)
-            item.status = "queued"
-            self.pipeline.enqueue_tts(item)
-        
         self.publish("overlay_message", {"user": user, "text": text})
+
+        # Etapa 1: encolar mensaje entrante para que la IA genere respuesta
+        self.pipeline.receive_message(user=user, trigger="chat", original_text=text)
 
     def _parse_ai_metadata(self, reply):
         """Extrae emotion/sfx de metadatos en respuesta AI (formato [emotion:happy][sfx:ding])."""
@@ -537,11 +540,8 @@ class EventOrchestrator:
                 voice_preset = action.get("voice_preset", "")
                 if voice_preset and self.tts_client:
                     self.load_preset(voice_preset)
-                # Encolar en el pipeline 2-etapas
-                item = ResponseItem(user=user, trigger="gift", original_text=gift_name,
-                                  text=msg, emotion="happy")
-                item.status = "queued"
-                self.pipeline.enqueue_tts(item)
+                # Saltar IA: encolar directo a generated para TTS
+                self.pipeline.enqueue_direct_tts(user=user, trigger="gift", text=msg, emotion="happy")
             elif action_type == "emoji":
                 emojis = action.get("emojis", "🎉")
                 count = action.get("count", 30)
@@ -741,6 +741,11 @@ class EventOrchestrator:
             self.log(f"TikTok modo: {'simulación' if state else 'real'}")
             return state
         return True
+
+    def set_simulation_speed(self, speed):
+        if self.tiktok_client:
+            self.tiktok_client.simulation_speed = max(0.1, min(10.0, speed))
+            self.log(f"Velocidad simulación: {self.tiktok_client.simulation_speed}x")
 
     def simulate_gift(self, user="Admin", gift="TestGift"):
         self.handle_tiktok_event({

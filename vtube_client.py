@@ -28,6 +28,7 @@ class VTubeStudioClient:
         self._params = []
         self._enabled = True
         self._running = False
+        self._last_mouth_log = 0  # log silencioso cada 2s
         self.host = getattr(config, 'VTS_HOST', VTS_DEFAULT_HOST)
         self.port = getattr(config, 'VTS_PORT', VTS_DEFAULT_PORT)
 
@@ -48,63 +49,82 @@ class VTubeStudioClient:
             except: pass
 
     def _ws_loop(self):
-        try:
-            url = f"ws://{self.host}:{self.port}"
-            logger.info(f"VTS conectando a {url}...")
-            self._ws = websocket.create_connection(url, timeout=5)
-            self._connected = True
-            logger.info("VTS WebSocket conectado")
+        while self._running:
+            try:
+                url = f"ws://{self.host}:{self.port}"
+                logger.info(f"VTS conectando a {url}...")
+                self._ws = websocket.create_connection(url, timeout=5)
+                self._connected = True
+                logger.info("VTS WebSocket conectado")
 
-            # Recibir mensajes iniciales
-            self._ws.settimeout(1)
-            for _ in range(5):
-                try:
-                    raw = self._ws.recv()
-                    if raw:
-                        data = json.loads(raw)
-                        logger.info(f"VTS <<< {data.get('messageType')}")
-                except websocket.WebSocketTimeoutException:
+                # Recibir mensajes iniciales
+                self._ws.settimeout(1)
+                for _ in range(5):
+                    try:
+                        raw = self._ws.recv()
+                        if raw:
+                            data = json.loads(raw)
+                            logger.info(f"VTS <<< {data.get('messageType')}")
+                    except websocket.WebSocketTimeoutException:
+                        break
+
+                # Verificar estado del API
+                logger.info("VTS: Verificando estado...")
+                resp = self._request("APIStateRequest")
+                if resp and resp.get("data", {}).get("active"):
+                    logger.info("VTS: API activa")
+                else:
+                    logger.warning("VTS: API no activa. Asegurate de activar Plugin API en VTube Studio")
                     break
 
-            # Verificar estado del API
-            logger.info("VTS: Verificando estado...")
-            resp = self._request("APIStateRequest")
-            if resp and resp.get("data", {}).get("active"):
-                logger.info("VTS: API activa")
-            else:
-                logger.warning("VTS: API no activa. Asegurate de activar Plugin API en VTube Studio")
+                # Autenticar
+                self._do_auth()
 
-            # Autenticar
-            self._do_auth()
-
-            # Loop recepcion eventos async
-            while self._running and self._connected:
-                try:
-                    self._ws.settimeout(1)
-                    raw = self._ws.recv()
-                    if raw:
-                        data = json.loads(raw)
-                        mt = data.get("messageType", "")
-                        if mt not in ("APIStateResponse",):
-                            logger.debug(f"VTS event: {mt}")
-                except websocket.WebSocketTimeoutException:
-                    continue
-                except Exception as e:
-                    if self._running:
-                        logger.error(f"VTS recv: {e}")
+                if not self._authenticated:
                     break
-        except Exception as e:
-            logger.error(f"VTS connection error: {e}")
-        finally:
-            self._connected = False
-            self._authenticated = False
-            logger.info("VTS desconectado")
+
+                # Loop recepcion eventos async
+                while self._running and self._connected:
+                    try:
+                        self._ws.settimeout(1)
+                        raw = self._ws.recv()
+                        if raw:
+                            data = json.loads(raw)
+                            mt = data.get("messageType", "")
+                            if mt not in ("APIStateResponse",):
+                                logger.debug(f"VTS event: {mt}")
+                    except websocket.WebSocketTimeoutException:
+                        continue
+                    except Exception as e:
+                        if self._running:
+                            logger.error(f"VTS recv: {e}")
+                        break
+            except websocket.WebSocketException as e:
+                if self._running:
+                    logger.warning(f"VTS connection: {e}")
+            except Exception as e:
+                if self._running:
+                    logger.error(f"VTS connection error: {e}")
+            finally:
+                self._connected = False
+                self._authenticated = False
+                self._params = []
+                if self._ws:
+                    try: self._ws.close()
+                    except: pass
+                self._ws = None
+                if self._running:
+                    logger.info("VTS desconectado, reconectando en 3s...")
+                    time.sleep(3)
 
     def _request(self, message_type, data=None):
-        """Envía request y recibe respuesta sincrona."""
+        """Envia request y recibe respuesta sincrona."""
         if not self._ws:
             return None
         try:
+            if not self._ws.connected:
+                self._on_disconnect()
+                return None
             rid = f"req-{int(time.time()*1000)}"
             msg = {
                 "apiName": "VTubeStudioPublicAPI",
@@ -120,7 +140,11 @@ class VTubeStudioClient:
         except websocket.WebSocketTimeoutException:
             return None
         except Exception as e:
-            logger.error(f"VTS request error ({message_type}): {e}")
+            msg_str = str(e)
+            if "closed" in msg_str.lower():
+                self._on_disconnect()
+            else:
+                logger.error(f"VTS request error ({message_type}): {e}")
             return None
 
     def _do_auth(self):
@@ -272,10 +296,9 @@ class VTubeStudioClient:
         except: pass
         return []
 
-    def _inject_params(self, params_dict):
-        """Inyecta valores de parametros al modelo."""
+    def _inject_params(self, params_dict, silent=False):
+        """Inyecta valores de parametros al modelo. silent=True no loguea."""
         if not self._params:
-            logger.warning("[VTube] No se conocen los parametros del modelo. Reconecta VTS.")
             return False
         avail = set(self._params)
         filtered = []
@@ -286,13 +309,15 @@ class VTubeStudioClient:
             else:
                 skipped.append(name)
         if not filtered:
-            logger.warning(f"[VTube] Ningun parametro valido para el modelo '{self._current_model}'. "
-                          f"Ignorados: {skipped}. Parametros del modelo: {self._params[:15]}")
+            if not silent:
+                logger.warning(f"[VTube] Ningun parametro valido para el modelo '{self._current_model}'. "
+                              f"Ignorados: {skipped}. Parametros del modelo: {self._params[:15]}")
             return False
-        if skipped:
-            logger.info(f"[VTube] Inyectando {list([f['id'] for f in filtered])}, ignorados: {skipped}")
-        else:
-            logger.info(f"[VTube] Inyectando params: {list(params_dict.keys())}")
+        if not silent:
+            if skipped:
+                logger.info(f"[VTube] Inyectando {list([f['id'] for f in filtered])}, ignorados: {skipped}")
+            else:
+                logger.info(f"[VTube] Inyectando params: {list(params_dict.keys())}")
         resp = self._request("InjectParameterDataRequest", {
             "faceFound": True,
             "mode": "set",
@@ -301,11 +326,18 @@ class VTubeStudioClient:
         if resp:
             mt = resp.get("messageType", "?")
             if mt == "InjectParameterDataResponse":
+                if silent:
+                    now = time.time()
+                    if now - self._last_mouth_log > 2:
+                        logger.debug("[VTube] Boca sync OK")
+                        self._last_mouth_log = now
                 return True
-            err_data = resp.get("data", {})
-            logger.warning(f"[VTube] Injection: {mt} - {err_data.get('message', err_data.get('errorID', '?'))}")
+            if not silent:
+                err_data = resp.get("data", {})
+                logger.warning(f"[VTube] Injection: {mt} - {err_data.get('message', err_data.get('errorID', '?'))}")
             return False
-        logger.warning("[VTube] Injection: sin respuesta del servidor")
+        if not silent:
+            logger.warning("[VTube] Injection: sin respuesta del servidor")
         return False
 
     def trigger_expression(self, expression):

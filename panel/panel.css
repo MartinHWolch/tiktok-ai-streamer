@@ -1346,9 +1346,99 @@ body.theme-midnight .form-group input[type="range"]::-webkit-slider-thumb { back
 }
 .pipeline-tag.emotion { background: rgba(235,69,158,0.15); color: #eb459e; }
 .pipeline-tag.sfx { background: rgba(254,179,45,0.15); color: #feb32d; }
+.pipeline-time { color: var(--text-muted); font-size: 10px; min-width: 35px; text-align: right; }
+.pipeline-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    margin-top: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
 .pipeline-empty {
     color: var(--text-muted);
     font-size: 12px;
     text-align: center;
     padding: 8px;
+}
+
+/* ===== AI Log ===== */
+.ai-log-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-top: 12px;
+}
+.ai-log-col {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 12px;
+}
+.ai-log-col h3 {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+.ai-log-container {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-top: 8px;
+}
+.ai-log-empty {
+    color: var(--text-muted);
+    font-size: 12px;
+    text-align: center;
+    padding: 16px;
+}
+.ai-log-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-bottom: 4px;
+    background: rgba(255,255,255,0.03);
+    border-left: 3px solid #4e5058;
+}
+.ai-log-item.generated {
+    border-left-color: #5865f2;
+    background: rgba(88,101,242,0.08);
+}
+.ai-log-item.played {
+    border-left-color: #23a55a;
+    background: rgba(35,165,90,0.08);
+}
+.ai-log-item.error {
+    border-left-color: #f23f42;
+    background: rgba(242,63,66,0.08);
+}
+.ai-log-item .log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.ai-log-item .log-user {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.ai-log-item .log-time {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+.ai-log-item .log-text {
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ai-log-item .log-meta {
+    font-size: 10px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 8px;
+}
+@media (max-width: 900px) {
+    .ai-log-grid { grid-template-columns: 1fr; }
 }

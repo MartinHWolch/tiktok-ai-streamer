@@ -124,11 +124,7 @@ class TTSClient:
             return None
         
         with self._cooldown_lock:
-            now = time.time()
-            if now - self._last_speak < self.config.TTS_COOLDOWN:
-                logger.info("TTS en cooldown.")
-                return None
-            self._last_speak = now
+            self._last_speak = time.time()
         
         with self._state_lock:
             engine = self.engine

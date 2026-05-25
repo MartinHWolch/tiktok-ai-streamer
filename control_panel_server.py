@@ -75,6 +75,14 @@ class ControlPanelServer(SseFlaskServer):
             state = self.orchestrator.toggle_tiktok_simulation()
             return jsonify({"simulation": state})
 
+        @self.app.route("/api/simulation_speed", methods=["POST"])
+        @self._require_auth
+        def set_simulation_speed():
+            data = request.get_json() or {}
+            speed = float(data.get("speed", 1.0))
+            self.orchestrator.set_simulation_speed(speed)
+            return jsonify({"simulation_speed": speed})
+
         @self.app.route("/api/stats", methods=["GET"])
         @self._require_auth
         def stats():
@@ -581,6 +589,16 @@ class ControlPanelServer(SseFlaskServer):
             if self.orchestrator.vtube_client:
                 ok = self.orchestrator.vtube_client.trigger_hotkey(hk)
                 return jsonify({"success": ok, "hotkey": hk})
+
+        @self.app.route("/api/vtube_mouth", methods=["POST"])
+        @self._require_auth
+        def vtube_mouth():
+            data = request.get_json(silent=True) or {}
+            open_val = data.get("open", 0)
+            if self.orchestrator.vtube_client:
+                ok = self.orchestrator.vtube_client._inject_params({"MouthOpen": float(open_val)}, silent=True)
+                return jsonify({"success": ok, "open": open_val})
+            return jsonify({"success": False, "error": "VTube client no disponible"})
             return jsonify({"success": False, "error": "VTube client no disponible"})
 
         # --- API: SFX ---

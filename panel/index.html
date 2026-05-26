@@ -1,580 +1,1285 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikTok AI Streamer</title>
-    <link rel="stylesheet" href="panel.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TikTok AI Streamer — Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep: #0a0a0f; --bg-surface: #111118; --bg-panel: #16161f;
+  --border-subtle: rgba(255,255,255,0.07); --border-hover: rgba(255,255,255,0.12);
+  --text-primary: #e8e8ed; --text-secondary: #9595a8; --text-muted: #5c5c72;
+  --accent-purple: #7c5cfc; --accent-teal: #2dd4a0; --accent-pink: #f472b6; --accent-amber: #f59e0b;
+  --green: #22c55e; --red: #ef4444; --blue: #3b82f6;
+  --radius-lg: 12px; --radius-md: 8px; --radius-sm: 6px;
+  --font-ui: 'DM Sans', 'Segoe UI', sans-serif; --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: var(--font-ui); background: var(--bg-deep); color: var(--text-primary); font-size: 13px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+.app { display: flex; height: 100vh; }
+.sidebar { width: 210px; min-width: 210px; background: var(--bg-surface); display: flex; flex-direction: column; border-right: 1px solid var(--border-subtle); z-index: 10; }
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.logo-area { padding: 18px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-subtle); }
+.logo-icon { width: 34px; height: 34px; background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #fff; }
+.logo-text { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+
+.nav-section { padding: 12px 10px; flex: 1; overflow-y: auto; }
+.nav-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); padding: 8px 8px 6px; margin-top: 4px; }
+.nav-label:first-child { margin-top: 0; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 7px; cursor: pointer; color: var(--text-secondary); font-size: 13px; font-weight: 500; transition: all 0.15s; position: relative; margin-bottom: 1px; }
+.nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
+.nav-item.active { background: rgba(124,92,252,0.14); color: var(--accent-purple); }
+.nav-item svg { flex-shrink: 0; opacity: 0.65; }
+.nav-item.active svg { opacity: 1; }
+.nav-item .badge { margin-left: auto; font-size: 10px; font-family: var(--font-mono); background: var(--accent-purple); color: #fff; padding: 1px 6px; border-radius: 8px; font-weight: 600; min-width: 18px; text-align: center; }
+.streamer-bar { padding: 12px 14px; border-top: 1px solid var(--border-subtle); display: flex; align-items: center; gap: 10px; }
+.streamer-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-teal), var(--accent-purple)); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.streamer-info { overflow: hidden; } .streamer-name { font-size: 12px; font-weight: 600; } .streamer-status { font-size: 10px; color: var(--green); display: flex; align-items: center; gap: 4px; }
+.streamer-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+
+.topbar { padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); background: var(--bg-surface); min-height: 52px; }
+.page-title { font-size: 15px; font-weight: 600; }
+.status-row { display: flex; align-items: center; gap: 10px; }
+.st-badge { padding: 4px 10px; border-radius: 14px; font-size: 11px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 5px; border: 1px solid var(--border-subtle); background: var(--bg-panel); transition: all 0.15s; }
+.st-badge.on { border-color: rgba(34,197,94,0.4); color: var(--green); }
+.st-badge.off { border-color: rgba(239,68,68,0.4); color: var(--red); }
+.st-badge .st-dot { width: 5px; height: 5px; border-radius: 50%; }
+.st-badge.on .st-dot { background: var(--green); animation: pulse 2s infinite; }
+
+.btn { padding: 7px 16px; border-radius: var(--radius-sm); font-family: var(--font-ui); font-size: 12px; font-weight: 600; border: 1px solid var(--border-subtle); background: var(--bg-panel); color: var(--text-primary); cursor: pointer; transition: all 0.15s; }
+.btn:hover { border-color: var(--border-hover); background: rgba(255,255,255,0.05); }
+.btn-p { background: var(--accent-purple); border-color: var(--accent-purple); color: #fff; } .btn-p:hover { background: #6d4ee8; }
+.btn-sm { padding: 4px 10px; font-size: 11px; }
+.btn-d { background: transparent; border-color: var(--red); color: var(--red); } .btn-d:hover { background: rgba(239,68,68,0.1); }
+.btn-g { border-color: rgba(34,197,94,0.4); color: var(--green); } .btn-g:hover { background: rgba(34,197,94,0.08); }
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+.spinner.hidden { display: none; }
+
+.content-area { flex: 1; overflow-y: auto; padding: 20px 24px; }
+.content { display: none; } .content.active { display: block; }
+
+.stats-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-bottom: 18px; }
+.stat-card { background: var(--bg-panel); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 12px 14px; transition: border-color 0.15s; }
+.stat-card:hover { border-color: var(--border-hover); }
+.stat-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+.stat-icon { font-size: 16px; }
+.stat-value { font-family: var(--font-mono); font-size: 22px; font-weight: 600; line-height: 1; }
+.stat-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-top: 2px; }
+
+.dash-grid { display: grid; grid-template-columns: 1fr 295px; gap: 14px; }
+.dash-left, .dash-right { display: flex; flex-direction: column; gap: 12px; }
+.dash-right { position: sticky; top: 0; }
+
+.panel { background: var(--bg-panel); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 14px; }
+.panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.panel-title { font-size: 12px; font-weight: 600; }
+
+.pipeline-steps { display: flex; align-items: center; gap: 0; }
+.p-step { display: flex; align-items: center; gap: 6px; flex: 1; padding: 8px 10px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); background: transparent; transition: all 0.35s; }
+.p-step-icon { width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; background: rgba(255,255,255,0.05); flex-shrink: 0; }
+.p-step-label { font-size: 10px; font-weight: 500; color: var(--text-muted); }
+.p-step.done { border-color: rgba(34,197,94,0.3); } .p-step.done .p-step-icon { background: rgba(34,197,94,0.15); } .p-step.done .p-step-label { color: var(--green); }
+.p-step.active { border-color: rgba(124,92,252,0.4); box-shadow: 0 0 12px rgba(124,92,252,0.2); animation: pulseGlow 1.5s infinite; }
+.p-step.active .p-step-icon { background: rgba(124,92,252,0.2); } .p-step.active .p-step-label { color: var(--accent-purple); }
+.p-connector { width: 14px; height: 1px; background: var(--border-subtle); flex-shrink: 0; }
+
+@keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 8px rgba(124,92,252,0.15); } 50% { box-shadow: 0 0 18px rgba(124,92,252,0.35); } }
+
+.pipe-list { max-height: 260px; overflow-y: auto; }
+.pipe-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius-sm); border: 1px solid transparent; margin-bottom: 2px; font-size: 11px; animation: slideIn 0.3s ease; }
+.pipe-item:hover { background: rgba(255,255,255,0.02); border-color: var(--border-subtle); }
+.pipe-status { font-size: 9px; font-family: var(--font-mono); padding: 2px 5px; border-radius: 3px; flex-shrink: 0; }
+.pipe-status.s-received { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+.pipe-status.s-generating { background: rgba(245,158,11,0.12); color: var(--accent-amber); }
+.pipe-status.s-generated { background: rgba(59,130,246,0.12); color: var(--blue); }
+.pipe-status.s-playing { background: rgba(124,92,252,0.12); color: var(--accent-purple); }
+.pipe-status.s-done { background: rgba(34,197,94,0.12); color: var(--green); }
+.pipe-user { font-weight: 500; color: var(--accent-purple); width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pipe-text { flex: 1; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.log-panel { max-height: 240px; overflow-y: auto; }
+.log-entry { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 11px; border-bottom: 1px solid rgba(255,255,255,0.03); animation: slideIn 0.25s; }
+.log-time { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); width: 50px; flex-shrink: 0; }
+.log-tag { font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono); text-transform: uppercase; flex-shrink: 0; }
+.log-tag.msg { background: rgba(59,130,246,0.15); color: var(--blue); } .log-tag.gift { background: rgba(244,114,182,0.15); color: var(--accent-pink); }
+.log-tag.like { background: rgba(245,158,11,0.15); color: var(--accent-amber); } .log-tag.join { background: rgba(45,212,160,0.15); color: var(--accent-teal); }
+.log-tag.sys { background: rgba(124,92,252,0.15); color: var(--accent-purple); }
+.log-text { color: var(--text-secondary); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.avatar-visual { display: flex; align-items: flex-end; justify-content: center; gap: 3px; height: 40px; margin-bottom: 8px; }
+.wavebar { width: 4px; border-radius: 2px; background: var(--accent-purple); animation: waveAnim 0.8s ease-in-out infinite; transform-origin: bottom; }
+.wavebar:nth-child(1) { height: 12px; animation-delay: 0s; } .wavebar:nth-child(2) { height: 28px; animation-delay: 0.08s; background: var(--accent-pink); }
+.wavebar:nth-child(3) { height: 20px; animation-delay: 0.16s; } .wavebar:nth-child(4) { height: 36px; animation-delay: 0.24s; background: var(--accent-teal); }
+.wavebar:nth-child(5) { height: 22px; animation-delay: 0.32s; } .wavebar:nth-child(6) { height: 44px; animation-delay: 0.4s; background: var(--accent-amber); }
+.wavebar:nth-child(7) { height: 16px; animation-delay: 0.48s; } .wavebar:nth-child(8) { height: 30px; animation-delay: 0.56s; background: var(--accent-pink); }
+.wavebar:nth-child(9) { height: 18px; animation-delay: 0.64s; } .wavebar:nth-child(10) { height: 40px; animation-delay: 0.72s; background: var(--accent-purple); }
+.wavebar.idle { animation-name: waveIdle; animation-duration: 1.4s; }
+.wavebar.thinking { animation-name: waveThink; animation-duration: 0.5s; }
+.wavebar.talking { animation-name: waveAnim; animation-duration: 0.6s; }
+@keyframes waveAnim { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+@keyframes waveIdle { 0%, 100% { transform: scaleY(0.2); } 50% { transform: scaleY(0.5); } }
+@keyframes waveThink { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(0.8); } }
+
+.av-status-label { text-align: center; font-size: 10px; font-weight: 600; margin-bottom: 8px; }
+.av-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 10px; }
+.av-key { color: var(--text-muted); font-family: var(--font-mono); font-size: 9px; }
+.av-val { color: var(--text-primary); font-family: var(--font-mono); font-size: 10px; font-weight: 500; }
+
+.obs-preview { position: relative; aspect-ratio: 16/9; background: linear-gradient(160deg, #16161f 0%, #0d0d18 40%, #1a1025 70%, #0a0a18 100%); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; }
+.obs-live { position: absolute; top: 8px; left: 8px; padding: 2px 7px; border-radius: 4px; background: var(--red); color: #fff; font-size: 9px; font-weight: 700; font-family: var(--font-mono); letter-spacing: 0.04em; display: flex; align-items: center; gap: 4px; z-index: 2; }
+.obs-live .live-dot { width: 5px; height: 5px; border-radius: 50%; background: #fff; animation: pulse 1s infinite; }
+.obs-chat-feed { position: absolute; top: 34px; left: 6px; right: 6px; bottom: 40px; overflow-y: auto; padding: 3px 5px; z-index: 1; pointer-events: none; }
+.obs-chat-msg { background: rgba(0,0,0,0.55); padding: 2px 6px; border-radius: 3px; margin-bottom: 2px; font-size: 9px; animation: slideIn 0.3s; }
+.obs-chat-msg .oc-user { color: var(--accent-pink); font-weight: 600; } .obs-chat-msg .oc-text { color: rgba(255,255,255,0.8); }
+
+.chat-box { max-height: 250px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px; }
+.chat-msg { display: flex; gap: 6px; padding: 3px 0; font-size: 11px; animation: slideIn 0.2s; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.chat-user { color: var(--accent-purple); font-weight: 600; flex-shrink: 0; min-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-text { color: var(--text-secondary); word-break: break-word; }
+.chat-msg.ai .chat-user { color: var(--accent-teal); }
+
+.toast-area { position: fixed; top: 16px; right: 16px; z-index: 100; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { background: var(--bg-panel); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 14px; font-size: 12px; display: flex; align-items: center; gap: 10px; pointer-events: auto; animation: slideIn 0.3s; }
+.toast .toast-undo { font-size: 11px; color: var(--accent-purple); cursor: pointer; background: none; border: none; font-weight: 600; font-family: var(--font-ui); }
+.toast.toast-out { opacity: 0; transform: translateY(-10px); transition: all 0.3s; }
+
+.form-group { margin-bottom: 10px; }
+.form-group label { display: block; font-size: 11px; font-weight: 500; color: var(--text-secondary); margin-bottom: 4px; }
+.input-dark { width: 100%; padding: 6px 10px; border-radius: var(--radius-sm); background: var(--bg-deep); border: 1px solid var(--border-subtle); color: var(--text-primary); font-family: var(--font-ui); font-size: 12px; transition: border-color 0.15s; }
+.input-dark:focus { outline: none; border-color: var(--accent-purple); }
+select.input-dark { cursor: pointer; } textarea.input-dark { resize: vertical; font-family: var(--font-mono); font-size: 11px; min-height: 60px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
+
+.slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.slider-label { font-size: 11px; font-weight: 500; color: var(--text-secondary); min-width: 60px; }
+input[type="range"] { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08); flex: 1; accent-color: var(--accent-purple); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent-purple); cursor: pointer; }
+.slider-readout { font-family: var(--font-mono); font-size: 11px; color: var(--text-primary); min-width: 36px; text-align: right; }
+
+.sw { width: 38px; height: 20px; border-radius: 12px; background: rgba(255,255,255,0.1); cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; }
+.sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+.sw.on { background: var(--accent-purple); } .sw.on::after { transform: translateX(18px); }
+
+.voice-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 5px; max-height: 180px; overflow-y: auto; }
+.voice-chip { padding: 5px 8px; border-radius: var(--radius-sm); font-size: 10px; font-family: var(--font-mono); cursor: pointer; text-align: center; border: 1px solid var(--border-subtle); color: var(--text-secondary); transition: all 0.15s; background: transparent; }
+.voice-chip:hover { border-color: var(--border-hover); color: var(--text-primary); }
+.voice-chip.active { border-color: var(--accent-purple); color: var(--accent-purple); background: rgba(124,92,252,0.1); }
+
+.setup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 14px; }
+.setup-card { padding: 10px 12px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 2px; }
+.setup-card .sc-label { font-size: 10px; color: var(--text-muted); }
+.setup-card .sc-value { font-size: 12px; font-weight: 600; font-family: var(--font-mono); }
+.setup-card.ok .sc-value { color: var(--green); } .setup-card.warn .sc-value { color: var(--accent-amber); } .setup-card.err .sc-value { color: var(--red); }
+
+.banned-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.banned-tag { padding: 3px 8px; border-radius: 10px; font-size: 10px; background: rgba(239,68,68,0.12); color: var(--red); display: flex; align-items: center; gap: 4px; }
+.banned-tag .tag-remove { cursor: pointer; font-weight: 700; }
+.banned-tag .tag-remove:hover { color: #fff; }
+
+.rules-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.rule-card { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--bg-surface); }
+.rule-name { font-weight: 600; font-size: 13px; } .rule-trigger { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+.rule-action-tag { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 9px; margin-right: 3px; margin-top: 3px; }
+.rule-action-tag.tts { background: rgba(124,92,252,0.12); color: var(--accent-purple); }
+.rule-action-tag.emoji { background: rgba(245,158,11,0.12); color: var(--accent-amber); }
+.rule-action-tag.sfx { background: rgba(59,130,246,0.12); color: var(--blue); }
+.rule-action-tag.vtube { background: rgba(45,212,160,0.12); color: var(--accent-teal); }
+
+.action-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.theme-row { display: flex; gap: 8px; }
+.theme-btn { padding: 7px 14px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; border: 1px solid var(--border-subtle); background: transparent; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
+.theme-btn.active { border-color: var(--accent-purple); color: var(--accent-purple); background: rgba(124,92,252,0.1); }
+.theme-btn:hover { border-color: var(--border-hover); }
+
+.s-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; }
+.s-badge.online { background: rgba(34,197,94,0.12); color: var(--green); }
+.s-badge.offline { background: rgba(148,155,164,0.12); color: var(--text-muted); }
+.s-badge.warning { background: rgba(245,158,11,0.12); color: var(--accent-amber); }
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes slideIn { from { transform: translateY(6px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
 </head>
 <body>
-    <div class="app">
-        <nav class="sidebar">
-            <div class="server-header">
-                <div class="server-icon">T</div>
-                <span>TikTok AI</span>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo-area"><div class="logo-icon">T</div><div class="logo-text">TikTok AI</div></div>
+    <nav class="nav-section">
+      <div class="nav-label">Monitoreo</div>
+      <div class="nav-item active" data-tab="dashboard"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span><span class="badge" id="nav-badge-dash">0</span></div>
+      <div class="nav-item" data-tab="pipeline"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="12" x2="10" y2="12"/><line x1="14" y1="12" x2="20" y2="12"/><circle cx="12" cy="12" r="2"/></svg><span>Pipeline</span></div>
+      <div class="nav-item" data-tab="eventos"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>Eventos</span></div>
+      <div class="nav-label">Configuracion</div>
+      <div class="nav-item" data-tab="voz"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg><span>Voz</span></div>
+      <div class="nav-item" data-tab="ia"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m16.07-7.07l-2.83 2.83M8.76 15.24l-2.83 2.83m12.9 0l-2.83-2.83M8.76 8.76L5.93 5.93"/></svg><span>IA</span></div>
+      <div class="nav-item" data-tab="vtube"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a7 7 0 017-7h4a7 7 0 017 7v2"/></svg><span>VTube</span></div>
+      <div class="nav-item" data-tab="overlay"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Overlay</span></div>
+      <div class="nav-label">Herramientas</div>
+      <div class="nav-item" data-tab="reglas"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg><span>Reglas</span></div>
+      <div class="nav-item" data-tab="sistema"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg><span>Sistema</span></div>
+    </nav>
+    <div class="streamer-bar"><div class="streamer-avatar">S</div><div class="streamer-info"><div class="streamer-name" id="streamer-name">Streamer</div><div class="streamer-status"><span class="dot"></span> En vivo</div></div></div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="page-title" id="page-title">Dashboard</div>
+      <div class="status-row">
+        <div class="st-badge on" id="badge-tts"><span class="st-dot"></span>TTS</div>
+        <div class="st-badge on" id="badge-ai"><span class="st-dot"></span>IA</div>
+        <div class="st-badge on" id="badge-tiktok"><span class="st-dot"></span>TikTok</div>
+        <button class="btn btn-p btn-sm" id="btn-top-action">Cambiar a Real</button>
+      </div>
+    </header>
+
+    <div class="content-area">
+
+      <!-- ===== DASHBOARD ===== -->
+      <div class="content active" id="tab-dashboard">
+        <div class="stats-row" id="stats-row"></div>
+        <div class="dash-grid">
+          <div class="dash-left">
+            <div class="panel">
+              <div class="panel-header"><span class="panel-title">VTube Studio</span><span id="vtube-status-badge" class="s-badge offline">Desconectado</span></div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span id="vtube-model" style="font-size:11px;color:var(--text-muted)"></span>
+                <button id="btn-vtube-connect" class="btn btn-p btn-sm">Conectar</button>
+                <button id="btn-vtube-disconnect" class="btn btn-d btn-sm" style="display:none">Desconectar</button>
+              </div>
+              <div style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                <select id="vtube-expr-select" class="input-dark" style="width:140px"><option value="">-- Expresion --</option></select>
+                <button id="btn-vtube-test-expr" class="btn btn-sm">Probar</button>
+                <select id="vtube-hk-select" class="input-dark" style="width:140px"><option value="">-- Hotkey --</option></select>
+                <button id="btn-vtube-test-hk" class="btn btn-sm">Probar</button>
+              </div>
             </div>
-            <div class="channels">
-                <div class="channel active" data-tab="dashboard">
-                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-                    <span>Dashboard</span>
-                </div>
-                <div class="channel" data-tab="tts">
-                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-                    <span>TTS Config</span>
-                </div>
-                <div class="channel" data-tab="setup">
-                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-                    <span>Setup</span>
-                </div>
-                <div class="channel" data-tab="logs">
-                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
-                    <span>Eventos</span>
-                </div>
-                <div class="channel" data-tab="ai-log">
-                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
-                    <span>AI Log</span>
-                </div>
-                <div class="channel" data-tab="rules">
-                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M13 10h-2v2H9v2h2v2h2v-2h2v-2h-2v-2zm9-6H2v16h20V4zm-2 14H4V6h16v12z"/></svg>
-                    <span>Reglas</span>
-                </div>
-                <div class="channel" data-tab="overlay">
-                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM9 8h2v8H9zm4 0h2v8h-2z"/></svg>
-                    <span>Overlay</span>
-                </div>
+            <div class="panel">
+              <div class="panel-header"><span class="panel-title">Pipeline</span><span style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono)" id="pipeline-summary">--</span></div>
+              <div class="pipeline-steps" id="pipeline-steps">
+                <div class="p-step" data-step="0"><div class="p-step-icon">📨</div><div class="p-step-label">Recibir</div></div><div class="p-connector"></div>
+                <div class="p-step" data-step="1"><div class="p-step-icon">🧠</div><div class="p-step-label">IA</div></div><div class="p-connector"></div>
+                <div class="p-step" data-step="2"><div class="p-step-icon">🗣️</div><div class="p-step-label">TTS</div></div><div class="p-connector"></div>
+                <div class="p-step" data-step="3"><div class="p-step-icon">📺</div><div class="p-step-label">Overlay</div></div><div class="p-connector"></div>
+                <div class="p-step" data-step="4"><div class="p-step-icon">✅</div><div class="p-step-label">Done</div></div>
+              </div>
             </div>
-            <div class="user-bar">
-                <div class="user-avatar">S</div>
-                <div class="user-info">
-                    <div class="user-name">Streamer</div>
-                    <div class="user-status online">En línea</div>
-                </div>
+            <div class="panel">
+              <div class="panel-header"><span class="panel-title">Cola de Respuestas</span></div>
+              <div class="pipe-list" id="pipe-queue"><div style="color:var(--text-muted);font-size:11px;padding:6px">Esperando datos...</div></div>
             </div>
-        </nav>
+            <div class="panel" style="margin-bottom:14px">
+              <div class="panel-header"><span class="panel-title">Chat en Vivo</span></div>
+              <div class="chat-box" id="live-chat"><div style="color:var(--text-muted);font-size:11px">Esperando mensajes...</div></div>
+            </div>
+            <div class="panel" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span style="font-size:11px;color:var(--text-secondary)">Modo:</span>
+              <span id="mode-label" style="font-weight:600;font-size:12px;color:var(--accent-amber)">Simulacion</span>
+              <span id="mode-desc" style="font-size:10px;color:var(--text-muted)">Eventos generados automaticamente</span>
+              <button class="btn btn-p btn-sm" id="btn-toggle-sim"><span id="btn-sim-text">Cambiar a Real</span><span class="spinner hidden" id="spinner-sim"></span></button>
+              <span style="font-size:10px;color:var(--text-muted);margin-left:8px">Vel:</span>
+              <input type="range" id="sim-speed-slider" min="0.1" max="5.0" step="0.1" value="1.0" style="width:80px">
+              <span id="sim-speed-label" style="font-family:var(--font-mono);font-size:10px">1.0x</span>
+            </div>
+            <div class="panel" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              <span style="font-size:11px;color:var(--text-secondary)">Acciones:</span>
+              <button class="btn btn-sm btn-g" id="btn-sim-gift">Simular Regalo</button>
+              <button class="btn btn-sm" id="btn-test-msg">Mensaje Prueba</button>
+              <button class="btn btn-sm" id="btn-bulk-sim">Simulacion Masiva</button>
+            </div>
+          </div>
+          <div class="dash-right">
+            <div class="panel" id="avatar-panel">
+              <div class="panel-header"><span class="panel-title">Avatar</span></div>
+              <div class="avatar-visual" id="avatar-visual">
+                <div class="wavebar idle"></div><div class="wavebar idle"></div><div class="wavebar idle"></div><div class="wavebar idle"></div><div class="wavebar idle"></div><div class="wavebar idle"></div><div class="wavebar idle"></div><div class="wavebar idle"></div><div class="wavebar idle"></div><div class="wavebar idle"></div>
+              </div>
+              <div class="av-status-label state-idle" id="av-status-label"><span class="status-dot"></span> <span id="av-status-text">Inactivo</span></div>
+              <div id="av-details"><div class="av-row"><span class="av-key">engine</span><span class="av-val" id="av-engine">--</span></div><div class="av-row"><span class="av-key">voice</span><span class="av-val" id="av-voice">--</span></div><div class="av-row"><span class="av-key">speed</span><span class="av-val" id="av-speed">--</span></div><div class="av-row"><span class="av-key">uptime</span><span class="av-val" id="av-uptime">0m</span></div></div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><span class="panel-title">OBS Preview</span></div>
+              <div class="obs-preview" id="obs-preview"><div class="obs-live"><span class="live-dot"></span>LIVE</div><div class="obs-chat-feed" id="obs-chat"></div><div class="obs-subtitle" style="position:absolute;bottom:0;left:0;right:0;padding:6px 12px;text-align:center;font-size:11px;color:rgba(255,255,255,0.85);background:linear-gradient(transparent,rgba(0,0,0,0.6));min-height:24px"><span id="obs-subtitle-text"></span></div></div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><span class="panel-title">Log Reciente</span></div>
+              <div class="log-panel" id="log-mini"></div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <main class="content">
-            <!-- Dashboard -->
-            <section class="tab active" id="tab-dashboard">
-                <h2>Dashboard</h2>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background:rgba(88,101,242,0.15);color:#5865f2;">
-                            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
-                        </div>
-                        <div class="stat-info"><span class="stat-value" id="stat-messages">0</span><span class="stat-label">Mensajes</span></div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background:rgba(240,178,50,0.15);color:#f0b232;">
-                            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                        </div>
-                        <div class="stat-info"><span class="stat-value" id="stat-gifts">0</span><span class="stat-label">Regalos</span></div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background:rgba(35,165,90,0.15);color:#23a55a;">
-                            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
-                        </div>
-                        <div class="stat-info"><span class="stat-value" id="stat-likes">0</span><span class="stat-label">Likes</span></div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background:rgba(218,55,60,0.15);color:#da373c;">
-                            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                        </div>
-                        <div class="stat-info"><span class="stat-value" id="stat-joins">0</span><span class="stat-label">Uniones</span></div>
-                    </div>
-                </div>
-                <div class="stats-grid secondary">
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background:rgba(88,101,242,0.15);color:#5865f2;">
-                            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-                        </div>
-                        <div class="stat-info"><span class="stat-value" id="stat-ai">0</span><span class="stat-label">Respuestas IA</span></div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background:rgba(88,101,242,0.15);color:#5865f2;">
-                            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-                        </div>
-                        <div class="stat-info"><span class="stat-value" id="stat-tts">0</span><span class="stat-label">TTS Reproducidos</span></div>
-                    </div>
-                    <div class="stat-card uptime-card">
-                        <div class="stat-icon" style="background:rgba(148,155,164,0.15);color:#949ba4;">
-                            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-                        </div>
-                        <div class="stat-info"><span class="stat-value" id="stat-uptime">0m</span><span class="stat-label">Uptime</span></div>
-                    </div>
-                </div>
+      <!-- ===== PIPELINE ===== -->
+      <div class="content" id="tab-pipeline">
+        <div class="panel-header"><span class="panel-title" style="font-size:16px">Pipeline Completo</span></div>
+        <div class="pipeline-steps" id="pl-full-steps" style="margin-bottom:14px">
+          <div class="p-step" data-step="0"><div class="p-step-icon">📨</div><div class="p-step-label">Recibir</div></div><div class="p-connector"></div>
+          <div class="p-step" data-step="1"><div class="p-step-icon">🧠</div><div class="p-step-label">IA</div></div><div class="p-connector"></div>
+          <div class="p-step" data-step="2"><div class="p-step-icon">🗣️</div><div class="p-step-label">TTS</div></div><div class="p-connector"></div>
+          <div class="p-step" data-step="3"><div class="p-step-icon">📺</div><div class="p-step-label">Overlay</div></div><div class="p-connector"></div>
+          <div class="p-step" data-step="4"><div class="p-step-icon">✅</div><div class="p-step-label">Done</div></div>
+        </div>
+        <div class="pipe-list" id="pl-full-list" style="max-height:calc(100vh - 220px)"><div style="color:var(--text-muted);font-size:12px;padding:16px;text-align:center">Sin elementos</div></div>
+      </div>
 
-                <div class="config-section" style="margin-top:16px">
-                    <h3>VTube Studio</h3>
-                    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-                        <span id="vtube-status-badge" class="status-badge offline">Desconectado</span>
-                        <span id="vtube-model" style="color:var(--text-muted);font-size:13px"></span>
-                        <button id="btn-vtube-connect" class="btn-sm-blurple">Conectar</button>
-                        <button id="btn-vtube-disconnect" class="btn-sm-danger" style="display:none">Desconectar</button>
-                    </div>
-                    <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                        <select id="vtube-expr-select" class="input-discord" style="width:160px;font-size:12px">
-                            <option value="">-- Expresion --</option>
-                        </select>
-                        <button id="btn-vtube-test-expr" class="btn-sm-blurple">Probar</button>
-                        <select id="vtube-hk-select" class="input-discord" style="width:160px;font-size:12px">
-                            <option value="">-- Hotkey --</option>
-                        </select>
-                        <button id="btn-vtube-test-hk" class="btn-sm-blurple">Probar</button>
-                    </div>
-                    <p style="font-size:11px;color:var(--text-muted);margin-top:4px">
-                        Al conectar, VTube Studio mostrara un popup. Hace click en PERMITIR.
-                    </p>
-                </div>
+      <!-- ===== EVENTOS ===== -->
+      <div class="content" id="tab-eventos">
+        <div class="panel-header"><span class="panel-title" style="font-size:16px">Registro de Eventos</span></div>
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <button class="btn btn-sm filter-btn active" data-filter="all">Todos</button><button class="btn btn-sm filter-btn" data-filter="msg">Mensajes</button><button class="btn btn-sm filter-btn" data-filter="gift">Regalos</button><button class="btn btn-sm filter-btn" data-filter="like">Likes</button><button class="btn btn-sm filter-btn" data-filter="join">Joins</button><button class="btn btn-sm filter-btn" data-filter="sys">Sistema</button>
+        </div>
+        <div class="log-panel" id="log-full" style="max-height:calc(100vh - 200px)"></div>
+      </div>
 
-                <div class="toggles-section">
-                    <h3>Control Rapido</h3>
-                    <div class="toggles-inline">
-                        <div class="toggle-card" id="card-tts">
-                            <div class="toggle-info">
-                                <span class="toggle-title">Texto a Voz</span>
-                                <span class="toggle-sub" id="tts-badge">DESACTIVADO</span>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox" id="toggle-tts">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-card" id="card-ai">
-                            <div class="toggle-info">
-                                <span class="toggle-title">IA (Groq)</span>
-                                <span class="toggle-sub" id="ai-badge">DESACTIVADO</span>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox" id="toggle-ai">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-card" id="card-tiktok">
-                            <div class="toggle-info">
-                                <span class="toggle-title">Eventos TikTok</span>
-                                <span class="toggle-sub" id="tiktok-badge">PAUSADO</span>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox" id="toggle-tiktok">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
+      <!-- ===== VOZ ===== -->
+      <div class="content" id="tab-voz">
+        <div class="panel-header"><span class="panel-title" style="font-size:16px">Configuracion de Voz</span></div>
+        <div class="grid-2"><div class="form-group"><label>Motor TTS</label><select class="input-dark" id="tts-engine"><option value="kokoro">Kokoro ONNX</option><option value="edge">Edge TTS</option><option value="piper">Piper</option><option value="gtts">gTTS</option></select></div><div class="form-group"><label>Idioma</label><select class="input-dark" id="tts-lang"><option value="es">Espanol</option><option value="en-us">English (US)</option><option value="en-gb">English (UK)</option><option value="fr">Francais</option><option value="pt">Portugues</option><option value="it">Italiano</option><option value="de">Deutsch</option><option value="ja">日本語</option><option value="zh">中文</option><option value="ko">한국어</option></select></div></div>
+        <div class="form-group kokoro-opt"><label>Voz</label><div class="voice-grid" id="voice-grid"></div><div style="display:flex;gap:8px;margin-top:6px"><button id="btn-preview-voice" class="btn btn-p btn-sm"><span class="btn-label">Escuchar</span><span class="spinner hidden" id="spinner-preview"></span></button><span id="voice-count" style="font-size:10px;color:var(--text-muted);display:flex;align-items:center"></span></div></div>
+        <div class="form-group edge-opt" style="display:none"><label>Voz Edge TTS</label><select class="input-dark" id="tts-edge-voice"><option value="es-MX-DaliaNeural">Dalia (MX)</option><option value="es-MX-JorgeNeural">Jorge (MX)</option><option value="es-AR-ElenaNeural">Elena (AR)</option><option value="es-ES-ElviraNeural">Elvira (ES)</option><option value="es-CO-SalomeNeural">Salome (CO)</option><option value="es-US-PalomaNeural">Paloma (US)</option></select></div>
+        <div class="form-group kokoro-opt"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:11px">Voice Blend</span><div class="sw" id="sw-blend"></div></div><input type="text" class="input-dark" id="tts-blend" placeholder="voz1*0.5 + voz2*0.5" disabled></div>
+        <div class="slider-row"><span class="slider-label">Velocidad</span><input type="range" id="tts-speed" min="0.5" max="2.0" step="0.1" value="1.0"><span class="slider-readout" id="tts-speed-val">1.0x</span></div>
+        <div class="slider-row"><span class="slider-label">Tono</span><input type="range" id="tts-pitch" min="-12" max="12" step="1" value="0"><span class="slider-readout" id="tts-pitch-val">0 st</span></div>
+        <div class="slider-row"><span class="slider-label">Volumen</span><input type="range" id="tts-volume" min="0.1" max="3.0" step="0.1" value="1.0"><span class="slider-readout" id="tts-volume-val">1.0x</span></div>
+        <div class="form-group kokoro-opt"><label>Modelo Kokoro</label><select class="input-dark" id="kokoro-model"><option value="fp16">FP16 (177 MB - rapido)</option><option value="fp32">FP32 (305 MB - calidad)</option></select></div>
+        <div class="form-group"><label>Texto de prueba</label><textarea class="input-dark" id="tts-test-text" rows="2" style="min-height:44px">Buenos dias, esta es una prueba de sonido.</textarea></div>
+        <button class="btn btn-p" id="btn-test-tts"><span class="btn-label">Probar TTS</span><span class="spinner hidden" id="spinner-test-tts"></span></button>
+        <div class="panel" style="margin-top:14px"><div class="panel-header"><span class="panel-title">Presets de Voz</span></div>
+          <div style="display:flex;gap:6px;margin-bottom:8px"><input type="text" class="input-dark" id="preset-name" placeholder="Nombre del preset..."><button class="btn btn-p btn-sm" id="btn-save-preset">Guardar</button></div>
+          <div style="display:flex;gap:6px"><select class="input-dark" id="preset-select"><option value="">-- Cargar preset --</option></select><button class="btn btn-sm" id="btn-load-preset">Cargar</button><button class="btn btn-d btn-sm" id="btn-delete-preset">Eliminar</button></div>
+        </div>
+      </div>
 
-                <div class="mode-section">
-                    <div class="mode-card" id="mode-card">
-                        <div class="mode-info">
-                            <span class="mode-title">Modo TikTok</span>
-                            <span class="mode-value" id="mode-label">Simulacion</span>
-                            <span class="mode-desc" id="mode-desc">Eventos generados automaticamente</span>
-                        </div>
-                        <button class="btn-blurple" id="btn-toggle-sim">
-                            <span id="btn-sim-text">Cambiar a Real</span>
-                            <span class="spinner hidden" id="spinner-sim"></span>
-                        </button>
-                    </div>
+      <!-- ===== IA ===== -->
+      <div class="content" id="tab-ia">
+        <div class="panel-header"><span class="panel-title" style="font-size:16px">Configuracion de IA</span></div>
+        <div class="grid-2"><div class="form-group"><label>Modelo</label><select class="input-dark" id="ai-model"><option value="llama3-8b-8192">Llama 3 (8B)</option><option value="llama3-70b-8192">Llama 3 (70B)</option><option value="mixtral-8x7b-32768">Mixtral (8x7B)</option><option value="gemma2-9b-it">Gemma 2 (9B)</option></select></div><div class="form-group"><label>Temperatura</label><div class="slider-row"><input type="range" id="ai-temp" min="0" max="2.0" step="0.1" value="0.7"><span class="slider-readout" id="ai-temp-val">0.7</span></div></div></div>
+        <div class="form-group"><label>Max Tokens</label><input type="number" class="input-dark" id="ai-max-tokens" value="150" min="50" max="500" step="10" style="width:120px"></div>
+        <div class="form-group"><label>System Prompt</label><textarea class="input-dark" id="ai-system-prompt" rows="5">Eres un streamer virtual en TikTok. Responde de forma amigable, divertida y corta (max 2 oraciones). Usa emojis. Puedes usar [emotion:happy] y [sfx:ding] para expresar emociones.</textarea></div>
+        <button class="btn btn-p" id="btn-save-ai">Guardar Configuracion</button>
+      </div>
 
-                    <div class="mode-card" id="speed-card" style="margin-top:8px">
-                        <div class="mode-info" style="flex:1">
-                            <span class="mode-title">Velocidad Simulacion</span>
-                            <span class="mode-value" id="speed-label">1.0x</span>
-                            <span class="mode-desc">Intervalo entre eventos simulados</span>
-                        </div>
-                        <input type="range" id="sim-speed-slider" min="0.1" max="5.0" step="0.1" value="1.0" style="width:120px;margin-left:12px">
-                    </div>
-                </div>
+      <!-- ===== VTUBE ===== -->
+      <div class="content" id="tab-vtube">
+        <div class="panel-header"><span class="panel-title" style="font-size:16px">VTube Studio</span></div>
+        <div class="panel" style="margin-bottom:12px"><div class="panel-header"><span class="panel-title">Conexion</span><span id="vtube-tab-badge" class="s-badge offline">Desconectado</span></div><div style="display:flex;gap:6px"><button id="btn-vtube-tab-connect" class="btn btn-p">Conectar</button><button id="btn-vtube-tab-disconnect" class="btn btn-d" style="display:none">Desconectar</button></div><p id="vtube-tab-model" style="font-size:11px;color:var(--text-muted);margin-top:8px"></p></div>
+        <div class="panel" style="margin-bottom:12px"><div class="panel-header"><span class="panel-title">Expresiones</span></div><div style="display:flex;gap:6px;align-items:center"><select id="vtube-tab-expr" class="input-dark" style="width:180px"><option value="">-- Seleccionar --</option></select><button id="btn-vtube-tab-test-expr" class="btn btn-p btn-sm">Activar</button></div></div>
+        <div class="panel"><div class="panel-header"><span class="panel-title">Hotkeys</span></div><div style="display:flex;gap:6px;align-items:center"><select id="vtube-tab-hk" class="input-dark" style="width:180px"><option value="">-- Seleccionar --</option></select><button id="btn-vtube-tab-test-hk" class="btn btn-p btn-sm">Activar</button></div></div>
+      </div>
 
-                <div class="actions-section">
-                    <h3>Acciones Rapidas</h3>
-                    <div class="btn-row">
-                        <button class="btn-secondary" id="btn-gift">
-                            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M20 12c0-1.1.9-2 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v4c1.1 0 2 .9 2 2s-.9 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2zm-4.42 4.8L12 14.5l-3.58 2.3 1.08-4.12-3.29-2.69 4.29-.37L12 5.5l1.5 4.12 4.29.37-3.29 2.69 1.08 4.12z"/></svg>
-                            Simular Regalo
-                        </button>
-                        <button class="btn-secondary" id="btn-message">
-                            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
-                            Mensaje de Prueba
-                        </button>
-                        <button class="btn-secondary" id="btn-bulk" title="Genera eventos aleatorios para probar leaderboard">
-                            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-                            Simulacion Masiva
-                        </button>
-                    </div>
-                </div>
+      <!-- ===== OVERLAY ===== -->
+      <div class="content" id="tab-overlay">
+        <div class="panel-header"><span class="panel-title" style="font-size:16px">Configuracion del Overlay</span></div>
+        <div class="panel" style="margin-bottom:12px"><div class="panel-header"><span class="panel-title">Fondo</span></div><div style="display:flex;gap:8px;align-items:center"><input type="color" id="overlay-bg-color" value="#00ff00"><button class="btn btn-sm" id="btn-set-overlay-bg">Aplicar</button><button class="btn btn-sm" id="btn-overlay-transparent">Transparente</button></div></div>
+        <div class="panel" style="margin-bottom:12px"><div class="panel-header"><span class="panel-title">Debug</span></div><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px">Mostrar eventos en overlay</span><div class="sw" id="sw-overlay-debug"></div></div></div>
+        <div class="panel" style="margin-bottom:12px"><div class="panel-header"><span class="panel-title">Mensajes de Bienvenida</span></div><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="font-size:12px">Activar bienvenida</span><div class="sw on" id="sw-welcome"></div></div><div class="form-group"><label>Template (usa {'{user}'})</label><input type="text" class="input-dark" id="welcome-template" value="Bienvenido {user} al stream!"></div><button class="btn btn-p btn-sm" id="btn-save-welcome">Guardar</button></div>
+        <button class="btn" id="btn-test-overlay-events">Simular eventos en overlay</button>
+      </div>
 
-                <div class="chat-section">
-                    <h3>Chat en Vivo</h3>
-                    <div class="chat-container" id="live-chat">
-                        <div class="chat-placeholder">Esperando mensajes...</div>
-                    </div>
-                </div>
+      <!-- ===== REGLAS ===== -->
+      <div class="content" id="tab-reglas">
+        <div class="panel-header"><span class="panel-title" style="font-size:16px">Reglas de Eventos</span></div>
+        <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px">Configura acciones automaticas al recibir regalos o diamantes.</p>
+        <div class="rules-grid" id="rules-grid"><div style="color:var(--text-muted);text-align:center;padding:20px">Cargando...</div></div>
+        <div class="panel"><div class="panel-header"><span class="panel-title" id="rule-form-title">Nueva Regla</span></div>
+          <input type="hidden" id="rule-edit-index" value="-1">
+          <div class="grid-2"><div class="form-group"><label>Nombre</label><input type="text" class="input-dark" id="rule-name" placeholder="ej: Super Rosa"></div><div class="form-group"><label>Gatillo</label><select class="input-dark" id="rule-trigger"><option value="gift">Regalo Especifico</option><option value="diamonds">Diamantes</option></select></div></div>
+          <div class="form-group"><label id="rule-trigger-label">Nombre del Regalo</label><input type="text" class="input-dark" id="rule-trigger-value" placeholder="ej: Rosa, Universo..."></div>
+          <div class="form-group"><label>Acciones</label><div id="actions-editor"></div><button class="btn btn-sm" id="btn-add-action" style="margin-top:6px">+ Agregar Accion</button></div>
+          <div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-p" id="btn-save-rule">Guardar Regla</button><button class="btn" id="btn-test-rule">Probar</button><button class="btn btn-d btn-sm" id="btn-cancel-edit" style="display:none">Cancelar</button></div>
+        </div>
+      </div>
 
-                <div class="pipeline-section" style="margin-top:16px">
-                    <h3>Cola de Respuestas</h3>
-                    <div id="pipeline-queue" style="max-height:200px;overflow-y:auto">
-                        <div class="pipeline-empty">Cola vacia</div>
-                    </div>
-                    <details style="margin-top:8px">
-                        <summary style="cursor:pointer;color:var(--text-muted);font-size:12px">Historial</summary>
-                        <div id="pipeline-history" style="max-height:150px;overflow-y:auto;margin-top:4px">
-                            <div class="pipeline-empty">Sin historial</div>
-                        </div>
-                    </details>
-                </div>
-            </section>
-
-            <!-- TTS Config -->
-            <section class="tab" id="tab-tts">
-                <h2>Configuracion de Voz</h2>
-                <div class="tts-section">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="tts-engine">Motor TTS</label>
-                            <select id="tts-engine">
-                                <option value="kokoro">Kokoro ONNX</option>
-                                <option value="edge">Edge TTS</option>
-                                <option value="piper">Piper</option>
-                                <option value="gtts">gTTS</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="tts-lang">Idioma</label>
-                            <select id="tts-lang">
-                                <option value="es">Espanol</option>
-                                <option value="en-us">English (US)</option>
-                                <option value="en-gb">English (UK)</option>
-                                <option value="fr">Francais</option>
-                                <option value="pt">Portugues</option>
-                                <option value="it">Italiano</option>
-                                <option value="de">Deutsch</option>
-                                <option value="ja">日本語</option>
-                                <option value="zh">中文</option>
-                                <option value="ko">한국어</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group kokoro-opt">
-                        <label for="tts-voice-search">Voz</label>
-                        <div class="voice-select-wrapper">
-                            <div class="searchable-select" id="voice-select-container">
-                                <input type="text" id="tts-voice-search" placeholder="Buscar o seleccionar voz..." autocomplete="off" class="voice-search">
-                                <div class="voice-dropdown" id="voice-dropdown"></div>
-                            </div>
-                            <div class="voice-gender-filters">
-                                <button class="gender-btn active" data-gender="all">Todos</button>
-                                <button class="gender-btn" data-gender="female">Femenino</button>
-                                <button class="gender-btn" data-gender="male">Masculino</button>
-                            </div>
-                        </div>
-                        <div class="voice-actions">
-                            <button id="btn-preview-voice" class="btn-sm-blurple">
-                                <span class="btn-label">Escuchar</span>
-                                <span class="spinner hidden" id="spinner-preview"></span>
-                            </button>
-                            <span class="voice-count" id="voice-count"></span>
-                        </div>
-                    </div>
-
-                    <div class="form-group edge-opt" style="display:none">
-                        <label for="tts-edge-voice">Voz Edge TTS</label>
-                        <select id="tts-edge-voice">
-                            <option value="es-MX-DaliaNeural">Dalia (MX) - Femenina</option>
-                            <option value="es-MX-JorgeNeural">Jorge (MX) - Masculina</option>
-                            <option value="es-AR-ElenaNeural">Elena (AR) - Femenina</option>
-                            <option value="es-AR-TomasNeural">Tomas (AR) - Masculina</option>
-                            <option value="es-CO-SalomeNeural">Salome (CO) - Femenina</option>
-                            <option value="es-CO-GonzaloNeural">Gonzalo (CO) - Masculina</option>
-                            <option value="es-ES-ElviraNeural">Elvira (ES) - Femenina</option>
-                            <option value="es-ES-AlvaroNeural">Alvaro (ES) - Masculina</option>
-                            <option value="es-CL-CatalinaNeural">Catalina (CL) - Femenina</option>
-                            <option value="es-CL-LorenzoNeural">Lorenzo (CL) - Masculina</option>
-                            <option value="es-PE-CamilaNeural">Camila (PE) - Femenina</option>
-                            <option value="es-PE-AlexNeural">Alex (PE) - Masculina</option>
-                            <option value="es-VE-PaolaNeural">Paola (VE) - Femenina</option>
-                            <option value="es-VE-SebastianNeural">Sebastian (VE) - Masculina</option>
-                            <option value="es-US-PalomaNeural">Paloma (US) - Femenina</option>
-                            <option value="es-US-AlonsoNeural">Alonso (US) - Masculina</option>
-                            <option value="es-HN-KarlaNeural">Karla (HN) - Femenina</option>
-                            <option value="es-HN-CarlosNeural">Carlos (HN) - Masculina</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group full-width kokoro-opt">
-                        <div class="blend-header">
-                            <label class="switch-small">
-                                <input type="checkbox" id="toggle-blend">
-                                <span class="slider-small"></span>
-                            </label>
-                            <span>Voice Blend (mezcla de voces)</span>
-                        </div>
-                        <input type="text" id="tts-blend" placeholder="jf_tebukuro*0.8 + ef_dora*0.2" disabled>
-                        <small>Formula: voz1*0.5 + voz2*0.5</small>
-                    </div>
-
-                    <div class="sliders-grid">
-                        <div class="form-group">
-                            <label>Velocidad <span id="speed-value">1.0</span>x</label>
-                            <input type="range" id="tts-speed" min="0.5" max="2.0" step="0.1" value="1.0">
-                        </div>
-                        <div class="form-group">
-                            <label>Tono <span id="pitch-value">0</span> st</label>
-                            <input type="range" id="tts-pitch" min="-12" max="12" step="1" value="0">
-                        </div>
-                        <div class="form-group">
-                            <label>Volumen <span id="volume-value">1.0</span>x</label>
-                            <input type="range" id="tts-volume" min="0.1" max="3.0" step="0.1" value="1.0">
-                        </div>
-                    </div>
-
-                    <div class="form-row kokoro-opt">
-                        <div class="form-group">
-                            <label for="kokoro-model">Modelo Kokoro</label>
-                            <select id="kokoro-model">
-                                <option value="fp16">FP16 (177 MB - rapido)</option>
-                                <option value="fp32">FP32 (305 MB - calidad)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label for="tts-test-text">Texto de prueba</label>
-                        <textarea id="tts-test-text" rows="2">Buenos dias, esta es una prueba de sonido</textarea>
-                    </div>
-                    <button id="btn-test-tts" class="btn-blurple">
-                        <span class="btn-label">Probar TTS</span>
-                        <span class="spinner hidden" id="spinner-test-tts"></span>
-                    </button>
-                </div>
-
-                <div class="presets-section">
-                    <h3>Presets de Voz</h3>
-                    <div class="preset-row">
-                        <input type="text" id="preset-name" placeholder="Nombre del preset..." class="input-discord">
-                        <button id="btn-save-preset" class="btn-sm-green">Guardar</button>
-                    </div>
-                    <div class="preset-row">
-                        <select id="preset-select" class="input-discord">
-                            <option value="">-- Cargar preset --</option>
-                        </select>
-                        <button id="btn-load-preset" class="btn-sm-blurple">Cargar</button>
-                        <button id="btn-delete-preset" class="btn-sm-danger">Eliminar</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Setup -->
-            <section class="tab" id="tab-setup">
-                <h2>Estado del Sistema</h2>
-                <div class="setup-grid" id="setup-grid">
-                    <div class="spinner-lg"></div>
-                </div>
-
-                <div class="spam-section">
-                    <h3>Filtro Anti-Spam</h3>
-                    <div class="spam-card">
-                        <div class="spam-header">
-                            <span>Bloquear spam</span>
-                            <label class="switch">
-                                <input type="checkbox" id="toggle-spam" checked>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="spam-config" id="spam-config">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Rate limit (msgs por usuario)</label>
-                                    <input type="number" id="spam-rate" value="2" min="1" max="20" class="input-discord">
-                                </div>
-                                <div class="form-group">
-                                    <label>Ventana (segundos)</label>
-                                    <input type="number" id="spam-window" value="3" min="1" max="60" class="input-discord">
-                                </div>
-                                <div class="form-group">
-                                    <label>Duplicados (segundos)</label>
-                                    <input type="number" id="spam-dup" value="30" min="5" max="300" class="input-discord">
-                                </div>
-                            </div>
-                            <div class="form-group full-width">
-                                <label>Palabras baneadas</label>
-                                <div class="banned-row">
-                                    <input type="text" id="banned-input" placeholder="Agregar palabra..." class="input-discord">
-                                    <button id="btn-add-banned" class="btn-sm-blurple">Agregar</button>
-                                </div>
-                                <div class="banned-tags" id="banned-tags"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="actions-row">
-                    <div class="config-section">
-                        <h3>Configuracion</h3>
-                        <div class="btn-row">
-                            <button id="btn-export" class="btn-blurple">
-                                <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-                                Exportar Config
-                            </button>
-                            <button id="btn-import" class="btn-secondary" onclick="document.getElementById('import-file').click()">
-                                <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
-                                Importar Config
-                            </button>
-                            <input type="file" id="import-file" accept=".json" style="display:none">
-                        </div>
-                    </div>
-                    <div class="theme-section">
-                        <h3>Tema</h3>
-                        <div class="theme-options">
-                            <button class="theme-btn active" data-theme="discord" title="Discord">
-                                <span class="theme-swatch disc"></span> Discord
-                            </button>
-                            <button class="theme-btn" data-theme="tiktok" title="TikTok">
-                                <span class="theme-swatch tt"></span> TikTok
-                            </button>
-                            <button class="theme-btn" data-theme="midnight" title="Midnight">
-                                <span class="theme-swatch mid"></span> Midnight
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Logs -->
-            <section class="tab" id="tab-logs">
-                <h2>Ultimos Eventos</h2>
-                <div class="log-filters">
-                    <button class="log-filter active" data-filter="all">Todos</button>
-                    <button class="log-filter" data-filter="message">Mensajes</button>
-                    <button class="log-filter" data-filter="gift">Gifts</button>
-                    <button class="log-filter" data-filter="like">Likes</button>
-                    <button class="log-filter" data-filter="join">Joins</button>
-                    <button class="log-filter" data-filter="system">Sistema</button>
-                </div>
-                <div class="logs-container">
-                    <ul id="log-list"></ul>
-                </div>
-            </section>
-
-            <!-- AI Log -->
-            <section class="tab" id="tab-ai-log">
-                <h2>AI Log</h2>
-                <p class="tab-desc">Auditoria del flujo de respuestas AI: generadas vs reproducidas.</p>
-
-                <div class="ai-log-grid">
-                    <!-- Incoming: mensajes esperando respuesta IA -->
-                    <div class="ai-log-col">
-                        <h3>Entrantes</h3>
-                        <p class="tab-desc" style="font-size:11px;color:var(--text-muted);margin-top:-6px">Mensajes TikTok recibidos, esperando respuesta de IA.</p>
-                        <div class="ai-log-container" id="ai-log-incoming">
-                            <div class="ai-log-empty">Sin mensajes entrantes</div>
-                        </div>
-                    </div>
-
-                    <!-- Generated: respuestas IA listas, esperando TTS -->
-                    <div class="ai-log-col">
-                        <h3>Generados</h3>
-                        <p class="tab-desc" style="font-size:11px;color:var(--text-muted);margin-top:-6px">Respuestas de IA listas, esperando generacion de audio.</p>
-                        <div class="ai-log-container" id="ai-log-generated">
-                            <div class="ai-log-empty">Sin respuestas generadas</div>
-                        </div>
-                    </div>
-
-                    <!-- Playback: audio generado, reproduciendose o reproducido -->
-                    <div class="ai-log-col">
-                        <h3>Reproduccion</h3>
-                        <p class="tab-desc" style="font-size:11px;color:var(--text-muted);margin-top:-6px">Audio TTS generado, en reproduccion o ya escuchado.</p>
-                        <div class="ai-log-container" id="ai-log-playback">
-                            <div class="ai-log-empty">Sin reproducciones</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Overlay -->
-            <section class="tab" id="tab-overlay">
-                <h2>Configuracion del Overlay</h2>
-                <p class="tab-desc">Personaliza como se ve el overlay en OBS.</p>
-                <div class="config-section">
-                    <h3>Fondo del Overlay</h3>
-                    <div class="form-group">
-                        <label>Color de fondo (para debug)</label>
-                        <div class="color-picker-row">
-                            <input type="color" id="overlay-bg-color" value="#00ff00" class="color-input">
-                            <button id="btn-set-bg" class="btn-sm-blurple">Aplicar</button>
-                            <button id="btn-bg-transparent" class="btn-sm">Transparente</button>
-                        </div>
-                    </div>
-                    <div class="form-group" style="margin-top:12px">
-                        <label class="switch-label">
-                            <span>Debug Mode (mostrar eventos en overlay)</span>
-                            <label class="switch">
-                                <input type="checkbox" id="toggle-debug">
-                                <span class="slider"></span>
-                            </label>
-                        </label>
-                    </div>
-                    <div class="form-group" style="margin-top:12px">
-                        <button id="btn-test-events" class="btn-secondary">Simular eventos en overlay</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Rules -->
-            <section class="tab" id="tab-rules">
-                <h2>Reglas de Eventos</h2>
-                <p class="tab-desc">Configura que acciones se ejecutan al recibir regalos o diamantes.</p>
-                <p class="tab-desc" style="color:var(--text-muted);font-size:12px;margin-top:-8px">Tip: Para emojis usa caracteres como 🎉🌹✨. Si no funcionan, probá con simbolos: ★ ♥ ♦ ♣ ♠</p>
-                <div class="rules-grid" id="rules-grid">
-                    <div class="spinner-lg"></div>
-                </div>
-                <div class="rule-form">
-                    <h3 id="rule-form-title">Nueva Regla</h3>
-                    <input type="hidden" id="rule-edit-index" value="-1">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Nombre de la Regla</label>
-                            <input type="text" id="rule-name" placeholder="ej: Super Rosa, Donacion Grande..." class="input-discord">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Gatillo (Trigger)</label>
-                            <select id="rule-trigger" class="input-discord">
-                                <option value="gift">Regalo Especifico</option>
-                                <option value="diamonds">Valor en Diamantes</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label id="rule-trigger-label">Nombre del Regalo</label>
-                            <input type="text" id="rule-trigger-value" placeholder="ej: Rosa, Panda, Universo..." class="input-discord">
-                        </div>
-                    </div>
-                    <div class="actions-editor" id="actions-editor">
-                        <h4>Acciones</h4>
-                        <div class="action-row" id="action-row-template" style="display:none">
-                            <select class="action-type input-discord">
-                                <option value="tts">TTS (Texto a Voz)</option>
-                                <option value="emoji">Lluvia de Emojis</option>
-                                <option value="sfx">Sonido (SFX)</option>
-                                <option value="vtube_expr">VTube Expresión</option>
-                                <option value="vtube_hotkey">VTube Hotkey</option>
-                            </select>
-                            <div class="action-config"></div>
-                            <button class="btn-sm-danger action-remove">X</button>
-                        </div>
-                    </div>
-                    <div class="btn-row" style="margin-top:12px">
-                        <button id="btn-add-action" class="btn-sm-blurple">+ Agregar Accion</button>
-                        <button id="btn-test-rule" class="btn-secondary">Probar Regla</button>
-                        <button id="btn-save-rule" class="btn-blurple">Guardar Regla</button>
-                        <button id="btn-cancel-edit" class="btn-sm-danger" style="display:none">Cancelar</button>
-                    </div>
-                </div>
-            </section>
-        </main>
+      <!-- ===== SISTEMA ===== -->
+      <div class="content" id="tab-sistema">
+        <div class="panel-header"><span class="panel-title" style="font-size:16px">Estado del Sistema</span></div>
+        <div class="setup-grid" id="setup-grid"><div style="color:var(--text-muted);padding:12px">Cargando...</div></div>
+        <div class="panel" style="margin-bottom:12px"><div class="panel-header"><span class="panel-title">Filtro Anti-Spam</span></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="font-size:12px">Activar</span><div class="sw on" id="sw-spam"></div></div>
+          <div class="grid-3"><div class="form-group"><label>Rate (msgs)</label><input type="number" class="input-dark" id="spam-rate" value="2" min="1" max="20"></div><div class="form-group"><label>Ventana (s)</label><input type="number" class="input-dark" id="spam-window" value="3" min="1" max="60"></div><div class="form-group"><label>Duplicados (s)</label><input type="number" class="input-dark" id="spam-dup" value="30" min="5" max="300"></div></div>
+          <div class="form-group"><label>Palabras baneadas</label><div style="display:flex;gap:6px"><input type="text" class="input-dark" id="banned-input" placeholder="Agregar palabra..."><button class="btn btn-sm" id="btn-add-banned">Agregar</button></div><div class="banned-tags" id="banned-tags"></div></div>
+        </div>
+        <div class="form-group"><label>Tema</label><div class="theme-row"><button class="theme-btn active" data-theme="discord">Discord</button><button class="theme-btn" data-theme="tiktok">TikTok</button><button class="theme-btn" data-theme="midnight">Midnight</button></div></div>
+        <div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-p" id="btn-export">Exportar Config</button><button class="btn" id="btn-import-btn">Importar Config</button><input type="file" id="import-file" accept=".json" style="display:none"></div>
+      </div>
     </div>
-    <div class="toast-container" id="toast-container"></div>
-    <script src="panel.js"></script>
+  </div>
+</div>
+
+<div class="toast-area" id="toast-area"></div>
+
+<script>
+/* ===============================================================
+   UTILITIES
+   =============================================================== */
+function $(id) { return document.getElementById(id); }
+function qs(sel) { return document.querySelector(sel); }
+function esc(s) { var m={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}; return String(s).replace(/[&<>"']/g,function(c){return m[c];}); }
+function now() { var d=new Date(); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')+':'+d.getSeconds().toString().padStart(2,'0'); }
+
+var testAudio = new Audio(); testAudio.volume = 1.0;
+
+async function postJSON(url, data) {
+  try {
+    var r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: data ? JSON.stringify(data) : '{}' });
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    return await r.json();
+  } catch(e) { addLogSilent('API Error: '+e.message); return null; }
+}
+
+function setSpinner(el, show) {
+  var s = el.querySelector('.spinner'); var l = el.querySelector('.btn-label');
+  if (s) s.classList.toggle('hidden', !show); if (l) l.classList.toggle('hidden', show); el.disabled = show;
+}
+
+function updateBadge(el, on) { el.className = 'st-badge '+(on?'on':'off'); }
+function updateModeUI(isSim) {
+  $('mode-label').textContent = isSim ? 'Simulacion' : 'TikTok Real';
+  $('mode-label').style.color = isSim ? 'var(--accent-amber)' : 'var(--green)';
+  $('mode-desc').textContent = isSim ? 'Eventos generados automaticamente' : 'Conectado al live de TikTok';
+  $('btn-sim-text').textContent = isSim ? 'Cambiar a Real' : 'Cambiar a Simulacion';
+}
+
+/* ===============================================================
+   GLOBAL STATE
+   =============================================================== */
+var G = {
+  stats: { messages:0, gifts:0, likes:0, joins:0, ai_replies:0, tts_played:0, uptime:0 },
+  ttsOn: true, aiOn: true, tiktokOn: true, isSim: true,
+  allLogs: [], logFilter: 'all',
+  currentVoice: '', allVoices: [],
+  pipelineState: null,
+  avatarState: 'idle'
+};
+
+/* ===============================================================
+   SSE
+   =============================================================== */
+var evtSource = null, sseReadyState = 0;
+function connectSSE() {
+  if (evtSource) evtSource.close();
+  console.log('[Panel SSE] Conectando a /stream...');
+  evtSource = new EventSource('/stream');
+  evtSource.onopen = function() {
+    console.log('[Panel SSE] Conectado OK. readyState='+evtSource.readyState);
+    sseReadyState = 1;
+  };
+  evtSource.onmessage = function(e) {
+    try {
+      var p = JSON.parse(e.data);
+      console.log('[Panel SSE] Evento recibido:', p.type, p.data ? (typeof p.data === 'string' ? p.data.slice(0,60) : JSON.stringify(p.data).slice(0,120)) : '');
+      switch (p.type) {
+        case 'log': addLogSilent(p.data.message); break;
+        case 'tiktok_event': handleSSEEvent(p.data); break;
+        case 'overlay_message': handleOverlayMsg(p.data); break;
+        case 'overlay_alert': handleOverlayAlert(p.data); break;
+        case 'pipeline_state': G.pipelineState = p.data; console.log('[Panel SSE] Pipeline state actualizado. Gen queue:', (p.data.gen_queue||[]).length, 'TTS queue:', (p.data.tts_queue||[]).length, 'Playing:', !!p.data.playing); renderPipelineQueue(); renderPipelineSteps(); renderPipelineFull(); break;
+        case 'tts_speak': updateAvatarState('talking'); break;
+        case 'tts_audio': updateAvatarState('idle'); break;
+        case 'overlay_config': break;
+        default: console.log('[Panel SSE] Tipo desconocido:', p.type);
+      }
+    } catch(err) { console.error('[Panel SSE] Parse error:', err, 'raw data:', e.data ? e.data.slice(0,200) : '(empty)'); }
+  };
+  evtSource.onerror = function() {
+    console.warn('[Panel SSE] Error/reconnect. readyState='+evtSource.readyState);
+    sseReadyState = evtSource.readyState;
+    setTimeout(connectSSE, 3000);
+  };
+}
+
+function handleSSEEvent(d) {
+  if (!d) return;
+  var user = d.user||'anon';
+  if (d.type === 'message') { addChatMsg(user, d.text, false); addObsChat(user, d.text); addLogSilent(user+': '+d.text); }
+  else if (d.type === 'gift') { addChatMsg('GIFT', user+' envio '+(d.gift||'?')+' x'+(d.amount||1), false); addObsChat(user, '[regalo: '+(d.gift||'?')+']'); addLogSilent(user+' envio '+(d.gift||'?')); }
+  else if (d.type === 'like') { addLogSilent(user+' dio '+(d.count||1)+' likes'); }
+  else if (d.type === 'join') { addChatMsg('JOIN', user+' se unio', false); addObsChat('Sistema', user+' se unio'); addLogSilent(user+' se unio'); }
+}
+
+function handleOverlayMsg(d) {
+  if (!d) return;
+  var isAI = !!d.original_user;
+  addChatMsg(d.user, d.text, isAI);
+  if (isAI) setObsSubtitle(d.text);
+}
+
+function handleOverlayAlert(d) { if (d) showToast(d.type+': '+d.user+(d.text?' - '+d.text:'')); }
+
+/* ===============================================================
+   TAB NAVIGATION
+   =============================================================== */
+var tabNames = { dashboard:'Dashboard', pipeline:'Pipeline', eventos:'Eventos', voz:'Voz', ia:'IA', vtube:'VTube', overlay:'Overlay', reglas:'Reglas', sistema:'Sistema' };
+
+function switchTab(id) {
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  document.querySelectorAll('.content').forEach(function(c){c.classList.remove('active');});
+  var nav = qs('.nav-item[data-tab="'+id+'"]'); if (nav) nav.classList.add('active');
+  var ct = $('tab-'+id); if (ct) ct.classList.add('active');
+  $('page-title').textContent = tabNames[id]||id;
+  if (id==='eventos') renderFullLog(G.logFilter);
+  if (id==='voz') renderVoiceGrid();
+  if (id==='sistema') { loadSetup(); loadSpamConfig(); }
+  if (id==='reglas') loadRules();
+  if (id==='vtube') refreshVtsStatus();
+  if (id==='pipeline') renderPipelineFull();
+}
+
+document.querySelectorAll('.nav-item').forEach(function(item){ item.addEventListener('click', function(){ switchTab(this.dataset.tab); }); });
+
+/* ===============================================================
+   STATS
+   =============================================================== */
+function initStats() {
+  var labels = [['💬','Mensajes','messages'],['🎁','Regalos','gifts'],['❤️','Likes','likes'],['👥','Uniones','joins'],['🧠','IA','ai_replies'],['🔊','TTS','tts_played'],['⏱️','Uptime','uptime']];
+  var row = $('stats-row'); row.innerHTML = '';
+  labels.forEach(function(l){
+    var c = document.createElement('div'); c.className = 'stat-card';
+    c.innerHTML = '<div class="stat-top"><span class="stat-icon">'+l[0]+'</span></div><div class="stat-value" id="stat-'+l[2]+'">0</div><div class="stat-label">'+l[1]+'</div>';
+    row.appendChild(c);
+  });
+}
+
+function refreshStats() {
+  fetch('/api/stats').then(function(r){return r.json();}).then(function(s){
+    G.stats = s;
+    $('stat-messages').textContent = s.messages; $('stat-gifts').textContent = s.gifts;
+    $('stat-likes').textContent = s.likes; $('stat-joins').textContent = s.joins;
+    $('stat-ai_replies').textContent = s.ai_replies; $('stat-tts_played').textContent = s.tts_played;
+    $('stat-uptime').textContent = fmtUptime(s.uptime);
+    updateModeUI(s.tiktok_mode==='simulacion');
+    $('nav-badge-dash').textContent = s.messages;
+    $('av-uptime').textContent = fmtUptime(s.uptime);
+  }).catch(function(){});
+}
+
+function fmtUptime(s) { if (s<60) return s+'s'; var m=Math.floor(s/60); if (m<60) return m+'m'; var h=Math.floor(m/60); m%=60; return h+'h '+m+'m'; }
+
+/* ===============================================================
+   LOGS
+   =============================================================== */
+function addLogSilent(text) {
+  G.allLogs.unshift({text:text, time:now()});
+  if (G.allLogs.length > 200) G.allLogs.length = 200;
+  renderLogMini();
+  if ($('tab-eventos').classList.contains('active')) renderFullLog(G.logFilter);
+}
+
+function renderLogMini() {
+  var c = $('log-mini'); if (!c) return;
+  c.innerHTML = '';
+  for (var i=0; i<Math.min(G.allLogs.length, 25); i++) {
+    var e = G.allLogs[i]; var t = getLogTag(e.text);
+    var d = document.createElement('div'); d.className = 'log-entry';
+    d.innerHTML = '<span class="log-time">'+e.time+'</span><span class="log-tag '+t+'">'+t.toUpperCase()+'</span><span class="log-text">'+esc(e.text.slice(0,80))+'</span>';
+    c.appendChild(d);
+  }
+}
+
+function renderFullLog(filter) {
+  G.logFilter = filter;
+  var c = $('log-full'); if (!c) return;
+  c.innerHTML = '';
+  var filtered = filter==='all' ? G.allLogs : G.allLogs.filter(function(e){ return getLogTag(e.text)===filter; });
+  for (var i=0; i<filtered.length; i++) {
+    var e = filtered[i]; var t = getLogTag(e.text);
+    var d = document.createElement('div'); d.className = 'log-entry';
+    d.innerHTML = '<span class="log-time">'+e.time+'</span><span class="log-tag '+t+'">'+t.toUpperCase()+'</span><span class="log-text">'+esc(e.text.slice(0,120))+'</span>';
+    c.appendChild(d);
+  }
+}
+
+function getLogTag(text) {
+  var t = text.toLowerCase();
+  if (t.indexOf('message')!==-1||t.indexOf('mensaje')!==-1||t.indexOf('respondio')!==-1) return 'msg';
+  if (t.indexOf('gift')!==-1||t.indexOf('regalo')!==-1) return 'gift';
+  if (t.indexOf('like')!==-1) return 'like';
+  if (t.indexOf('join')!==-1||t.indexOf('se unio')!==-1) return 'join';
+  return 'sys';
+}
+
+document.querySelectorAll('.filter-btn').forEach(function(b){
+  b.addEventListener('click', function(){
+    document.querySelectorAll('.filter-btn').forEach(function(f){f.classList.remove('active');});
+    b.classList.add('active'); renderFullLog(b.dataset.filter);
+  });
+});
+
+/* ===============================================================
+   CHAT
+   =============================================================== */
+function addChatMsg(user, text, isAI) {
+  var c = $('live-chat'); if (!c) return;
+  var ph = c.querySelector('div:first-child'); if (ph && ph.style.color) ph.remove();
+  var d = document.createElement('div'); d.className = 'chat-msg'+(isAI?' ai':'');
+  d.innerHTML = '<span class="chat-user">'+esc(user)+'</span><span class="chat-text">'+esc(text)+'</span>';
+  c.appendChild(d); while (c.children.length>60) c.firstElementChild.remove();
+  c.scrollTop = c.scrollHeight;
+}
+
+function addObsChat(user, text) {
+  var c = $('obs-chat'); if (!c) return;
+  var d = document.createElement('div'); d.className = 'obs-chat-msg';
+  d.innerHTML = '<span class="oc-user">'+esc(user)+':</span> <span class="oc-text">'+esc(text)+'</span>';
+  c.insertBefore(d, c.firstChild); while (c.children.length>15) c.removeChild(c.lastChild);
+}
+
+function setObsSubtitle(text) {
+  var s = $('obs-subtitle-text'); if (!s) return;
+  s.textContent = text; s.style.opacity = '1';
+  setTimeout(function(){ s.style.opacity = '0'; }, 3500);
+}
+
+/* ===============================================================
+   AVATAR
+   =============================================================== */
+function updateAvatarState(state) {
+  if (G.avatarState===state) return;
+  G.avatarState = state;
+  var bars = document.querySelectorAll('#avatar-visual .wavebar');
+  var text = $('av-status-text'); var label = $('av-status-label');
+  bars.forEach(function(b){ b.className = 'wavebar '+state; });
+  label.className = 'av-status-label state-'+state;
+  if (state==='thinking') text.textContent = 'Pensando (IA)...';
+  else if (state==='talking') text.textContent = 'Hablando (TTS)';
+  else text.textContent = 'Inactivo';
+  if (state!=='idle') setTimeout(function(){ updateAvatarState('idle'); }, 4000);
+}
+
+/* ===============================================================
+   PIPELINE
+   =============================================================== */
+function renderPipelineSteps() {
+  var ps = G.pipelineState; if (!ps) return;
+  var steps = document.querySelectorAll('#pipeline-steps .p-step');
+  var genQ = (ps.gen_queue||[]).length; var ttsQ = (ps.tts_queue||[]).length;
+  var playing = ps.playing;
+
+  steps.forEach(function(s){ s.classList.remove('active','done'); });
+  if (playing) { steps[3].classList.add('active'); for (var i=0;i<3;i++) steps[i].classList.add('done'); }
+  else if (ttsQ>0) { steps[2].classList.add('active'); steps[0].classList.add('done'); steps[1].classList.add('done'); }
+  else if (genQ>0) { steps[1].classList.add('active'); steps[0].classList.add('done'); }
+  else if ((ps.generating)) { steps[1].classList.add('active'); steps[0].classList.add('done'); }
+  else if ((ps.incoming_queue||[]).length>0) steps[0].classList.add('active');
+
+  $('pipeline-summary').textContent = 'In:'+(ps.incoming_queue||[]).length+' Gen:'+(genQ)+' TTS:'+(ttsQ)+(playing?' Play:1':'');
+}
+
+function renderPipelineQueue() {
+  var ps = G.pipelineState; var c = $('pipe-queue'); if (!c || !ps) return;
+  var items = [];
+  if (ps.generating) items.push({user:ps.generating.user||'?', text:ps.generating.original_text||'', status:'generating', id:'gen'});
+  (ps.gen_queue||[]).forEach(function(i){ items.push({user:i.user||'?', text:i.text||'', status:'generated', id:i.id}); });
+  (ps.tts_queue||[]).forEach(function(i){ items.push({user:i.user||'?', text:i.text||'', status:'tts', id:i.id}); });
+  if (ps.playing) items.push({user:ps.playing.user||'?', text:ps.playing.text||'', status:'playing', id:ps.playing.id});
+  (ps.history||[]).slice(-5).reverse().forEach(function(i){ items.push({user:i.user||'?', text:i.text||'', status:'done', id:i.id}); });
+
+  c.innerHTML = '';
+  if (items.length===0) { c.innerHTML = '<div style="color:var(--text-muted);font-size:11px;padding:6px">Cola vacia</div>'; return; }
+  items.slice(0,20).forEach(function(it){
+    var sc = 's-'+it.status; var st = it.status==='generating'?'GEN':(it.status==='generated'?'LISTO':(it.status==='tts'?'TTS':(it.status==='playing'?'PLAY':'DONE')));
+    var d = document.createElement('div'); d.className = 'pipe-item';
+    d.innerHTML = '<span class="pipe-status '+sc+'">'+st+'</span><span class="pipe-user">'+esc(it.user)+'</span><span class="pipe-text">'+esc(it.text||'').slice(0,60)+'</span>';
+    c.appendChild(d);
+  });
+}
+
+function renderPipelineFull() {
+  var ps = G.pipelineState; var c = $('pl-full-list'); if (!c) return;
+  if (!ps) { c.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:16px">Esperando datos...</div>'; return; }
+  var items = [];
+  if (ps.generating) items.unshift({user:ps.generating.user||'?', text:ps.generating.original_text||'', status:'generating'});
+  (ps.gen_queue||[]).forEach(function(i){ items.unshift({user:i.user||'?', text:i.text||'', status:'generated'}); });
+  (ps.tts_queue||[]).forEach(function(i){ items.unshift({user:i.user||'?', text:i.text||'', status:'tts'}); });
+  (ps.history||[]).slice(-30).forEach(function(i){ items.unshift({user:i.user||'?', text:i.text||'', status:i.status==='done'?'done':'playing'}); });
+
+  c.innerHTML = '';
+  if (items.length===0) { c.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:16px">Sin elementos</div>'; return; }
+  items.forEach(function(it){
+    var sc = 's-'+it.status; var st = it.status==='generating'?'GEN':(it.status==='generated'?'LISTO':(it.status==='tts'?'TTS':(it.status==='playing'?'PLAY':'DONE')));
+    var d = document.createElement('div'); d.className = 'pipe-item';
+    d.innerHTML = '<span class="pipe-status '+sc+'">'+st+'</span><span class="pipe-user">'+esc(it.user)+'</span><span class="pipe-text">'+esc(it.text||'').slice(0,80)+'</span>';
+    c.appendChild(d);
+  });
+}
+
+/* ===============================================================
+   TTS TOGGLES (topbar)
+   =============================================================== */
+$('badge-tts').addEventListener('click', async function(){
+  var r = await postJSON('/api/toggle_tts'); if (r) { updateBadge(this, r.tts_enabled); G.ttsOn = r.tts_enabled; refreshStats(); }
+});
+$('badge-ai').addEventListener('click', async function(){
+  var r = await postJSON('/api/toggle_ai'); if (r) { updateBadge(this, r.ai_enabled); G.aiOn = r.ai_enabled; refreshStats(); }
+});
+$('badge-tiktok').addEventListener('click', async function(){
+  var r = await postJSON('/api/toggle_tiktok'); if (r) { updateBadge(this, r.tiktok_enabled); G.tiktokOn = r.tiktok_enabled; refreshStats(); }
+});
+
+/* ===============================================================
+   MODE TOGGLE
+   =============================================================== */
+$('btn-toggle-sim').addEventListener('click', async function(){
+  setSpinner(this, true);
+  var r = await postJSON('/api/toggle_simulation'); setSpinner(this, false);
+  if (r) { updateModeUI(r.simulation); G.isSim = r.simulation; refreshStats(); }
+});
+
+$('sim-speed-slider').addEventListener('input', function(){ $('sim-speed-label').textContent = parseFloat(this.value).toFixed(1)+'x'; });
+$('sim-speed-slider').addEventListener('change', async function(){
+  await postJSON('/api/simulation_speed', {speed: parseFloat(this.value)});
+});
+
+/* ===============================================================
+   QUICK ACTIONS
+   =============================================================== */
+$('btn-sim-gift').addEventListener('click', async function(){ await postJSON('/api/simulate_gift', {user:'Admin',gift:'Panda'}); addLogSilent('Regalo simulado enviado'); setTimeout(refreshStats,500); });
+$('btn-test-msg').addEventListener('click', async function(){ await postJSON('/api/test_message', {user:'Admin',text:'Hola desde el panel'}); addLogSilent('Mensaje de prueba enviado'); });
+$('btn-bulk-sim').addEventListener('click', async function(){
+  addLogSilent('Generando 20 eventos aleatorios...');
+  var r = await postJSON('/api/simulate_bulk', {count:20});
+  if (r&&r.success) { addLogSilent('Simulacion masiva: '+r.events_generated+' eventos'); setTimeout(refreshStats,500); }
+});
+
+/* ===============================================================
+   VTUBE
+   =============================================================== */
+function refreshVtsStatus() {
+  fetch('/api/vtube_status').then(function(r){return r.json();}).then(function(s){
+    var badge = $('vtube-status-badge'), tBadge = $('vtube-tab-badge');
+    var conn = $('btn-vtube-connect'), dis = $('btn-vtube-disconnect');
+    var tConn = $('btn-vtube-tab-connect'), tDis = $('btn-vtube-tab-disconnect');
+
+    if (s.connected && s.authenticated) {
+      var info = s.model ? 'Modelo: '+s.model : '';
+      $('vtube-model').textContent = info; $('vtube-tab-model').textContent = info;
+      badge.textContent = 'Conectado'; badge.className = 's-badge online';
+      tBadge.textContent = 'Conectado'; tBadge.className = 's-badge online';
+      conn.style.display = 'none'; dis.style.display = ''; tConn.style.display = 'none'; tDis.style.display = '';
+      populateVtubeSelects(s);
+    } else {
+      badge.textContent = 'Desconectado'; badge.className = 's-badge offline';
+      tBadge.textContent = 'Desconectado'; tBadge.className = 's-badge offline';
+      conn.style.display = ''; dis.style.display = 'none'; tConn.style.display = ''; tDis.style.display = 'none';
+      $('vtube-model').textContent = ''; $('vtube-tab-model').textContent = '';
+    }
+  }).catch(function(){
+    $('vtube-status-badge').textContent = 'Desconectado'; $('vtube-status-badge').className = 's-badge offline';
+  });
+}
+
+function populateVtubeSelects(s) {
+  var presets = ['happy','very_happy','angry','furious','surprised','shocked','sad','crying','wink','blush','neutral','laughing','scared','sleepy','smug'];
+  // Dashboard select
+  var ds = $('vtube-expr-select'); if (ds.options.length<=1) { presets.forEach(function(p){ var o=document.createElement('option'); o.value=p; o.textContent=p+' (preset)'; ds.appendChild(o); }); (s.expressions||[]).forEach(function(e){ if(presets.indexOf(e)===-1){ var o=document.createElement('option'); o.value=e; o.textContent=e+' (modelo)'; ds.appendChild(o); } }); }
+  var dk = $('vtube-hk-select'); if (dk.options.length<=1) { (s.hotkeys||[]).forEach(function(h){ var o=document.createElement('option'); o.value=h; o.textContent=h; dk.appendChild(o); }); }
+  // VTube tab selects
+  var ts = $('vtube-tab-expr'); if (ts.options.length<=1) { presets.forEach(function(p){ var o=document.createElement('option'); o.value=p; o.textContent=p+' (preset)'; ts.appendChild(o); }); (s.expressions||[]).forEach(function(e){ if(presets.indexOf(e)===-1){ var o=document.createElement('option'); o.value=e; o.textContent=e+' (modelo)'; ts.appendChild(o); } }); }
+  var th = $('vtube-tab-hk'); if (th.options.length<=1) { (s.hotkeys||[]).forEach(function(h){ var o=document.createElement('option'); o.value=h; o.textContent=h; th.appendChild(o); }); }
+}
+
+$('btn-vtube-connect').addEventListener('click', async function(){ var r=await postJSON('/api/vtube_connect'); if(r&&r.success){ addLogSilent('Conectando a VTube Studio...'); setTimeout(refreshVtsStatus,2000); } });
+$('btn-vtube-disconnect').addEventListener('click', async function(){ await postJSON('/api/vtube_disconnect'); refreshVtsStatus(); addLogSilent('VTube desconectado'); });
+$('btn-vtube-test-expr').addEventListener('click', async function(){ var v=$('vtube-expr-select').value; if(!v)return; var r=await postJSON('/api/vtube_expression',{expression:v}); addLogSilent('VTS expresion: '+(r&&r.success?'OK':'fallo')); });
+$('btn-vtube-test-hk').addEventListener('click', async function(){ var v=$('vtube-hk-select').value; if(!v)return; var r=await postJSON('/api/vtube_hotkey',{hotkey:v}); addLogSilent('VTS hotkey: '+(r&&r.success?'OK':'fallo')); });
+$('btn-vtube-tab-connect').addEventListener('click', async function(){ var r=await postJSON('/api/vtube_connect'); if(r&&r.success){ addLogSilent('Conectando a VTube Studio...'); setTimeout(refreshVtsStatus,2000); } });
+$('btn-vtube-tab-disconnect').addEventListener('click', async function(){ await postJSON('/api/vtube_disconnect'); refreshVtsStatus(); addLogSilent('VTube desconectado'); });
+$('btn-vtube-tab-test-expr').addEventListener('click', async function(){ var v=$('vtube-tab-expr').value; if(!v)return; var r=await postJSON('/api/vtube_expression',{expression:v}); addLogSilent('VTS expresion: '+(r&&r.success?'OK':'fallo')); });
+$('btn-vtube-tab-test-hk').addEventListener('click', async function(){ var v=$('vtube-tab-hk').value; if(!v)return; var r=await postJSON('/api/vtube_hotkey',{hotkey:v}); addLogSilent('VTS hotkey: '+(r&&r.success?'OK':'fallo')); });
+
+/* ===============================================================
+   TTS CONFIG
+   =============================================================== */
+function updateEngineUI(engine) {
+  document.querySelectorAll('.kokoro-opt').forEach(function(e){ e.style.display = (engine==='kokoro')?'':'none'; });
+  document.querySelectorAll('.edge-opt').forEach(function(e){ e.style.display = (engine==='edge')?'':'none'; });
+}
+
+var voiceGender = 'all';
+function populateVoices(voices, selected) {
+  G.allVoices = voices||[]; G.currentVoice = selected||'';
+  document.getElementById('voice-count').textContent = G.allVoices.length+' voces';
+  renderVoiceGrid();
+}
+
+function renderVoiceGrid() {
+  var grid = $('voice-grid'); if (!grid) return;
+  var filtered = G.allVoices;
+  if (voiceGender==='female') filtered = filtered.filter(function(v){return /[a-z]f_/i.test(v);});
+  else if (voiceGender==='male') filtered = filtered.filter(function(v){return /[a-z]m_/i.test(v);});
+  grid.innerHTML = '';
+  filtered.forEach(function(v){
+    var c = document.createElement('div'); c.className = 'voice-chip'+(v===G.currentVoice?' active':'');
+    c.textContent = v;
+    c.addEventListener('click', function(){
+      G.currentVoice = v; renderVoiceGrid();
+      postJSON('/api/set_tts_voice', {voice:v});
+    });
+    grid.appendChild(c);
+  });
+}
+
+$('tts-engine').addEventListener('change', async function(){
+  updateEngineUI(this.value);
+  var r = await postJSON('/api/set_tts_engine', {engine:this.value});
+  if (r&&r.success) { populateVoices(r.status.kokoro_voices, r.status.voice); $('av-engine').textContent=this.value; }
+});
+
+$('tts-lang').addEventListener('change', async function(){ await postJSON('/api/set_tts_lang', {lang:this.value}); });
+
+var swBlend = $('sw-blend'), blendInput = $('tts-blend');
+swBlend.addEventListener('click', function(){
+  swBlend.classList.toggle('on'); blendInput.disabled = !swBlend.classList.contains('on');
+  if (!swBlend.classList.contains('on')) postJSON('/api/set_tts_voice_blend', {blend:''});
+});
+blendInput.addEventListener('change', async function(){
+  if (swBlend.classList.contains('on')) await postJSON('/api/set_tts_voice_blend', {blend:this.value});
+});
+
+$('tts-edge-voice').addEventListener('change', async function(){ await postJSON('/api/set_tts_edge_voice', {voice:this.value}); });
+
+$('tts-speed').addEventListener('input', function(){ $('tts-speed-val').textContent=parseFloat(this.value).toFixed(1)+'x'; $('av-speed').textContent=parseFloat(this.value).toFixed(1)+'x'; });
+$('tts-speed').addEventListener('change', async function(){ await postJSON('/api/set_tts_speed', {speed:parseFloat(this.value)}); });
+$('tts-pitch').addEventListener('input', function(){ $('tts-pitch-val').textContent=this.value+' st'; });
+$('tts-pitch').addEventListener('change', async function(){ await postJSON('/api/set_tts_pitch', {pitch:parseInt(this.value)}); });
+$('tts-volume').addEventListener('input', function(){ $('tts-volume-val').textContent=parseFloat(this.value).toFixed(1)+'x'; });
+$('tts-volume').addEventListener('change', async function(){ await postJSON('/api/set_tts_volume', {volume:parseFloat(this.value)}); });
+$('kokoro-model').addEventListener('change', async function(){
+  var prev=this.dataset.current||'fp16';
+  var r=await postJSON('/api/set_kokoro_model', {model:this.value});
+  if (r&&r.success) { this.dataset.current=this.value; populateVoices(r.status.kokoro_voices, r.status.voice); }
+  else { this.value=prev; }
+});
+
+$('btn-preview-voice').addEventListener('click', async function(){
+  var v = G.currentVoice; if(!v) return;
+  setSpinner(this, true);
+  var r = await postJSON('/api/preview_voice', {voice:v}); setSpinner(this, false);
+  if (r&&r.filename) { testAudio.src='/audio/'+r.filename; testAudio.currentTime=0; testAudio.play().catch(function(){}); }
+});
+
+$('btn-test-tts').addEventListener('click', async function(){
+  setSpinner(this, true);
+  var r = await postJSON('/api/test_tts', {text:$('tts-test-text').value}); setSpinner(this, false);
+  if (r&&r.filename) { addLogSilent('TTS generado: '+r.filename); testAudio.src='/audio/'+r.filename; testAudio.currentTime=0; testAudio.play().catch(function(){}); }
+  else addLogSilent('Error TTS - revisa logs del servidor');
+});
+
+// Presets
+async function loadPresetList() {
+  var r = await fetch('/api/tts_presets'); var p = await r.json();
+  $('preset-select').innerHTML = '<option value="">-- Cargar preset --</option>';
+  Object.keys(p).sort().forEach(function(n){ var o=document.createElement('option'); o.value=n; o.textContent=n; $('preset-select').appendChild(o); });
+}
+
+$('btn-save-preset').addEventListener('click', async function(){
+  var n = $('preset-name').value.trim(); if(!n) return;
+  var r = await postJSON('/api/save_preset', {name:n});
+  if (r&&r.success) { addLogSilent('Preset guardado: '+n); $('preset-name').value=''; loadPresetList(); }
+});
+
+$('btn-load-preset').addEventListener('click', async function(){
+  var n = $('preset-select').value; if(!n) return;
+  var r = await postJSON('/api/load_preset', {name:n});
+  if (r&&r.success) {
+    var s = r.status;
+    if (s.engine) { $('tts-engine').value=s.engine; updateEngineUI(s.engine); }
+    if (s.voice) { G.currentVoice=s.voice; renderVoiceGrid(); }
+    if (s.voice_blend) { blendInput.value=s.voice_blend; swBlend.classList.add('on'); blendInput.disabled=false; }
+    else { blendInput.value=''; swBlend.classList.remove('on'); blendInput.disabled=true; }
+    if (s.speed!==undefined) { $('tts-speed').value=s.speed; $('tts-speed-val').textContent=s.speed.toFixed(1)+'x'; }
+    if (s.lang) $('tts-lang').value=s.lang;
+    if (s.edge_voice) $('tts-edge-voice').value=s.edge_voice;
+    populateVoices(s.kokoro_voices, s.voice);
+    addLogSilent('Preset cargado: '+n);
+  }
+});
+
+$('btn-delete-preset').addEventListener('click', async function(){
+  var n = $('preset-select').value; if(!n) return;
+  // Get preset data before deleting for undo
+  var pd = null;
+  try { var pr = await fetch('/api/tts_presets'); var pp = await pr.json(); pd = pp[n]; } catch(e) {}
+  var r = await postJSON('/api/delete_preset', {name:n});
+  if (r&&r.success) { addLogSilent('Preset eliminado: '+n); loadPresetList();
+    if (pd) showToast('Preset "'+n+'" eliminado', async function(){ await postJSON('/api/save_preset', {name:n}); loadPresetList(); addLogSilent('Preset restaurado: '+n); });
+  }
+});
+
+/* ===============================================================
+   AI CONFIG
+   =============================================================== */
+$('ai-temp').addEventListener('input', function(){ $('ai-temp-val').textContent=parseFloat(this.value).toFixed(1); });
+$('btn-save-ai').addEventListener('click', function(){ addLogSilent('Config IA guardada (requiere reinicio)'); });
+
+/* ===============================================================
+   OVERLAY CONFIG
+   =============================================================== */
+$('btn-set-overlay-bg').addEventListener('click', async function(){
+  await postJSON('/api/overlay_config', {background: $('overlay-bg-color').value, debug: null});
+});
+$('btn-overlay-transparent').addEventListener('click', async function(){
+  await postJSON('/api/overlay_config', {background: 'transparent', debug: null});
+});
+var swDebug = $('sw-overlay-debug');
+swDebug.addEventListener('click', function(){
+  swDebug.classList.toggle('on');
+  postJSON('/api/overlay_config', {background: null, debug: swDebug.classList.contains('on')});
+});
+
+var swWelcome = $('sw-welcome');
+swWelcome.addEventListener('click', function(){ swWelcome.classList.toggle('on'); });
+$('btn-save-welcome').addEventListener('click', async function(){
+  await postJSON('/api/welcome_config', {enabled: swWelcome.classList.contains('on'), template: $('welcome-template').value});
+  addLogSilent('Welcome config guardado');
+});
+$('btn-test-overlay-events').addEventListener('click', async function(){
+  await postJSON('/api/test_actions', {user:'TestUser', gift_name:'TestGift', diamond_value:1, actions:[{type:'emoji', emojis:'🎉', count:20}]});
+});
+
+/* ===============================================================
+   SPAM CONFIG
+   =============================================================== */
+function loadSpamConfig() {
+  fetch('/api/spam_config').then(function(r){return r.json();}).then(function(c){
+    var s = $('sw-spam'); if (c.enabled) s.classList.add('on'); else s.classList.remove('on');
+    $('spam-rate').value = c.rate_limit; $('spam-window').value = c.window; $('spam-dup').value = c.dup_window;
+    renderBannedTags(c.banned_words);
+  });
+}
+
+function renderBannedTags(words) {
+  var c = $('banned-tags'); c.innerHTML = '';
+  (words||[]).forEach(function(w){
+    var t = document.createElement('span'); t.className = 'banned-tag';
+    t.innerHTML = w + '<span class="tag-remove" data-word="'+esc(w)+'">&times;</span>';
+    c.appendChild(t);
+  });
+}
+
+var swSpam = $('sw-spam');
+swSpam.addEventListener('click', async function(){
+  swSpam.classList.toggle('on');
+  await postJSON('/api/spam_toggle');
+});
+
+function saveSpamSettings() {
+  postJSON('/api/spam_set', {rate_limit:parseInt($('spam-rate').value), window:parseInt($('spam-window').value), dup_window:parseInt($('spam-dup').value)});
+}
+$('spam-rate').addEventListener('change', saveSpamSettings);
+$('spam-window').addEventListener('change', saveSpamSettings);
+$('spam-dup').addEventListener('change', saveSpamSettings);
+
+$('btn-add-banned').addEventListener('click', async function(){
+  var w=$('banned-input').value.trim(); if(!w)return;
+  var r=await postJSON('/api/banned_words', {word:w});
+  if (r&&r.success) { $('banned-input').value=''; renderBannedTags(r.words); }
+});
+$('banned-input').addEventListener('keydown', function(e){ if(e.key==='Enter') $('btn-add-banned').click(); });
+
+document.addEventListener('click', function(e){
+  if (e.target.classList.contains('tag-remove')) {
+    var w = e.target.dataset.word;
+    fetch('/api/banned_words', {method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:w})})
+      .then(function(r){return r.json();}).then(function(r){if(r.success) renderBannedTags(r.words);});
+  }
+});
+
+/* ===============================================================
+   SETUP
+   =============================================================== */
+function loadSetup() {
+  var g = $('setup-grid'); g.innerHTML = '<div style="color:var(--text-muted);padding:12px">Cargando...</div>';
+  fetch('/api/setup_status').then(function(r){return r.json();}).then(function(d){
+    var items = [
+      {label:'Kokoro FP16',ok:d.kokoro_fp16,val:d.kokoro_fp16?'OK':'Falta'},
+      {label:'Kokoro FP32',ok:d.kokoro_fp32,val:d.kokoro_fp32?'OK':'Falta'},
+      {label:'Kokoro Voces',ok:d.kokoro_voices,val:d.kokoro_voices?'OK':'Falta'},
+      {label:'Piper',ok:d.piper_model,val:d.piper_model?'OK':'Opcional',warn:!d.piper_model},
+      {label:'Groq API Key',ok:d.groq_configured,val:d.groq_configured?'OK ('+d.groq_model+')':'Falta',warn:!d.groq_configured},
+      {label:'TikTokLive',ok:d.TikTokLive_installed,val:d.TikTokLive_installed?'OK':'Falta',warn:!d.TikTokLive_installed},
+      {label:'Usuario TikTok',ok:true,val:d.tiktok_username||'demo_user'},
+      {label:'TTS Engine',ok:true,val:(d.tts_engine||'kokoro').toUpperCase()},
+    ];
+    g.innerHTML = items.map(function(i){
+      var cls = i.ok ? 'ok' : (i.warn?'warn':'err');
+      return '<div class="setup-card '+cls+'"><span class="sc-label">'+i.label+'</span><span class="sc-value">'+i.val+'</span></div>';
+    }).join('');
+  });
+}
+
+/* ===============================================================
+   THEMES
+   =============================================================== */
+var themeStyles = document.createElement('style'); document.head.appendChild(themeStyles);
+function applyTheme(n) {
+  document.querySelectorAll('.theme-btn').forEach(function(b){b.classList.toggle('active',b.dataset.theme===n);});
+  localStorage.setItem('tts-theme', n);
+  if (n==='tiktok') themeStyles.textContent = ':root{--accent-purple:#ff0050;--accent-teal:#00f2ea;--accent-pink:#ff0050;--accent-amber:#ffd700;}';
+  else if (n==='midnight') themeStyles.textContent = ':root{--bg-deep:#030712;--bg-surface:#0f0f1a;--bg-panel:#151525;--accent-purple:#6366f1;--accent-teal:#10b981;--accent-pink:#c084fc;--accent-amber:#fbbf24;}';
+  else themeStyles.textContent = '';
+}
+applyTheme(localStorage.getItem('tts-theme')||'discord');
+document.querySelectorAll('.theme-btn').forEach(function(b){b.addEventListener('click',function(){applyTheme(this.dataset.theme);});});
+
+/* ===============================================================
+   EXPORT / IMPORT
+   =============================================================== */
+$('btn-export').addEventListener('click', async function(){
+  var r = await fetch('/api/export_config'); var d = await r.json();
+  var blob = new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+  var a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='tiktok-ai-config-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+  addLogSilent('Configuracion exportada');
+});
+
+$('btn-import-btn').addEventListener('click', function(){ $('import-file').click(); });
+$('import-file').addEventListener('change', async function(){
+  var f = this.files[0]; if(!f)return;
+  try {
+    var t = await f.text(); var d = JSON.parse(t);
+    var r = await postJSON('/api/import_config', d);
+    if (r&&r.success) { addLogSilent('Configuracion importada. Recargando...'); setTimeout(function(){location.reload();},1500); }
+  } catch(e) { addLogSilent('Error al importar: '+e.message); }
+});
+
+/* ===============================================================
+   EVENT RULES
+   =============================================================== */
+function loadRules() {
+  fetch('/api/event_rules').then(function(r){return r.json();}).then(renderRules);
+}
+
+function renderRules(rules) {
+  var g = $('rules-grid'); if (!rules||!rules.length) { g.innerHTML='<div style="color:var(--text-muted);text-align:center;padding:20px">No hay reglas configuradas</div>'; return; }
+  g.innerHTML = rules.map(function(r,i){
+    var tl = r.trigger==='gift'?'Regalo: '+r.trigger_value:'Diamantes >= '+r.trigger_value;
+    var at = (r.actions||[]).map(function(a){
+      var cls = a.type==='tts'?'tts':(a.type==='emoji'?'emoji':(a.type==='sfx'?'sfx':'vtube'));
+      var txt = a.type==='tts'?'TTS':(a.type==='emoji'?'Emoji':(a.type==='sfx'?'SFX: '+a.file:'VTS'));
+      return '<span class="rule-action-tag '+cls+'">'+txt+'</span>';
+    }).join('');
+    return '<div class="rule-card"><div><div class="rule-name">'+esc(r.name)+'</div><div class="rule-trigger">'+esc(tl)+'</div><div style="margin-top:4px">'+at+'</div></div><div style="display:flex;gap:4px;flex-shrink:0"><button class="btn btn-sm rule-edit" data-idx="'+i+'">Editar</button><button class="btn btn-sm rule-test" data-idx="'+i+'">Probar</button><button class="btn btn-d btn-sm rule-delete" data-idx="'+i+'">Eliminar</button></div></div>';
+  }).join('');
+
+  document.querySelectorAll('.rule-delete').forEach(function(b){
+    b.addEventListener('click', async function(){
+      var i = parseInt(this.dataset.idx);
+      var r = await fetch('/api/event_rules/'+i, {method:'DELETE'});
+      var d = await r.json();
+      if (d.success) { renderRules(d.rules); addLogSilent('Regla eliminada'); }
+    });
+  });
+
+  document.querySelectorAll('.rule-edit').forEach(function(b){
+    b.addEventListener('click', async function(){
+      var i = parseInt(this.dataset.idx);
+      var r = await fetch('/api/event_rules'); var rules = await r.json();
+      if (rules[i]) editRule(rules[i], i);
+    });
+  });
+
+  document.querySelectorAll('.rule-test').forEach(function(b){
+    b.addEventListener('click', async function(){
+      var i = parseInt(this.dataset.idx);
+      var r = await fetch('/api/event_rules'); var rules = await r.json();
+      var rule = rules[i]; if (!rule) return;
+      var gift = rule.trigger==='gift'?rule.trigger_value:'TestGift';
+      var diamonds = rule.trigger==='diamonds'?parseInt(rule.trigger_value)||0:0;
+      await postJSON('/api/test_rule', {gift:gift, user:'TestUser', diamonds:diamonds});
+      addLogSilent('Regla "'+rule.name+'" probada');
+    });
+  });
+}
+
+function editRule(rule, idx) {
+  $('rule-form-title').textContent = 'Editar Regla';
+  $('rule-edit-index').value = idx;
+  $('rule-name').value = rule.name||'';
+  $('rule-trigger').value = rule.trigger||'gift';
+  $('rule-trigger-value').value = rule.trigger_value||'';
+  $('btn-cancel-edit').style.display = '';
+  rebuildActions(rule.actions||[]);
+  updateTriggerLabel();
+}
+
+function resetRuleForm() {
+  $('rule-form-title').textContent = 'Nueva Regla';
+  $('rule-edit-index').value = '-1';
+  $('rule-name').value = ''; $('rule-trigger').value = 'gift'; $('rule-trigger-value').value = '';
+  $('btn-cancel-edit').style.display = 'none';
+  updateTriggerLabel();
+  $('actions-editor').innerHTML = '';
+}
+
+$('rule-trigger').addEventListener('change', updateTriggerLabel);
+function updateTriggerLabel() {
+  $('rule-trigger-label').textContent = $('rule-trigger').value==='gift'?'Nombre del Regalo':'Valor minimo de Diamantes';
+}
+
+$('btn-cancel-edit').addEventListener('click', resetRuleForm);
+
+function createActionRow(type, data) {
+  var row = document.createElement('div'); row.className = 'action-row';
+  var sel = document.createElement('select'); sel.className = 'input-dark'; sel.style.cssText = 'width:120px';
+  ['tts','emoji','sfx','vtube_expr','vtube_hotkey'].forEach(function(t){ var o=document.createElement('option'); o.value=t; o.textContent={tts:'TTS',emoji:'Emoji',sfx:'SFX',vtube_expr:'VTube Expr',vtube_hotkey:'VTube HK'}[t]; o.selected=(t===type); sel.appendChild(o); });
+  row.appendChild(sel);
+
+  var cfg = document.createElement('div'); cfg.style.cssText = 'flex:1';
+  row.appendChild(cfg);
+  row.appendChild(createRemoveBtn(row));
+
+  function updateCfg() { updateActionConfig(cfg, sel.value, data); }
+  sel.addEventListener('change', updateCfg);
+  updateCfg();
+
+  return row;
+}
+
+function createRemoveBtn(row) {
+  var b = document.createElement('button'); b.className = 'btn btn-d btn-sm'; b.textContent = 'X';
+  b.addEventListener('click', function(){ row.remove(); });
+  return b;
+}
+
+function updateActionConfig(cfg, type, data) {
+  data = data||{};
+  if (type==='tts') {
+    cfg.innerHTML = '<div style="display:flex;gap:4px"><input type="text" class="input-dark action-tts-msg" placeholder="Mensaje TTS" value="'+esc(data.message||'')+'" style="flex:1"><input type="text" class="input-dark action-tts-preset" placeholder="Preset (opc)" value="'+esc(data.voice_preset||'')+'" style="width:100px"></div>';
+  } else if (type==='emoji') {
+    cfg.innerHTML = '<div style="display:flex;gap:4px"><input type="text" class="input-dark action-emoji-chars" placeholder="Emoji" value="'+esc(data.emojis||'')+'" style="width:80px"><input type="number" class="input-dark action-emoji-count" placeholder="Cantidad" value="'+(data.count||30)+'" min="1" max="200" style="width:80px"></div>';
+  } else if (type==='sfx') {
+    cfg.innerHTML = '<select class="input-dark action-sfx-file" style="flex:1"><option value="">-- Archivo --</option></select>';
+    fetch('/api/sfx_files').then(function(r){return r.json();}).then(function(files){
+      var s = cfg.querySelector('.action-sfx-file');
+      (files||[]).forEach(function(f){ var o=document.createElement('option'); o.value=f; o.textContent=f; if(f===data.file)o.selected=true; s.appendChild(o); });
+    });
+  } else if (type==='vtube_expr') {
+    cfg.innerHTML = '<select class="input-dark action-vtube-expr" style="flex:1"><option value="">-- Expresion --</option></select>';
+    var presets = ['happy','very_happy','angry','furious','surprised','shocked','sad','crying','wink','blush','neutral','laughing','scared','sleepy','smug'];
+    var s = cfg.querySelector('.action-vtube-expr');
+    presets.forEach(function(p){ var o=document.createElement('option'); o.value=p; o.textContent=p+' (preset)'; if(p===data.expression)o.selected=true; s.appendChild(o); });
+    fetch('/api/vtube_status').then(function(r){return r.json();}).then(function(vs){
+      (vs.expressions||[]).forEach(function(e){ if(presets.indexOf(e)===-1){ var o=document.createElement('option'); o.value=e; o.textContent=e+' (modelo)'; if(e===data.expression)o.selected=true; s.appendChild(o); } });
+    });
+  } else if (type==='vtube_hotkey') {
+    cfg.innerHTML = '<select class="input-dark action-vtube-hk" style="flex:1"><option value="">-- Hotkey --</option></select>';
+    var s = cfg.querySelector('.action-vtube-hk');
+    fetch('/api/vtube_status').then(function(r){return r.json();}).then(function(vs){
+      (vs.hotkeys||[]).forEach(function(h){ var o=document.createElement('option'); o.value=h; o.textContent=h; if(h===data.hotkey)o.selected=true; s.appendChild(o); });
+    });
+  }
+}
+
+function rebuildActions(actions) {
+  var ed = $('actions-editor'); ed.innerHTML = '';
+  (actions||[]).forEach(function(a){ ed.appendChild(createActionRow(a.type, a)); });
+}
+
+function collectActions() {
+  var rows = document.querySelectorAll('#actions-editor .action-row');
+  var actions = [];
+  rows.forEach(function(r){
+    var sel = r.querySelector('select'); var type = sel.value;
+    if (type==='tts') { var m=r.querySelector('.action-tts-msg'),p=r.querySelector('.action-tts-preset'); if(m&&m.value) actions.push({type:'tts',message:m.value,voice_preset:p?p.value:''}); }
+    else if (type==='emoji') { var c=r.querySelector('.action-emoji-chars'),n=r.querySelector('.action-emoji-count'); if(c&&c.value) actions.push({type:'emoji',emojis:c.value,count:parseInt(n?n.value:30)}); }
+    else if (type==='sfx') { var f=r.querySelector('.action-sfx-file'); if(f&&f.value) actions.push({type:'sfx',file:f.value}); }
+    else if (type==='vtube_expr') { var e=r.querySelector('.action-vtube-expr'); if(e&&e.value) actions.push({type:'vtube_expr',expression:e.value}); }
+    else if (type==='vtube_hotkey') { var h=r.querySelector('.action-vtube-hk'); if(h&&h.value) actions.push({type:'vtube_hotkey',hotkey:h.value}); }
+  });
+  return actions;
+}
+
+$('btn-add-action').addEventListener('click', function(){ $('actions-editor').appendChild(createActionRow('tts',{})); });
+
+$('btn-save-rule').addEventListener('click', async function(){
+  var rule = {
+    name: $('rule-name').value.trim(),
+    trigger: $('rule-trigger').value,
+    trigger_value: $('rule-trigger-value').value.trim(),
+    actions: collectActions()
+  };
+  if (!rule.name||!rule.trigger_value||rule.actions.length===0) { addLogSilent('Completa nombre, gatillo y al menos 1 accion'); return; }
+  var idx = parseInt($('rule-edit-index').value);
+  var url = idx>=0 ? '/api/event_rules/'+idx : '/api/event_rules';
+  var method = idx>=0 ? 'PUT' : 'POST';
+  var r = await fetch(url, {method:method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(rule)});
+  var d = await r.json();
+  if (d.success||d) { addLogSilent('Regla guardada: '+rule.name); resetRuleForm(); loadRules(); }
+});
+
+$('btn-test-rule').addEventListener('click', async function(){
+  var name = $('rule-name').value.trim();
+  var trigger = $('rule-trigger').value;
+  var triggerValue = $('rule-trigger-value').value.trim();
+  if (!triggerValue) { addLogSilent('Ingresa valor de gatillo para probar'); return; }
+  var gift = trigger==='gift'?triggerValue:'TestGift';
+  var diamonds = trigger==='diamonds'?parseInt(triggerValue)||0:0;
+  await postJSON('/api/test_rule', {gift:gift, user:'TestUser', diamonds:diamonds});
+  addLogSilent((name?'Regla "'+name+'" probada':'Gatillo probado'));
+});
+
+/* ===============================================================
+   TOAST
+   =============================================================== */
+function showToast(msg, onUndo) {
+  var t = document.createElement('div'); t.className = 'toast';
+  t.innerHTML = '<span>'+esc(msg)+'</span>'+(onUndo?'<button class="toast-undo">Deshacer</button>':'');
+  $('toast-area').appendChild(t);
+  var removed = false;
+  var undo = t.querySelector('.toast-undo');
+  if (undo) undo.addEventListener('click', function(){ removed=true; if(onUndo)onUndo(); t.classList.add('toast-out'); setTimeout(function(){t.remove();},300); });
+  setTimeout(function(){ if(!removed){ t.classList.add('toast-out'); setTimeout(function(){t.remove();},300); } }, 5000);
+}
+
+/* ===============================================================
+   INIT
+   =============================================================== */
+function init() {
+  initStats();
+  connectSSE();
+
+  // Load status
+  fetch('/api/status').then(function(r){return r.json();}).then(function(s){
+    updateBadge($('badge-tts'), s.tts_enabled); updateBadge($('badge-ai'), s.ai_enabled); updateBadge($('badge-tiktok'), s.tiktok_enabled);
+    G.ttsOn=s.tts_enabled; G.aiOn=s.ai_enabled; G.tiktokOn=s.tiktok_enabled;
+  });
+
+  // Load TTS status
+  fetch('/api/tts_status').then(function(r){return r.json();}).then(function(s){
+    if (s.engine) { $('tts-engine').value=s.engine; updateEngineUI(s.engine); $('av-engine').textContent=s.engine; }
+    if (s.speed!==undefined) { $('tts-speed').value=s.speed; $('tts-speed-val').textContent=s.speed.toFixed(1)+'x'; $('av-speed').textContent=s.speed.toFixed(1)+'x'; }
+    if (s.lang) $('tts-lang').value=s.lang;
+    if (s.pitch!==undefined) { $('tts-pitch').value=s.pitch; $('tts-pitch-val').textContent=s.pitch+' st'; }
+    if (s.volume!==undefined) { $('tts-volume').value=s.volume; $('tts-volume-val').textContent=s.volume.toFixed(1)+'x'; }
+    if (s.kokoro_model) { $('kokoro-model').value=s.kokoro_model; $('kokoro-model').dataset.current=s.kokoro_model; }
+    if (s.voice_blend) { $('tts-blend').value=s.voice_blend; $('sw-blend').classList.add('on'); $('tts-blend').disabled=false; }
+    if (s.edge_voice) $('tts-edge-voice').value=s.edge_voice;
+    populateVoices(s.kokoro_voices, s.voice);
+    $('av-voice').textContent = s.voice||s.voice_blend||'--';
+  });
+
+  // Load logs
+  fetch('/api/logs').then(function(r){return r.json();}).then(function(logs){
+    (logs||[]).forEach(function(l){ G.allLogs.unshift({text:l, time:now()}); });
+    renderLogMini();
+  });
+
+  refreshStats(); loadPresetList(); refreshVtsStatus();
+  setInterval(refreshStats, 10000);
+  setInterval(refreshVtsStatus, 15000);
+  setInterval(function(){ $('av-uptime').textContent = fmtUptime(G.stats.uptime+1); }, 60000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
 </body>
 </html>

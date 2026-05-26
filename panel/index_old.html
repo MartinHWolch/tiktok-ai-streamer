@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok AI Streamer</title>
+    <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+    <div class="app">
+        <nav class="sidebar">
+            <div class="server-header">
+                <div class="server-icon">T</div>
+                <span>TikTok AI</span>
+            </div>
+            <div class="channels">
+                <div class="channel active" data-tab="dashboard">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                    <span>Dashboard</span>
+                </div>
+                <div class="channel" data-tab="tts">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                    <span>TTS Config</span>
+                </div>
+                <div class="channel" data-tab="setup">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                    <span>Setup</span>
+                </div>
+                <div class="channel" data-tab="logs">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+                    <span>Eventos</span>
+                </div>
+                <div class="channel" data-tab="ai-log">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+                    <span>AI Log</span>
+                </div>
+                <div class="channel" data-tab="rules">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M13 10h-2v2H9v2h2v2h2v-2h2v-2h-2v-2zm9-6H2v16h20V4zm-2 14H4V6h16v12z"/></svg>
+                    <span>Reglas</span>
+                </div>
+                <div class="channel" data-tab="overlay">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM9 8h2v8H9zm4 0h2v8h-2z"/></svg>
+                    <span>Overlay</span>
+                </div>
+            </div>
+            <div class="user-bar">
+                <div class="user-avatar">S</div>
+                <div class="user-info">
+                    <div class="user-name">Streamer</div>
+                    <div class="user-status online">En línea</div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="content">
+            <!-- Dashboard -->
+            <section class="tab active" id="tab-dashboard">
+                <h2>Dashboard</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:rgba(88,101,242,0.15);color:#5865f2;">
+                            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                        </div>
+                        <div class="stat-info"><span class="stat-value" id="stat-messages">0</span><span class="stat-label">Mensajes</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:rgba(240,178,50,0.15);color:#f0b232;">
+                            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="stat-info"><span class="stat-value" id="stat-gifts">0</span><span class="stat-label">Regalos</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:rgba(35,165,90,0.15);color:#23a55a;">
+                            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
+                        </div>
+                        <div class="stat-info"><span class="stat-value" id="stat-likes">0</span><span class="stat-label">Likes</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:rgba(218,55,60,0.15);color:#da373c;">
+                            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                        <div class="stat-info"><span class="stat-value" id="stat-joins">0</span><span class="stat-label">Uniones</span></div>
+                    </div>
+                </div>
+                <div class="stats-grid secondary">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:rgba(88,101,242,0.15);color:#5865f2;">
+                            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                        </div>
+                        <div class="stat-info"><span class="stat-value" id="stat-ai">0</span><span class="stat-label">Respuestas IA</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:rgba(88,101,242,0.15);color:#5865f2;">
+                            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                        </div>
+                        <div class="stat-info"><span class="stat-value" id="stat-tts">0</span><span class="stat-label">TTS Reproducidos</span></div>
+                    </div>
+                    <div class="stat-card uptime-card">
+                        <div class="stat-icon" style="background:rgba(148,155,164,0.15);color:#949ba4;">
+                            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                        </div>
+                        <div class="stat-info"><span class="stat-value" id="stat-uptime">0m</span><span class="stat-label">Uptime</span></div>
+                    </div>
+                </div>
+
+                <div class="config-section" style="margin-top:16px">
+                    <h3>VTube Studio</h3>
+                    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                        <span id="vtube-status-badge" class="status-badge offline">Desconectado</span>
+                        <span id="vtube-model" style="color:var(--text-muted);font-size:13px"></span>
+                        <button id="btn-vtube-connect" class="btn-sm-blurple">Conectar</button>
+                        <button id="btn-vtube-disconnect" class="btn-sm-danger" style="display:none">Desconectar</button>
+                    </div>
+                    <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                        <select id="vtube-expr-select" class="input-discord" style="width:160px;font-size:12px">
+                            <option value="">-- Expresion --</option>
+                        </select>
+                        <button id="btn-vtube-test-expr" class="btn-sm-blurple">Probar</button>
+                        <select id="vtube-hk-select" class="input-discord" style="width:160px;font-size:12px">
+                            <option value="">-- Hotkey --</option>
+                        </select>
+                        <button id="btn-vtube-test-hk" class="btn-sm-blurple">Probar</button>
+                    </div>
+                    <p style="font-size:11px;color:var(--text-muted);margin-top:4px">
+                        Al conectar, VTube Studio mostrara un popup. Hace click en PERMITIR.
+                    </p>
+                </div>
+
+                <div class="toggles-section">
+                    <h3>Control Rapido</h3>
+                    <div class="toggles-inline">
+                        <div class="toggle-card" id="card-tts">
+                            <div class="toggle-info">
+                                <span class="toggle-title">Texto a Voz</span>
+                                <span class="toggle-sub" id="tts-badge">DESACTIVADO</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-tts">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-card" id="card-ai">
+                            <div class="toggle-info">
+                                <span class="toggle-title">IA (Groq)</span>
+                                <span class="toggle-sub" id="ai-badge">DESACTIVADO</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-ai">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-card" id="card-tiktok">
+                            <div class="toggle-info">
+                                <span class="toggle-title">Eventos TikTok</span>
+                                <span class="toggle-sub" id="tiktok-badge">PAUSADO</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-tiktok">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mode-section">
+                    <div class="mode-card" id="mode-card">
+                        <div class="mode-info">
+                            <span class="mode-title">Modo TikTok</span>
+                            <span class="mode-value" id="mode-label">Simulacion</span>
+                            <span class="mode-desc" id="mode-desc">Eventos generados automaticamente</span>
+                        </div>
+                        <button class="btn-blurple" id="btn-toggle-sim">
+                            <span id="btn-sim-text">Cambiar a Real</span>
+                            <span class="spinner hidden" id="spinner-sim"></span>
+                        </button>
+                    </div>
+
+                    <div class="mode-card" id="speed-card" style="margin-top:8px">
+                        <div class="mode-info" style="flex:1">
+                            <span class="mode-title">Velocidad Simulacion</span>
+                            <span class="mode-value" id="speed-label">1.0x</span>
+                            <span class="mode-desc">Intervalo entre eventos simulados</span>
+                        </div>
+                        <input type="range" id="sim-speed-slider" min="0.1" max="5.0" step="0.1" value="1.0" style="width:120px;margin-left:12px">
+                    </div>
+                </div>
+
+                <div class="actions-section">
+                    <h3>Acciones Rapidas</h3>
+                    <div class="btn-row">
+                        <button class="btn-secondary" id="btn-gift">
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M20 12c0-1.1.9-2 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v4c1.1 0 2 .9 2 2s-.9 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2zm-4.42 4.8L12 14.5l-3.58 2.3 1.08-4.12-3.29-2.69 4.29-.37L12 5.5l1.5 4.12 4.29.37-3.29 2.69 1.08 4.12z"/></svg>
+                            Simular Regalo
+                        </button>
+                        <button class="btn-secondary" id="btn-message">
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                            Mensaje de Prueba
+                        </button>
+                        <button class="btn-secondary" id="btn-bulk" title="Genera eventos aleatorios para probar leaderboard">
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                            Simulacion Masiva
+                        </button>
+                    </div>
+                </div>
+
+                <div class="chat-section">
+                    <h3>Chat en Vivo</h3>
+                    <div class="chat-container" id="live-chat">
+                        <div class="chat-placeholder">Esperando mensajes...</div>
+                    </div>
+                </div>
+
+                <div class="pipeline-section" style="margin-top:16px">
+                    <h3>Cola de Respuestas</h3>
+                    <div id="pipeline-queue" style="max-height:200px;overflow-y:auto">
+                        <div class="pipeline-empty">Cola vacia</div>
+                    </div>
+                    <details style="margin-top:8px">
+                        <summary style="cursor:pointer;color:var(--text-muted);font-size:12px">Historial</summary>
+                        <div id="pipeline-history" style="max-height:150px;overflow-y:auto;margin-top:4px">
+                            <div class="pipeline-empty">Sin historial</div>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
+            <!-- TTS Config -->
+            <section class="tab" id="tab-tts">
+                <h2>Configuracion de Voz</h2>
+                <div class="tts-section">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tts-engine">Motor TTS</label>
+                            <select id="tts-engine">
+                                <option value="kokoro">Kokoro ONNX</option>
+                                <option value="edge">Edge TTS</option>
+                                <option value="piper">Piper</option>
+                                <option value="gtts">gTTS</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="tts-lang">Idioma</label>
+                            <select id="tts-lang">
+                                <option value="es">Espanol</option>
+                                <option value="en-us">English (US)</option>
+                                <option value="en-gb">English (UK)</option>
+                                <option value="fr">Francais</option>
+                                <option value="pt">Portugues</option>
+                                <option value="it">Italiano</option>
+                                <option value="de">Deutsch</option>
+                                <option value="ja">日本語</option>
+                                <option value="zh">中文</option>
+                                <option value="ko">한국어</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group kokoro-opt">
+                        <label for="tts-voice-search">Voz</label>
+                        <div class="voice-select-wrapper">
+                            <div class="searchable-select" id="voice-select-container">
+                                <input type="text" id="tts-voice-search" placeholder="Buscar o seleccionar voz..." autocomplete="off" class="voice-search">
+                                <div class="voice-dropdown" id="voice-dropdown"></div>
+                            </div>
+                            <div class="voice-gender-filters">
+                                <button class="gender-btn active" data-gender="all">Todos</button>
+                                <button class="gender-btn" data-gender="female">Femenino</button>
+                                <button class="gender-btn" data-gender="male">Masculino</button>
+                            </div>
+                        </div>
+                        <div class="voice-actions">
+                            <button id="btn-preview-voice" class="btn-sm-blurple">
+                                <span class="btn-label">Escuchar</span>
+                                <span class="spinner hidden" id="spinner-preview"></span>
+                            </button>
+                            <span class="voice-count" id="voice-count"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group edge-opt" style="display:none">
+                        <label for="tts-edge-voice">Voz Edge TTS</label>
+                        <select id="tts-edge-voice">
+                            <option value="es-MX-DaliaNeural">Dalia (MX) - Femenina</option>
+                            <option value="es-MX-JorgeNeural">Jorge (MX) - Masculina</option>
+                            <option value="es-AR-ElenaNeural">Elena (AR) - Femenina</option>
+                            <option value="es-AR-TomasNeural">Tomas (AR) - Masculina</option>
+                            <option value="es-CO-SalomeNeural">Salome (CO) - Femenina</option>
+                            <option value="es-CO-GonzaloNeural">Gonzalo (CO) - Masculina</option>
+                            <option value="es-ES-ElviraNeural">Elvira (ES) - Femenina</option>
+                            <option value="es-ES-AlvaroNeural">Alvaro (ES) - Masculina</option>
+                            <option value="es-CL-CatalinaNeural">Catalina (CL) - Femenina</option>
+                            <option value="es-CL-LorenzoNeural">Lorenzo (CL) - Masculina</option>
+                            <option value="es-PE-CamilaNeural">Camila (PE) - Femenina</option>
+                            <option value="es-PE-AlexNeural">Alex (PE) - Masculina</option>
+                            <option value="es-VE-PaolaNeural">Paola (VE) - Femenina</option>
+                            <option value="es-VE-SebastianNeural">Sebastian (VE) - Masculina</option>
+                            <option value="es-US-PalomaNeural">Paloma (US) - Femenina</option>
+                            <option value="es-US-AlonsoNeural">Alonso (US) - Masculina</option>
+                            <option value="es-HN-KarlaNeural">Karla (HN) - Femenina</option>
+                            <option value="es-HN-CarlosNeural">Carlos (HN) - Masculina</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width kokoro-opt">
+                        <div class="blend-header">
+                            <label class="switch-small">
+                                <input type="checkbox" id="toggle-blend">
+                                <span class="slider-small"></span>
+                            </label>
+                            <span>Voice Blend (mezcla de voces)</span>
+                        </div>
+                        <input type="text" id="tts-blend" placeholder="jf_tebukuro*0.8 + ef_dora*0.2" disabled>
+                        <small>Formula: voz1*0.5 + voz2*0.5</small>
+                    </div>
+
+                    <div class="sliders-grid">
+                        <div class="form-group">
+                            <label>Velocidad <span id="speed-value">1.0</span>x</label>
+                            <input type="range" id="tts-speed" min="0.5" max="2.0" step="0.1" value="1.0">
+                        </div>
+                        <div class="form-group">
+                            <label>Tono <span id="pitch-value">0</span> st</label>
+                            <input type="range" id="tts-pitch" min="-12" max="12" step="1" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Volumen <span id="volume-value">1.0</span>x</label>
+                            <input type="range" id="tts-volume" min="0.1" max="3.0" step="0.1" value="1.0">
+                        </div>
+                    </div>
+
+                    <div class="form-row kokoro-opt">
+                        <div class="form-group">
+                            <label for="kokoro-model">Modelo Kokoro</label>
+                            <select id="kokoro-model">
+                                <option value="fp16">FP16 (177 MB - rapido)</option>
+                                <option value="fp32">FP32 (305 MB - calidad)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="tts-test-text">Texto de prueba</label>
+                        <textarea id="tts-test-text" rows="2">Buenos dias, esta es una prueba de sonido</textarea>
+                    </div>
+                    <button id="btn-test-tts" class="btn-blurple">
+                        <span class="btn-label">Probar TTS</span>
+                        <span class="spinner hidden" id="spinner-test-tts"></span>
+                    </button>
+                </div>
+
+                <div class="presets-section">
+                    <h3>Presets de Voz</h3>
+                    <div class="preset-row">
+                        <input type="text" id="preset-name" placeholder="Nombre del preset..." class="input-discord">
+                        <button id="btn-save-preset" class="btn-sm-green">Guardar</button>
+                    </div>
+                    <div class="preset-row">
+                        <select id="preset-select" class="input-discord">
+                            <option value="">-- Cargar preset --</option>
+                        </select>
+                        <button id="btn-load-preset" class="btn-sm-blurple">Cargar</button>
+                        <button id="btn-delete-preset" class="btn-sm-danger">Eliminar</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Setup -->
+            <section class="tab" id="tab-setup">
+                <h2>Estado del Sistema</h2>
+                <div class="setup-grid" id="setup-grid">
+                    <div class="spinner-lg"></div>
+                </div>
+
+                <div class="spam-section">
+                    <h3>Filtro Anti-Spam</h3>
+                    <div class="spam-card">
+                        <div class="spam-header">
+                            <span>Bloquear spam</span>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-spam" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="spam-config" id="spam-config">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Rate limit (msgs por usuario)</label>
+                                    <input type="number" id="spam-rate" value="2" min="1" max="20" class="input-discord">
+                                </div>
+                                <div class="form-group">
+                                    <label>Ventana (segundos)</label>
+                                    <input type="number" id="spam-window" value="3" min="1" max="60" class="input-discord">
+                                </div>
+                                <div class="form-group">
+                                    <label>Duplicados (segundos)</label>
+                                    <input type="number" id="spam-dup" value="30" min="5" max="300" class="input-discord">
+                                </div>
+                            </div>
+                            <div class="form-group full-width">
+                                <label>Palabras baneadas</label>
+                                <div class="banned-row">
+                                    <input type="text" id="banned-input" placeholder="Agregar palabra..." class="input-discord">
+                                    <button id="btn-add-banned" class="btn-sm-blurple">Agregar</button>
+                                </div>
+                                <div class="banned-tags" id="banned-tags"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-row">
+                    <div class="config-section">
+                        <h3>Configuracion</h3>
+                        <div class="btn-row">
+                            <button id="btn-export" class="btn-blurple">
+                                <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                                Exportar Config
+                            </button>
+                            <button id="btn-import" class="btn-secondary" onclick="document.getElementById('import-file').click()">
+                                <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                                Importar Config
+                            </button>
+                            <input type="file" id="import-file" accept=".json" style="display:none">
+                        </div>
+                    </div>
+                    <div class="theme-section">
+                        <h3>Tema</h3>
+                        <div class="theme-options">
+                            <button class="theme-btn active" data-theme="discord" title="Discord">
+                                <span class="theme-swatch disc"></span> Discord
+                            </button>
+                            <button class="theme-btn" data-theme="tiktok" title="TikTok">
+                                <span class="theme-swatch tt"></span> TikTok
+                            </button>
+                            <button class="theme-btn" data-theme="midnight" title="Midnight">
+                                <span class="theme-swatch mid"></span> Midnight
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Logs -->
+            <section class="tab" id="tab-logs">
+                <h2>Ultimos Eventos</h2>
+                <div class="log-filters">
+                    <button class="log-filter active" data-filter="all">Todos</button>
+                    <button class="log-filter" data-filter="message">Mensajes</button>
+                    <button class="log-filter" data-filter="gift">Gifts</button>
+                    <button class="log-filter" data-filter="like">Likes</button>
+                    <button class="log-filter" data-filter="join">Joins</button>
+                    <button class="log-filter" data-filter="system">Sistema</button>
+                </div>
+                <div class="logs-container">
+                    <ul id="log-list"></ul>
+                </div>
+            </section>
+
+            <!-- AI Log -->
+            <section class="tab" id="tab-ai-log">
+                <h2>AI Log</h2>
+                <p class="tab-desc">Auditoria del flujo de respuestas AI: generadas vs reproducidas.</p>
+
+                <div class="ai-log-grid">
+                    <!-- Incoming: mensajes esperando respuesta IA -->
+                    <div class="ai-log-col">
+                        <h3>Entrantes</h3>
+                        <p class="tab-desc" style="font-size:11px;color:var(--text-muted);margin-top:-6px">Mensajes TikTok recibidos, esperando respuesta de IA.</p>
+                        <div class="ai-log-container" id="ai-log-incoming">
+                            <div class="ai-log-empty">Sin mensajes entrantes</div>
+                        </div>
+                    </div>
+
+                    <!-- Generated: respuestas IA listas, esperando TTS -->
+                    <div class="ai-log-col">
+                        <h3>Generados</h3>
+                        <p class="tab-desc" style="font-size:11px;color:var(--text-muted);margin-top:-6px">Respuestas de IA listas, esperando generacion de audio.</p>
+                        <div class="ai-log-container" id="ai-log-generated">
+                            <div class="ai-log-empty">Sin respuestas generadas</div>
+                        </div>
+                    </div>
+
+                    <!-- Playback: audio generado, reproduciendose o reproducido -->
+                    <div class="ai-log-col">
+                        <h3>Reproduccion</h3>
+                        <p class="tab-desc" style="font-size:11px;color:var(--text-muted);margin-top:-6px">Audio TTS generado, en reproduccion o ya escuchado.</p>
+                        <div class="ai-log-container" id="ai-log-playback">
+                            <div class="ai-log-empty">Sin reproducciones</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Overlay -->
+            <section class="tab" id="tab-overlay">
+                <h2>Configuracion del Overlay</h2>
+                <p class="tab-desc">Personaliza como se ve el overlay en OBS.</p>
+                <div class="config-section">
+                    <h3>Fondo del Overlay</h3>
+                    <div class="form-group">
+                        <label>Color de fondo (para debug)</label>
+                        <div class="color-picker-row">
+                            <input type="color" id="overlay-bg-color" value="#00ff00" class="color-input">
+                            <button id="btn-set-bg" class="btn-sm-blurple">Aplicar</button>
+                            <button id="btn-bg-transparent" class="btn-sm">Transparente</button>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top:12px">
+                        <label class="switch-label">
+                            <span>Debug Mode (mostrar eventos en overlay)</span>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-debug">
+                                <span class="slider"></span>
+                            </label>
+                        </label>
+                    </div>
+                    <div class="form-group" style="margin-top:12px">
+                        <button id="btn-test-events" class="btn-secondary">Simular eventos en overlay</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Rules -->
+            <section class="tab" id="tab-rules">
+                <h2>Reglas de Eventos</h2>
+                <p class="tab-desc">Configura que acciones se ejecutan al recibir regalos o diamantes.</p>
+                <p class="tab-desc" style="color:var(--text-muted);font-size:12px;margin-top:-8px">Tip: Para emojis usa caracteres como 🎉🌹✨. Si no funcionan, probá con simbolos: ★ ♥ ♦ ♣ ♠</p>
+                <div class="rules-grid" id="rules-grid">
+                    <div class="spinner-lg"></div>
+                </div>
+                <div class="rule-form">
+                    <h3 id="rule-form-title">Nueva Regla</h3>
+                    <input type="hidden" id="rule-edit-index" value="-1">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre de la Regla</label>
+                            <input type="text" id="rule-name" placeholder="ej: Super Rosa, Donacion Grande..." class="input-discord">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Gatillo (Trigger)</label>
+                            <select id="rule-trigger" class="input-discord">
+                                <option value="gift">Regalo Especifico</option>
+                                <option value="diamonds">Valor en Diamantes</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label id="rule-trigger-label">Nombre del Regalo</label>
+                            <input type="text" id="rule-trigger-value" placeholder="ej: Rosa, Panda, Universo..." class="input-discord">
+                        </div>
+                    </div>
+                    <div class="actions-editor" id="actions-editor">
+                        <h4>Acciones</h4>
+                        <div class="action-row" id="action-row-template" style="display:none">
+                            <select class="action-type input-discord">
+                                <option value="tts">TTS (Texto a Voz)</option>
+                                <option value="emoji">Lluvia de Emojis</option>
+                                <option value="sfx">Sonido (SFX)</option>
+                                <option value="vtube_expr">VTube Expresión</option>
+                                <option value="vtube_hotkey">VTube Hotkey</option>
+                            </select>
+                            <div class="action-config"></div>
+                            <button class="btn-sm-danger action-remove">X</button>
+                        </div>
+                    </div>
+                    <div class="btn-row" style="margin-top:12px">
+                        <button id="btn-add-action" class="btn-sm-blurple">+ Agregar Accion</button>
+                        <button id="btn-test-rule" class="btn-secondary">Probar Regla</button>
+                        <button id="btn-save-rule" class="btn-blurple">Guardar Regla</button>
+                        <button id="btn-cancel-edit" class="btn-sm-danger" style="display:none">Cancelar</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <div class="toast-container" id="toast-container"></div>
+    <script src="panel.js"></script>
+</body>
+</html>

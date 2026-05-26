@@ -274,9 +274,11 @@ class ResponsePipeline:
                     if filename:
                         item.audio_file = filename
 
-                # Mover a playback queue
+                # Mover a playback queue y asignar como item activo
                 item.status = "playback_queued"
                 self._playback_queue.put(item)
+                with self._lock:
+                    self._playing = item
                 self._notify()
             except Exception as e:
                 logger.error(f"Pipeline TTS error: {e}")
@@ -290,12 +292,14 @@ class ResponsePipeline:
             # Esperar a que overlay termine de reproducir
             # El overlay debe llamar mark_playback_done() via API
             # Mientras tanto, dormimos y revisamos
+            logger.info(f"[Pipeline TTS] Waiting for playback_done on item {item.id}, status={item.status}")
             playback_waited = 0
             while self._running and item.status not in ("done", "error", "skipped"):
                 time.sleep(0.5)
                 playback_waited += 0.5
                 # Timeout de seguridad: si pasaron 30s, forzar done
                 if playback_waited > 30:
+                    logger.warning(f"[Pipeline TTS] Timeout! Forcing done for item {item.id}")
                     with self._lock:
                         if self._playing and self._playing.id == item.id:
                             self._playing.status = "done"
@@ -306,5 +310,6 @@ class ResponsePipeline:
                             self._notify()
                     break
 
+            logger.info(f"[Pipeline TTS] Item {item.id} finished with status={item.status}, waited {playback_waited}s")
             # Gap minimo entre TTS consecutivos
             time.sleep(TTS_MIN_GAP)

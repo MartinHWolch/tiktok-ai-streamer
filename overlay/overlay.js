@@ -358,8 +358,10 @@ function sseOnMessage(e) {
         const data = payload.data;
 
         if (type === "overlay_message") {
+            console.log("[Overlay] Chat msg:", data.user, "->", data.text ? data.text.slice(0,40) : '');
             createMessage(data.user, data.text);
         } else if (type === "overlay_alert") {
+            console.log("[Overlay] Alert:", data.type, data.user);
             if (data.type === "gift") {
                 createAlert(`🎁 ${escapeHtml(data.user)} envió ${escapeHtml(data.gift)} x${data.amount}`);
             } else if (data.type === "like") {

@@ -765,6 +765,9 @@ class EventOrchestrator:
         })
 
     def publish(self, event_type, data):
+        if not self.listeners:
+            logger.warning(f"[Publish] No listeners registered for {event_type}")
+            return
         for name, callback in self.listeners.items():
             try:
                 callback(event_type, data)

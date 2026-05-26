@@ -8,16 +8,18 @@ from flask import Flask, send_from_directory, Response
 logger = logging.getLogger(__name__)
 
 class SseFlaskServer:
-    """Clase base para servidores Flask con SSE (Server-Sent Events)."""
+    """Clase base para servidores Flask con SSE (Server-Sent Events).
+    
+    Usa broadcast a todos los suscriptores activos. Cada conexion SSE
+    tiene su propia cola, asi que nunca se pierden eventos por reconexiones."""
 
     def __init__(self, config, static_dir=None):
         self.config = config
         self.static_dir = static_dir
         self.app = Flask(__name__, static_folder=None)
-        self.event_queue = queue.Queue()
+        self._subscribers = []          # lista de Queue (una por conexion SSE)
+        self._subscribers_lock = threading.Lock()
         self._running = False
-        self._stream_threads = []
-        self._stream_lock = threading.Lock()
         self._shutdown_sentinel = object()
         self._setup_routes()
 
@@ -26,26 +28,34 @@ class SseFlaskServer:
         pass
 
     def _event_stream(self, initial_event=None):
-        """Generador SSE genérico. Opcionalmente envía un evento inicial."""
-        with self._stream_lock:
-            self._stream_threads.append(threading.current_thread())
+        """Generador SSE con cola propia para cada cliente."""
+        client_q = queue.Queue(maxsize=500)
+        with self._subscribers_lock:
+            self._subscribers.append(client_q)
+        client_id = id(client_q)
+        logger.info(f"[SSE] Client #{client_id} connected to {self.__class__.__name__}. Subscribers: {len(self._subscribers)}")
         try:
             if initial_event is not None:
                 yield f"data: {json.dumps(initial_event, ensure_ascii=False)}\n\n"
 
+            event_count = 0
             while self._running:
                 try:
-                    msg = self.event_queue.get(timeout=1)
+                    msg = client_q.get(timeout=2)
                     if msg is self._shutdown_sentinel:
                         break
+                    event_count += 1
                     yield f"data: {json.dumps(msg, ensure_ascii=False)}\n\n"
                 except queue.Empty:
+                    # Heartbeat cada 2s para mantener vivo el navegador
+                    yield f":heartbeat\n\n"
                     continue
+            logger.info(f"[SSE] Client #{client_id} loop ended. Events yielded: {event_count}")
         finally:
-            with self._stream_lock:
-                t = threading.current_thread()
-                if t in self._stream_threads:
-                    self._stream_threads.remove(t)
+            with self._subscribers_lock:
+                if client_q in self._subscribers:
+                    self._subscribers.remove(client_q)
+            logger.info(f"[SSE] Client #{client_id} disconnected. Remaining: {len(self._subscribers)}")
 
     def _serve_static(self, filename):
         """Sirve archivos estáticos desde static_dir."""
@@ -54,18 +64,33 @@ class SseFlaskServer:
         return "Not found", 404
 
     def handle_event(self, event_type, data):
-        self.event_queue.put({"type": event_type, "data": data})
+        """Broadcast a todos los suscriptores activos."""
+        msg = {"type": event_type, "data": data}
+        with self._subscribers_lock:
+            dead = []
+            for client_q in self._subscribers:
+                try:
+                    client_q.put_nowait(msg)
+                except queue.Full:
+                    dead.append(client_q)
+            # Limpiar colas bloqueadas
+            for d in dead:
+                try:
+                    self._subscribers.remove(d)
+                except ValueError:
+                    pass
 
     def start(self):
         self._running = True
 
     def stop(self):
         self._running = False
-        for _ in range(len(self._stream_threads) + 1):
-            try:
-                self.event_queue.put_nowait(self._shutdown_sentinel)
-            except queue.Full:
-                pass
+        with self._subscribers_lock:
+            for client_q in self._subscribers:
+                try:
+                    client_q.put_nowait(self._shutdown_sentinel)
+                except queue.Full:
+                    pass
 
     def run(self, host=None, port=None):
         self.start()

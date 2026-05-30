@@ -1,0 +1,2 @@
+---description: Build a knowledge graph of the project
+---Load the graphify skill and run /graphify $ARGUMENTS on the specified path (or . if no path given).

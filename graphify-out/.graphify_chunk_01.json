@@ -1,0 +1,605 @@
+{
+  "nodes": [
+    {
+      "id": "main_entry_point",
+      "label": "System entry point (main)",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "main.py:98",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "config_Config",
+      "label": "Configuration manager",
+      "file_type": "code",
+      "source_file": "config.py",
+      "source_location": "config.py:25",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "event_orchestrator_EventOrchestrator",
+      "label": "Event orchestrator hub",
+      "file_type": "code",
+      "source_file": "event_orchestrator.py",
+      "source_location": "event_orchestrator.py:13",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pipeline_ResponsePipeline",
+      "label": "3-stage response pipeline",
+      "file_type": "code",
+      "source_file": "pipeline.py",
+      "source_location": "pipeline.py:64",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pipeline_ResponseItem",
+      "label": "Pipeline response data item",
+      "file_type": "code",
+      "source_file": "pipeline.py",
+      "source_location": "pipeline.py:22",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "ai_client_AIClient",
+      "label": "AI response generator (Groq)",
+      "file_type": "code",
+      "source_file": "ai_client.py",
+      "source_location": "ai_client.py:57",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tts_client_TTSClient",
+      "label": "Multi-engine text-to-speech client",
+      "file_type": "code",
+      "source_file": "tts_client.py",
+      "source_location": "tts_client.py:11",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tiktok_client_TikTokClient",
+      "label": "TikTok event source (simulation + real)",
+      "file_type": "code",
+      "source_file": "tiktok_client.py",
+      "source_location": "tiktok_client.py:18",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "vtube_client_VTubeStudioClient",
+      "label": "VTube Studio avatar controller",
+      "file_type": "code",
+      "source_file": "vtube_client.py",
+      "source_location": "vtube_client.py:14",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "overlay_server_OverlayServer",
+      "label": "Browser overlay SSE server",
+      "file_type": "code",
+      "source_file": "overlay_server.py",
+      "source_location": "overlay_server.py:8",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "control_panel_server_ControlPanelServer",
+      "label": "Admin control panel SSE server",
+      "file_type": "code",
+      "source_file": "control_panel_server.py",
+      "source_location": "control_panel_server.py:11",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "sse_server_SseFlaskServer",
+      "label": "Base SSE Flask server with broadcast",
+      "file_type": "code",
+      "source_file": "sse_server.py",
+      "source_location": "sse_server.py:10",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "points_manager_PointsManager",
+      "label": "Viewer points and leaderboard system",
+      "file_type": "code",
+      "source_file": "points_manager.py",
+      "source_location": "points_manager.py:8",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "event_orchestrator_event_rules",
+      "label": "Gift-to-action event rules engine",
+      "file_type": "code",
+      "source_file": "event_orchestrator.py",
+      "source_location": "event_orchestrator.py:47",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "event_orchestrator_spam_filter",
+      "label": "Anti-spam rate-limit and duplicate filter",
+      "file_type": "code",
+      "source_file": "event_orchestrator.py",
+      "source_location": "event_orchestrator.py:33",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "ai_client_intent_fallback",
+      "label": "Intent-based fallback reply system",
+      "file_type": "code",
+      "source_file": "ai_client.py",
+      "source_location": "ai_client.py:74",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "vtube_client_expression_presets",
+      "label": "VTube avatar expression presets dictionary",
+      "file_type": "code",
+      "source_file": "vtube_client.py",
+      "source_location": "vtube_client.py:265",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "main_entry_point",
+      "target": "event_orchestrator_EventOrchestrator",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "main.py",
+      "source_location": "main.py:105",
+      "weight": 1.0
+    },
+    {
+      "source": "main_entry_point",
+      "target": "ai_client_AIClient",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "main.py",
+      "source_location": "main.py:107",
+      "weight": 1.0
+    },
+    {
+      "source": "main_entry_point",
+      "target": "tts_client_TTSClient",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "main.py",
+      "source_location": "main.py:108",
+      "weight": 1.0
+    },
+    {
+      "source": "main_entry_point",
+      "target": "vtube_client_VTubeStudioClient",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "main.py",
+      "source_location": "main.py:109",
+      "weight": 1.0
+    },
+    {
+      "source": "main_entry_point",
+      "target": "tiktok_client_TikTokClient",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "main.py",
+      "source_location": "main.py:115",
+      "weight": 1.0
+    },
+    {
+      "source": "main_entry_point",
+      "target": "overlay_server_OverlayServer",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "main.py",
+      "source_location": "main.py:118",
+      "weight": 1.0
+    },
+    {
+      "source": "main_entry_point",
+      "target": "control_panel_server_ControlPanelServer",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "main.py",
+      "source_location": "main.py:119",
+      "weight": 1.0
+    },
+    {
+      "source": "tiktok_client_TikTokClient",
+      "target": "event_orchestrator_EventOrchestrator",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tiktok_client.py",
+      "source_location": "tiktok_client.py:116",
+      "weight": 1.0
+    },
+    {
+      "source": "event_orchestrator_EventOrchestrator",
+      "target": "pipeline_ResponsePipeline",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "event_orchestrator.py",
+      "source_location": "event_orchestrator.py:426",
+      "weight": 1.0
+    },
+    {
+      "source": "event_orchestrator_EventOrchestrator",
+      "target": "pipeline_ResponsePipeline",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "event_orchestrator.py",
+      "source_location": "event_orchestrator.py:393",
+      "weight": 1.0
+    },
+    {
+      "source": "event_orchestrator_EventOrchestrator",
+      "target": "points_manager_PointsManager",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "event_orchestrator.py",
+      "source_location": "event_orchestrator.py:380",
+      "weight": 1.0
+    },
+    {
+      "source": "ai_client_AIClient",
+      "target": "ai_client_intent_fallback",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ai_client.py",
+      "source_location": "ai_client.py:110",
+      "weight": 1.0
+    },
+    {
+      "source": "overlay_server_OverlayServer",
+      "target": "pipeline_ResponsePipeline",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "overlay_server.py",
+      "source_location": "overlay_server.py:43",
+      "weight": 1.0
+    },
+    {
+      "source": "overlay_server_OverlayServer",
+      "target": "pipeline_ResponsePipeline",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "overlay_server.py",
+      "source_location": "overlay_server.py:51",
+      "weight": 1.0
+    },
+    {
+      "source": "control_panel_server_ControlPanelServer",
+      "target": "event_orchestrator_EventOrchestrator",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "control_panel_server.py",
+      "source_location": "control_panel_server.py:57",
+      "weight": 1.0
+    },
+    {
+      "source": "event_orchestrator_EventOrchestrator",
+      "target": "event_orchestrator_spam_filter",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "event_orchestrator.py",
+      "source_location": "event_orchestrator.py:416",
+      "weight": 1.0
+    },
+    {
+      "source": "event_orchestrator_EventOrchestrator",
+      "target": "event_orchestrator_event_rules",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "event_orchestrator.py",
+      "source_location": "event_orchestrator.py:521",
+      "weight": 1.0
+    },
+    {
+      "source": "overlay_server_OverlayServer",
+      "target": "sse_server_SseFlaskServer",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "overlay_server.py",
+      "source_location": "overlay_server.py:8",
+      "weight": 1.0
+    },
+    {
+      "source": "control_panel_server_ControlPanelServer",
+      "target": "sse_server_SseFlaskServer",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "control_panel_server.py",
+      "source_location": "control_panel_server.py:11",
+      "weight": 1.0
+    },
+    {
+      "source": "event_orchestrator_EventOrchestrator",
+      "target": "ai_client_AIClient",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "event_orchestrator.py",
+      "source_location": "event_orchestrator.py:79",
+      "weight": 1.0
+    },
+    {
+      "source": "event_orchestrator_EventOrchestrator",
+      "target": "tts_client_TTSClient",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "event_orchestrator.py",
+      "source_location": "event_orchestrator.py:83",
+      "weight": 1.0
+    },
+    {
+      "source": "event_orchestrator_EventOrchestrator",
+      "target": "vtube_client_VTubeStudioClient",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "event_orchestrator.py",
+      "source_location": "event_orchestrator.py:92",
+      "weight": 1.0
+    },
+    {
+      "source": "event_orchestrator_EventOrchestrator",
+      "target": "tiktok_client_TikTokClient",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "event_orchestrator.py",
+      "source_location": "event_orchestrator.py:96",
+      "weight": 1.0
+    },
+    {
+      "source": "event_orchestrator_EventOrchestrator",
+      "target": "points_manager_PointsManager",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "event_orchestrator.py",
+      "source_location": "event_orchestrator.py:60",
+      "weight": 1.0
+    },
+    {
+      "source": "event_orchestrator_EventOrchestrator",
+      "target": "pipeline_ResponsePipeline",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "event_orchestrator.py",
+      "source_location": "event_orchestrator.py:73",
+      "weight": 1.0
+    },
+    {
+      "source": "vtube_client_VTubeStudioClient",
+      "target": "vtube_client_expression_presets",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "vtube_client.py",
+      "source_location": "vtube_client.py:374",
+      "weight": 1.0
+    },
+    {
+      "source": "tiktok_client_TikTokClient",
+      "target": "event_orchestrator_EventOrchestrator",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "tiktok_client.py",
+      "source_location": "tiktok_client.py:102",
+      "weight": 1.0
+    },
+    {
+      "source": "overlay_server_OverlayServer",
+      "target": "pipeline_ResponsePipeline",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "overlay_server.py",
+      "source_location": "overlay_server.py:41",
+      "weight": 1.0
+    },
+    {
+      "source": "event_orchestrator_EventOrchestrator",
+      "target": "sse_server_SseFlaskServer",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "event_orchestrator.py",
+      "source_location": "event_orchestrator.py:767",
+      "weight": 1.0
+    },
+    {
+      "source": "pipeline_ResponsePipeline",
+      "target": "ai_client_AIClient",
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.7,
+      "source_file": "pipeline.py",
+      "source_location": "pipeline.py:218",
+      "weight": 1.0
+    },
+    {
+      "source": "pipeline_ResponsePipeline",
+      "target": "tts_client_TTSClient",
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.7,
+      "source_file": "pipeline.py",
+      "source_location": "pipeline.py:273",
+      "weight": 1.0
+    },
+    {
+      "source": "pipeline_ResponsePipeline",
+      "target": "vtube_client_VTubeStudioClient",
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.7,
+      "source_file": "pipeline.py",
+      "source_location": "pipeline.py:148",
+      "weight": 1.0
+    },
+    {
+      "source": "pipeline_ResponsePipeline",
+      "target": "event_orchestrator_EventOrchestrator",
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.7,
+      "source_file": "pipeline.py",
+      "source_location": "pipeline.py:165",
+      "weight": 1.0
+    },
+    {
+      "source": "event_orchestrator_event_rules",
+      "target": "event_orchestrator_spam_filter",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.6,
+      "source_file": "event_orchestrator.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "ai_client_intent_fallback",
+      "target": "ai_client_AIClient",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "ai_client.py",
+      "source_location": "ai_client.py:110",
+      "weight": 1.0
+    },
+    {
+      "source": "vtube_client_expression_presets",
+      "target": "vtube_client_VTubeStudioClient",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "vtube_client.py",
+      "source_location": "vtube_client.py:374",
+      "weight": 1.0
+    },
+    {
+      "source": "event_orchestrator_event_rules",
+      "target": "pipeline_ResponsePipeline",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.7,
+      "source_file": "event_orchestrator.py",
+      "source_location": "event_orchestrator.py:544",
+      "weight": 1.0
+    },
+    {
+      "source": "pipeline_ResponsePipeline",
+      "target": "pipeline_ResponseItem",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "pipeline.py",
+      "source_location": "pipeline.py:117",
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "three_stage_message_pipeline",
+      "label": "3-stage message processing pipeline (incoming → generated → playback)",
+      "nodes": [
+        "pipeline_ResponsePipeline",
+        "ai_client_AIClient",
+        "tts_client_TTSClient",
+        "overlay_server_OverlayServer"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "pipeline.py"
+    },
+    {
+      "id": "sse_event_broadcast_architecture",
+      "label": "SSE publish-subscribe broadcast system",
+      "nodes": [
+        "event_orchestrator_EventOrchestrator",
+        "sse_server_SseFlaskServer",
+        "overlay_server_OverlayServer",
+        "control_panel_server_ControlPanelServer"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "event_orchestrator.py"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

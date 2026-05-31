@@ -10,8 +10,7 @@ from tiktok_client import TikTokClient
 from ai_client import AIClient
 from tts_client import TTSClient
 from vtube_client import VTubeStudioClient
-from overlay_server import OverlayServer
-from control_panel_server import ControlPanelServer
+from unified_server import UnifiedServer
 
 # ANSI colors
 C = {
@@ -115,37 +114,33 @@ def main():
     tiktok = TikTokClient(orchestrator, config)
     orchestrator.set_tiktok_client(tiktok)
     
-    overlay = OverlayServer(orchestrator, config)
-    panel = ControlPanelServer(orchestrator, config)
-    
-    orchestrator.register_listener("overlay", overlay.handle_event)
-    orchestrator.register_listener("panel", panel.handle_event)
+    server = UnifiedServer(orchestrator, config)
+
+    orchestrator.register_listener("server", server.handle_event)
     orchestrator.register_listener("vtube", vtube.handle_event)
-    
+
     threads = [
         threading.Thread(target=tiktok.start, daemon=True, name="TikTok"),
-        threading.Thread(target=overlay.run, daemon=True, name="Overlay"),
-        threading.Thread(target=panel.run, daemon=True, name="Panel"),
+        threading.Thread(target=server.run, daemon=True, name="Server"),
     ]
-    
+
     for t in threads:
         t.start()
-    
+
     logger.info("=" * 50)
     logger.info("Sistema iniciado.")
-    logger.info(f"Overlay: http://localhost:{config.OVERLAY_PORT}")
-    logger.info(f"Panel:   http://localhost:{config.PANEL_PORT}")
+    logger.info(f"Panel:   http://localhost:{config.OVERLAY_PORT}")
+    logger.info(f"Overlay: http://localhost:{config.OVERLAY_PORT}/overlay")
     logger.info("Presiona Ctrl+C para detener.")
     logger.info("=" * 50)
-    
+
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         logger.info("Deteniendo sistema...")
         tiktok.stop()
-        overlay.stop()
-        panel.stop()
+        server.stop()
 
 if __name__ == "__main__":
     main()

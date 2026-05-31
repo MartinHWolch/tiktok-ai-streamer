@@ -166,6 +166,10 @@ class EventOrchestrator:
                 self.publish("pipeline_state", pipeline.get_state())
             p.on_change = _on_change
 
+        # Sync flags
+        p.ai_enabled = self.ai_enabled
+        p.tts_enabled = self.tts_enabled
+
         if not p._running:
             p.start()
 
@@ -595,6 +599,7 @@ class EventOrchestrator:
 
     def toggle_tts(self):
         self.tts_enabled = not self.tts_enabled
+        self.pipeline.tts_enabled = self.tts_enabled
         if self.tts_client:
             self.tts_client.set_enabled(self.tts_enabled)
         self.log(f"TTS toggled: {self.tts_enabled}")
@@ -603,6 +608,7 @@ class EventOrchestrator:
 
     def toggle_ai(self):
         self.ai_enabled = not self.ai_enabled
+        self.pipeline.ai_enabled = self.ai_enabled
         self.log(f"AI toggled: {self.ai_enabled}")
         self._save_user_settings()
         return self.ai_enabled

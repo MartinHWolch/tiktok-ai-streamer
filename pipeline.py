@@ -85,6 +85,8 @@ class ResponsePipeline:
         self._incoming_thread = None
         self._tts_thread = None
 
+        self._playback_done = threading.Event()
+
         # Callbacks
         self.ai_generate = None     # fn(text, user) -> dict|str|None
         self.tts_speak = None       # fn(text) -> filename|None
@@ -93,6 +95,10 @@ class ResponsePipeline:
         self.dispatch_emotion = None
         self.mouth_open_fn = None   # fn() abre boca avatar
         self.mouth_close_fn = None  # fn() cierra boca avatar
+
+        # Flags de habilitación (seteados por el orquestador)
+        self.ai_enabled = True
+        self.tts_enabled = True
 
     def start(self):
         if self._running:
@@ -106,6 +112,7 @@ class ResponsePipeline:
 
     def stop(self):
         self._running = False
+        self._playback_done.set()
         for q in (self._incoming_queue, self._generated_queue, self._playback_queue):
             try: q.put_nowait(None)
             except queue.Full: pass
@@ -214,7 +221,7 @@ class ResponsePipeline:
             self._notify()
 
             try:
-                if self.ai_generate:
+                if self.ai_generate and self.ai_enabled:
                     result = self.ai_generate(item.original_text, item.user)
                     if isinstance(result, dict):
                         item.text = result.get("text", "")
@@ -234,6 +241,18 @@ class ResponsePipeline:
                     self._generated_queue.put(item)
                     self._notify()
                     logger.info(f"Pipeline gen: {item.user} -> '{item.text[:60]}' ({item.emotion})")
+
+                    # Dispatch emotion y SFX si existen
+                    if self.dispatch_emotion and item.emotion and item.emotion != "neutral":
+                        try:
+                            self.dispatch_emotion(item.emotion)
+                        except Exception as e:
+                            logger.error(f"Pipeline emotion dispatch error: {e}")
+                    if self.dispatch_sfx and item.sfx:
+                        try:
+                            self.dispatch_sfx(item.sfx)
+                        except Exception as e:
+                            logger.error(f"Pipeline sfx dispatch error: {e}")
                 else:
                     item.status = "done"
                     self._notify()
@@ -250,66 +269,68 @@ class ResponsePipeline:
 
     def _tts_loop(self):
         TTS_MIN_GAP = 1.5
+        logger.info("Pipeline TTS loop started")
 
         while self._running:
+            item = None
             try:
                 item = self._generated_queue.get(timeout=1)
             except queue.Empty:
                 continue
+            except Exception as e:
+                logger.error(f"Pipeline TTS queue.get error: {e}", exc_info=True)
+                time.sleep(1)
+                continue
+
             if item is None:
                 continue
 
-            with self._lock:
-                self._making_tts = item
-            item.status = "tts_queued"
-            self._notify()
-
             try:
-                # Generar audio TTS
-                if self.tts_speak:
-                    item.tts_at = time.time()
-                    item.status = "making_tts"
-                    self._notify()
-                    filename = self.tts_speak(item)
-                    if filename:
-                        item.audio_file = filename
+                self._process_tts_item(item)
+            except Exception as e:
+                logger.error(f"Pipeline TTS unhandled error: {e}", exc_info=True)
+                try:
+                    with self._lock:
+                        self._making_tts = None
+                except:
+                    pass
 
-                # Mover a playback queue y asignar como item activo
+            time.sleep(TTS_MIN_GAP)
+
+        logger.info("Pipeline TTS loop stopped")
+
+    def _process_tts_item(self, item):
+        with self._lock:
+            self._making_tts = item
+        item.status = "tts_queued"
+        self._notify()
+
+        try:
+            if self.tts_speak and self.tts_enabled:
+                item.tts_at = time.time()
+                item.status = "making_tts"
+                self._notify()
+                filename = self.tts_speak(item)
+                if filename:
+                    item.audio_file = filename
+
+            if item.audio_file:
                 item.status = "playback_queued"
                 self._playback_queue.put(item)
                 with self._lock:
-                    self._playing = item
+                    if self._playing is None or self._playing.status in ("done", "error", "skipped"):
+                        self._playing = item
+                    self._making_tts = None
                 self._notify()
-            except Exception as e:
-                logger.error(f"Pipeline TTS error: {e}")
-                item.error = str(e)[:200]
-                item.status = "error"
-                self._notify()
-            finally:
+            else:
+                item.status = "done"
                 with self._lock:
                     self._making_tts = None
-
-            # Esperar a que overlay termine de reproducir
-            # El overlay debe llamar mark_playback_done() via API
-            # Mientras tanto, dormimos y revisamos
-            logger.info(f"[Pipeline TTS] Waiting for playback_done on item {item.id}, status={item.status}")
-            playback_waited = 0
-            while self._running and item.status not in ("done", "error", "skipped"):
-                time.sleep(0.5)
-                playback_waited += 0.5
-                # Timeout de seguridad: si pasaron 30s, forzar done
-                if playback_waited > 30:
-                    logger.warning(f"[Pipeline TTS] Timeout! Forcing done for item {item.id}")
-                    with self._lock:
-                        if self._playing and self._playing.id == item.id:
-                            self._playing.status = "done"
-                            self._playback_log.append(self._playing)
-                            if len(self._playback_log) > MAX_HISTORY:
-                                self._playback_log = self._playback_log[-MAX_HISTORY:]
-                            self._playing = None
-                            self._notify()
-                    break
-
-            logger.info(f"[Pipeline TTS] Item {item.id} finished with status={item.status}, waited {playback_waited}s")
-            # Gap minimo entre TTS consecutivos
-            time.sleep(TTS_MIN_GAP)
+                self._notify()
+        except Exception as e:
+            logger.error(f"Pipeline TTS error: {e}", exc_info=True)
+            item.error = str(e)[:200]
+            item.status = "error"
+            with self._lock:
+                self._making_tts = None
+            self._notify()

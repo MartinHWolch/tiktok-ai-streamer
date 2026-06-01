@@ -445,7 +445,44 @@ function sseOnError() {
 }
 
 // Desbloquear AudioContext en el primer click/touch (politica del navegador)
-document.addEventListener('click', function unlockAudio() {
+function unlockAudio() {
+    var overlay = document.getElementById('click-to-start');
+    
+    // Crear/resumir AudioContext
+    try {
+        if (!lipSyncCtx) {
+            lipSyncCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (lipSyncCtx.state === 'suspended') {
+            lipSyncCtx.resume().then(function() {
+                console.log("[Overlay] AudioContext unlocked by user gesture");
+            });
+        }
+        // Reproducir sonido silencioso para desbloquear play()
+        var buffer = lipSyncCtx.createBuffer(1, 1, 22050);
+        var source = lipSyncCtx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(lipSyncCtx.destination);
+        source.start(0);
+        source.onended = function() {
+            console.log("[Overlay] Audio desbloqueado correctamente");
+        };
+    } catch(e) {
+        console.warn("[Overlay] Audio unlock failed:", e.message);
+    }
+    
+    // Ocultar el overlay de click-to-start
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
+    
+    // Procesar la cola TTS pendiente si hay items
+    if (ttsQueue.length > 0 && !ttsPlaying) {
+        processTtsQueue();
+    }
+}
+
+document.addEventListener('click', function unlockAudioLegacy() {
     if (lipSyncCtx && lipSyncCtx.state === 'suspended') {
         lipSyncCtx.resume().then(function() {
             console.log("[Overlay] AudioContext unlocked by user gesture");

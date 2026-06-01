@@ -69,6 +69,15 @@ class EventOrchestrator:
         self._sfx_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sfx")
         self._load_sfx()
 
+        # Comment reading (lectura de comentarios con voz separada)
+        self.read_comments_enabled = getattr(config, 'READ_COMMENTS_ENABLED', True)
+        self.comment_voice = getattr(config, 'COMMENT_VOICE', '')
+        self.comment_speed = getattr(config, 'COMMENT_SPEED', 1.0)
+        self.comment_pitch = getattr(config, 'COMMENT_PITCH', 0)
+        self.comment_volume = getattr(config, 'COMMENT_VOLUME', 1.0)
+        self.comment_lang = getattr(config, 'COMMENT_LANG', 'es')
+        self._comment_voice_lock = threading.Lock()
+
         # Response pipeline (cola 2-etapas: gen -> TTS)
         self.pipeline = ResponsePipeline()
         self._pipeline_callbacks_wired = False
@@ -205,6 +214,14 @@ class EventOrchestrator:
             self.welcome_enabled = settings["welcome_enabled"]
         if "welcome_template" in settings:
             self.welcome_template = settings["welcome_template"]
+        if "read_comments_enabled" in settings:
+            self.read_comments_enabled = settings["read_comments_enabled"]
+        if "comment_voice" in settings:
+            self.comment_voice = settings["comment_voice"]
+        if "comment_speed" in settings:
+            self.comment_speed = settings["comment_speed"]
+        if "comment_lang" in settings:
+            self.comment_lang = settings["comment_lang"]
 
         tts_keys = ["tts_engine", "tts_voice", "tts_voice_blend", "tts_edge_voice", "tts_speed", "tts_lang", "tts_pitch", "tts_volume", "kokoro_model"]
         self._pending_tts_settings = {k: settings[k] for k in tts_keys if k in settings}
@@ -263,6 +280,10 @@ class EventOrchestrator:
             "tts_pitch": status.get("pitch", 0),
             "tts_volume": status.get("volume", 1.0),
             "kokoro_model": status.get("kokoro_model", ""),
+            "read_comments_enabled": self.read_comments_enabled,
+            "comment_voice": self.comment_voice,
+            "comment_speed": self.comment_speed,
+            "comment_lang": self.comment_lang,
         }
         try:
             with open(self._user_settings_path, "w", encoding="utf-8") as f:
@@ -426,8 +447,57 @@ class EventOrchestrator:
         
         self.publish("overlay_message", {"user": user, "text": text})
 
+        # Lectura de comentarios con voz configurable
+        if self.read_comments_enabled and self.tts_client and self.tts_client._kokoro:
+            self._speak_comment(text, user)
+
         # Etapa 1: encolar mensaje entrante para que la IA genere respuesta
         self.pipeline.receive_message(user=user, trigger="chat", original_text=text)
+
+    def _speak_comment(self, text, user):
+        """Genera TTS para leer el comentario con la voz configurada."""
+        try:
+            t = self.tts_client
+            voice_to_use = self.comment_voice
+            if not voice_to_use and t.voice_blend:
+                # Sin voz configurada pero hay voice blend: usar el blend para comentarios
+                voice_to_use = ""
+            elif not voice_to_use:
+                # Sin voz configurada: usar la voz actual (voz IA) o saltar
+                voice_to_use = t.voice
+                if not voice_to_use:
+                    return
+
+            with t._state_lock:
+                prev_voice = t.voice
+                prev_blend = t.voice_blend
+                prev_speed = t.speed
+                prev_pitch = t.pitch
+                prev_volume = t.volume
+                prev_lang = t.lang
+                if voice_to_use:
+                    t.voice = voice_to_use
+                    t.voice_blend = ""
+                t.speed = self.comment_speed
+                t.pitch = self.comment_pitch
+                t.volume = self.comment_volume
+                t.lang = self.comment_lang
+            try:
+                msg = text[:200]
+                filename = t.speak(msg)
+                if filename:
+                    self.publish("tts_audio", {"url": f"/audio/{filename}", "item_id": "comment", "comment": True})
+                    self.log(f"Comentario leido: {text[:40]}")
+            finally:
+                with t._state_lock:
+                    t.voice = prev_voice
+                    t.voice_blend = prev_blend
+                    t.speed = prev_speed
+                    t.pitch = prev_pitch
+                    t.volume = prev_volume
+                    t.lang = prev_lang
+        except Exception as e:
+            logger.error(f"Error leyendo comentario: {e}")
 
     def _parse_ai_metadata(self, reply):
         """Extrae emotion/sfx de metadatos en respuesta AI (formato [emotion:happy][sfx:ding])."""
@@ -750,8 +820,8 @@ class EventOrchestrator:
 
     def set_simulation_speed(self, speed):
         if self.tiktok_client:
-            self.tiktok_client.simulation_speed = max(0.1, min(10.0, speed))
-            self.log(f"Velocidad simulación: {self.tiktok_client.simulation_speed}x")
+            self.tiktok_client.simulation_speed = max(1, min(120, int(speed)))
+            self.log(f"Intervalo simulacion: {self.tiktok_client.simulation_speed}s")
 
     def simulate_gift(self, user="Admin", gift="TestGift"):
         self.handle_tiktok_event({
@@ -802,6 +872,17 @@ class EventOrchestrator:
             logger.error(f"Error guardando banned words: {e}")
 
     def _check_spam(self, user, text):
+        # En modo simulación, solo filtrar palabras baneadas (no rate limit)
+        is_simulation = self.tiktok_client and getattr(self.tiktok_client, "simulation_enabled", True)
+        if is_simulation:
+            if self.banned_words:
+                text_lower = text.lower()
+                for word in self.banned_words:
+                    if word.lower() in text_lower:
+                        self.log(f"SPAM bloqueado ({user}): palabra baneada '{word}'")
+                        return True
+            return False
+
         if not self.spam_enabled:
             return False
 

@@ -88,8 +88,9 @@ class TikTokClient:
 
     def _sim_loop(self):
         while self._sim_running and self._running:
-            interval = self.config.SIMULATION_INTERVAL * self.simulation_speed
-            time.sleep(max(0.5, interval))
+            # simulation_speed ahora es segundos entre eventos (1s-60s)
+            interval = max(1.0, self.simulation_speed)
+            time.sleep(interval)
             if not self._sim_running or not self._running:
                 break
             self._emit_random_event()

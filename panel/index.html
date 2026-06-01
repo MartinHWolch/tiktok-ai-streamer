@@ -102,6 +102,25 @@ body { font-family: var(--font-ui); background: var(--bg-deep); color: var(--tex
 .pipe-user { font-weight: 500; color: var(--accent-purple); width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pipe-text { flex: 1; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* Pipeline Table */
+.pl-row { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); margin-bottom: 3px; font-size: 11px; animation: slideIn 0.3s ease; transition: all 0.2s; }
+.pl-row:hover { background: rgba(255,255,255,0.02); border-color: var(--border-hover); }
+.pl-row.pl-playing { border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.05); }
+.pl-row.pl-done { opacity: 0.6; }
+.pl-row.pl-error { border-color: rgba(239,68,68,0.3); }
+.pl-col { flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl-col-time { width: 40px; font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); }
+.pl-col-user { width: 70px; font-weight: 500; color: var(--accent-purple); }
+.pl-col-msg { width: 120px; color: var(--text-secondary); }
+.pl-col-gen { width: 130px; }
+.pl-col-tts { width: 90px; }
+.pl-col-play { width: 80px; }
+.pl-col-done { width: 90px; font-size: 10px; }
+.pl-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.pl-expand-btn { background: none; border: 1px solid var(--border-subtle); color: var(--text-muted); cursor: pointer; font-size: 9px; padding: 1px 4px; border-radius: 3px; margin-left: 4px; vertical-align: middle; }
+.pl-expand-btn:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+.pl-full-response { margin-top: 4px; }
+
 .log-panel { max-height: 240px; overflow-y: auto; }
 .log-entry { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 11px; border-bottom: 1px solid rgba(255,255,255,0.03); animation: slideIn 0.25s; }
 .log-time { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); width: 50px; flex-shrink: 0; }
@@ -285,9 +304,9 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance
               <span id="mode-label" style="font-weight:600;font-size:12px;color:var(--accent-amber)">Simulacion</span>
               <span id="mode-desc" style="font-size:10px;color:var(--text-muted)">Eventos generados automaticamente</span>
               <button class="btn btn-p btn-sm" id="btn-toggle-sim"><span id="btn-sim-text">Cambiar a Real</span><span class="spinner hidden" id="spinner-sim"></span></button>
-              <span style="font-size:10px;color:var(--text-muted);margin-left:8px">Vel:</span>
-              <input type="range" id="sim-speed-slider" min="0.1" max="5.0" step="0.1" value="1.0" style="width:80px">
-              <span id="sim-speed-label" style="font-family:var(--font-mono);font-size:10px">1.0x</span>
+              <span style="font-size:10px;color:var(--text-muted);margin-left:8px">Intervalo:</span>
+              <input type="range" id="sim-speed-slider" min="1" max="60" step="1" value="3" style="width:80px">
+              <span id="sim-speed-label" style="font-family:var(--font-mono);font-size:10px">3s</span>
             </div>
             <div class="panel" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
               <span style="font-size:11px;color:var(--text-secondary)">Acciones:</span>
@@ -352,6 +371,11 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance
         <div class="form-group kokoro-opt"><label>Modelo Kokoro</label><select class="input-dark" id="kokoro-model"><option value="fp16">FP16 (177 MB - rapido)</option><option value="fp32">FP32 (305 MB - calidad)</option></select></div>
         <div class="form-group"><label>Texto de prueba</label><textarea class="input-dark" id="tts-test-text" rows="2" style="min-height:44px">Buenos dias, esta es una prueba de sonido.</textarea></div>
         <button class="btn btn-p" id="btn-test-tts"><span class="btn-label">Probar TTS</span><span class="spinner hidden" id="spinner-test-tts"></span></button>
+        <div class="panel" style="margin-top:14px"><div class="panel-header"><span class="panel-title">Lectura de Comentarios</span></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="font-size:12px">Leer comentarios en voz alta</span><div class="sw on" id="sw-read-comments"></div></div>
+          <div class="form-group kokoro-opt" id="comment-voice-group"><label>Voz para comentarios</label><select class="input-dark" id="comment-voice-select"></select></div>
+          <div class="slider-row" id="comment-speed-group"><span class="slider-label">Velocidad</span><input type="range" id="comment-speed" min="0.5" max="2.0" step="0.1" value="1.0"><span class="slider-readout" id="comment-speed-val">1.0x</span></div>
+        </div>
         <div class="panel" style="margin-top:14px"><div class="panel-header"><span class="panel-title">Presets de Voz</span></div>
           <div style="display:flex;gap:6px;margin-bottom:8px"><input type="text" class="input-dark" id="preset-name" placeholder="Nombre del preset..."><button class="btn btn-p btn-sm" id="btn-save-preset">Guardar</button></div>
           <div style="display:flex;gap:6px"><select class="input-dark" id="preset-select"><option value="">-- Cargar preset --</option></select><button class="btn btn-sm" id="btn-load-preset">Cargar</button><button class="btn btn-d btn-sm" id="btn-delete-preset">Eliminar</button></div>
@@ -670,7 +694,7 @@ function renderPipelineSteps() {
   else if ((ps.generating)) { steps[1].classList.add('active'); steps[0].classList.add('done'); }
   else if ((ps.incoming_queue||[]).length>0) steps[0].classList.add('active');
 
-  $('pipeline-summary').textContent = 'In:'+(ps.incoming_queue||[]).length+' Gen:'+(genQ)+' TTS:'+(ttsQ)+(playing?' Play:1':'');
+  $('pipeline-summary').textContent = 'Items:'+(ps.table_items||[]).length+' | In:'+(ps.incoming_queue||[]).length+' Gen:'+(genQ)+' TTS:'+(ttsQ)+(playing?' Play:1':'');
 }
 
 function renderPipelineQueue() {
@@ -695,20 +719,77 @@ function renderPipelineQueue() {
 function renderPipelineFull() {
   var ps = G.pipelineState; var c = $('pl-full-list'); if (!c) return;
   if (!ps) { c.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:16px">Esperando datos...</div>'; return; }
-  var items = [];
-  if (ps.generating) items.unshift({user:ps.generating.user||'?', text:ps.generating.original_text||'', status:'generating'});
-  (ps.gen_queue||[]).forEach(function(i){ items.unshift({user:i.user||'?', text:i.text||'', status:'generated'}); });
-  (ps.tts_queue||[]).forEach(function(i){ items.unshift({user:i.user||'?', text:i.text||'', status:'tts'}); });
-  (ps.history||[]).slice(-30).forEach(function(i){ items.unshift({user:i.user||'?', text:i.text||'', status:i.status==='done'?'done':'playing'}); });
+  var items = ps.table_items || [];
 
   c.innerHTML = '';
   if (items.length===0) { c.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:16px">Sin elementos</div>'; return; }
+
   items.forEach(function(it){
-    var sc = 's-'+it.status; var st = it.status==='generating'?'GEN':(it.status==='generated'?'LISTO':(it.status==='tts'?'TTS':(it.status==='playing'?'PLAY':'DONE')));
-    var d = document.createElement('div'); d.className = 'pipe-item';
-    d.innerHTML = '<span class="pipe-status '+sc+'">'+st+'</span><span class="pipe-user">'+esc(it.user)+'</span><span class="pipe-text">'+esc(it.text||'').slice(0,80)+'</span>';
-    c.appendChild(d);
+    var st = it.status || '';
+    var hasAudio = !!it.audio_file;
+    var hasResponse = !!(it.text && it.text.trim());
+    var isDone = (st === 'done');
+    var isPlaying = (st === 'playing' || st === 'playback_queued');
+    var isTts = (st === 'tts_queued' || st === 'making_tts');
+    var isGen = (st === 'generating' || st === 'generated');
+    var isError = (st === 'error');
+
+    var row = document.createElement('div');
+    row.className = 'pl-row' + (isDone ? ' pl-done' : '') + (isPlaying ? ' pl-playing' : '') + (isError ? ' pl-error' : '');
+
+    // Fecha/hora
+    var timeStr = it.received_at ? new Date(it.received_at*1000).toLocaleTimeString().slice(0,5) : '--:--';
+
+    // Colores de status
+    var scGen = isError?'#ef4444':(hasResponse?'#22c55e':(isGen?'#f59e0b':'#5c5c72'));
+    var scTts = isError?'#ef4444':(hasAudio?'#22c55e':(isTts?'#f59e0b':'#5c5c72'));
+    var scPlay = isError?'#ef4444':(isPlaying?'#3b82f6':(isDone?'#22c55e':'#5c5c72'));
+    var scDone = isDone?'#22c55e':'#5c5c72';
+
+    // Texto para cada columna
+    var genText = hasResponse ? esc(it.text||'').slice(0,30)+'...' : (isGen ? 'Generando...' : '--');
+    var ttsText = hasAudio ? 'Listo' : (isTts ? 'Generando...' : '--');
+    var playText = isPlaying ? 'Enviado' : (isDone ? 'Reproducido' : '--');
+    var doneText = isDone ? 'Completado '+timeStr : (isError ? 'Error' : 'Pendiente');
+
+    row.innerHTML = '<div class="pl-col pl-col-time">'+timeStr+'</div>'+
+      '<div class="pl-col pl-col-user">'+esc(it.user||'?')+'</div>'+
+      '<div class="pl-col pl-col-msg" title="'+esc(it.original_text||'')+'">'+esc((it.original_text||'').slice(0,40))+'</div>'+
+      '<div class="pl-col pl-col-gen" style="color:'+scGen+'">'+
+        '<span class="pl-dot" style="background:'+scGen+'"></span>'+
+        genText+
+        (hasResponse?' <button class="pl-expand-btn" data-id="'+it.id+'">&#9654;</button>':'')+
+      '</div>'+
+      '<div class="pl-col pl-col-tts" style="color:'+scTts+'"><span class="pl-dot" style="background:'+scTts+'"></span>'+ttsText+'</div>'+
+      '<div class="pl-col pl-col-play" style="color:'+scPlay+'"><span class="pl-dot" style="background:'+scPlay+'"></span>'+playText+'</div>'+
+      '<div class="pl-col pl-col-done" style="color:'+scDone+'">'+doneText+'</div>'+
+      '<div class="pl-full-response" id="pl-resp-'+it.id+'" style="display:none"></div>';
+
+    c.appendChild(row);
   });
+
+  // Expand buttons
+  setTimeout(function(){
+    c.querySelectorAll('.pl-expand-btn').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var id = this.dataset.id;
+        var respEl = document.getElementById('pl-resp-'+id);
+        if (!respEl) return;
+        if (respEl.style.display === 'none') {
+          var item = items.find(function(i){ return i.id === id; });
+          if (item) {
+            respEl.innerHTML = '<div style="background:var(--bg-surface);border-left:2px solid var(--accent-purple);padding:8px 12px;margin:4px 0;border-radius:0 6px 6px 0;font-size:12px;color:var(--text-secondary)"><strong style="color:var(--accent-teal)">@'+esc(item.user)+':</strong> '+esc(item.original_text||'')+'<br><strong style="color:var(--accent-purple)">AI:</strong> '+esc(item.text||'Sin respuesta')+'</div>';
+          }
+          respEl.style.display = 'block';
+          this.textContent = '▼';
+        } else {
+          respEl.style.display = 'none';
+          this.textContent = '▶';
+        }
+      });
+    });
+  }, 100);
 }
 
 /* ===============================================================
@@ -733,9 +814,9 @@ $('btn-toggle-sim').addEventListener('click', async function(){
   if (r) { updateModeUI(r.simulation); G.isSim = r.simulation; refreshStats(); }
 });
 
-$('sim-speed-slider').addEventListener('input', function(){ $('sim-speed-label').textContent = parseFloat(this.value).toFixed(1)+'x'; });
+$('sim-speed-slider').addEventListener('input', function(){ $('sim-speed-label').textContent = this.value+'s'; });
 $('sim-speed-slider').addEventListener('change', async function(){
-  await postJSON('/api/simulation_speed', {speed: parseFloat(this.value)});
+  await postJSON('/api/simulation_speed', {speed: parseInt(this.value)});
 });
 
 /* ===============================================================
@@ -1273,11 +1354,41 @@ function init() {
     renderLogMini();
   });
 
-  refreshStats(); loadPresetList(); refreshVtsStatus();
+  refreshStats(); loadPresetList(); refreshVtsStatus(); loadCommentConfig();
   setInterval(refreshStats, 10000);
   setInterval(refreshVtsStatus, 15000);
   setInterval(function(){ $('av-uptime').textContent = fmtUptime(G.stats.uptime+1); }, 60000);
 }
+
+function loadCommentConfig() {
+  fetch('/api/read_comments_config').then(function(r){return r.json();}).then(function(c){
+    var sw = $('sw-read-comments');
+    if (c.enabled) sw.classList.add('on'); else sw.classList.remove('on');
+    if (c.voices && c.voices.length) {
+      var sel = $('comment-voice-select');
+      sel.innerHTML = '<option value="">-- Igual que voz IA --</option>';
+      c.voices.forEach(function(v){ var o=document.createElement('option');o.value=v;o.textContent=v;if(v===c.voice)o.selected=true;sel.appendChild(o); });
+    }
+    if (c.speed!==undefined) { $('comment-speed').value=c.speed; $('comment-speed-val').textContent=c.speed.toFixed(1)+'x'; }
+  });
+}
+
+$('sw-read-comments').addEventListener('click', function(){
+  this.classList.toggle('on');
+  var enabled = this.classList.contains('on');
+  postJSON('/api/read_comments_config', {enabled:enabled});
+});
+
+$('comment-voice-select').addEventListener('change', function(){
+  postJSON('/api/read_comments_config', {voice:this.value});
+});
+
+$('comment-speed').addEventListener('input', function(){
+  $('comment-speed-val').textContent = parseFloat(this.value).toFixed(1)+'x';
+});
+$('comment-speed').addEventListener('change', function(){
+  postJSON('/api/read_comments_config', {speed:parseFloat(this.value)});
+});
 
 document.addEventListener('DOMContentLoaded', init);
 </script>

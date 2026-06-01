@@ -1,16 +1,16 @@
-# Graph Report - tiktok-ai-streamer  (2026-05-30)
+# Graph Report - tiktok-ai-streamer  (2026-05-31)
 
 ## Corpus Check
-- 26 files · ~56,818 words
+- 26 files · ~57,885 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 572 nodes · 848 edges · 54 communities (25 shown, 29 thin omitted)
+- 580 nodes · 863 edges · 60 communities (28 shown, 32 thin omitted)
 - Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 57 edges (avg confidence: 0.72)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e240b75a`
+- Built from commit: `1411fb31`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -66,14 +66,19 @@
 - [[_COMMUNITY_Community 49|Community 49]]
 - [[_COMMUNITY_Community 50|Community 50]]
 - [[_COMMUNITY_Community 53|Community 53]]
+- [[_COMMUNITY_Community 54|Community 54]]
+- [[_COMMUNITY_Community 55|Community 55]]
+- [[_COMMUNITY_Community 56|Community 56]]
+- [[_COMMUNITY_Community 57|Community 57]]
+- [[_COMMUNITY_Community 58|Community 58]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `EventOrchestrator` - 84 edges
+1. `EventOrchestrator` - 85 edges
 2. `API Details` - 38 edges
 3. `TTSClient` - 29 edges
 4. `TikTok AI Streamer` - 26 edges
-5. `VTubeStudioClient` - 19 edges
-6. `ResponsePipeline` - 17 edges
+5. `ResponsePipeline` - 19 edges
+6. `VTubeStudioClient` - 19 edges
 7. `SseFlaskServer` - 16 edges
 8. `TikTokClient` - 15 edges
 9. `PointsManager` - 13 edges
@@ -98,11 +103,11 @@
 - **SSE Real-Time Event Stream** — overlay_sseOnMessage, panel_sseOnMessage, panel_connectSSE, readme_OBSOverlay, readme_ControlPanel [EXTRACTED 1.00]
 - **VTube Studio Integration Flow** — readme_VTubeClient, vtubeapi_VTubeStudioAPI, vtubeapi_WebSocket, vtubeapi_Authentication, panel_refreshVtsStatus, panel_ActionEditorVtubeExpr, panel_ActionEditorVtubeHotkey [EXTRACTED 1.00]
 
-## Communities (54 total, 29 thin omitted)
+## Communities (60 total, 32 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.05
-Nodes (6): EventOrchestrator, Conecta el pipeline con los servicios disponibles., Extrae emotion/sfx de metadatos en respuesta AI (formato [emotion:happy][sfx:din, Extrae emotion/sfx de metadatos en respuesta AI (formato [emotion:happy][sfx:din, Ejecuta acciones temporales sin guardarlas como regla., Ejecuta acciones temporales sin guardarlas como regla.
+Nodes (7): EventOrchestrator, Conecta el pipeline con los servicios disponibles., Conecta el pipeline con los servicios disponibles., Genera TTS para leer el comentario con la voz configurada., Ejecuta acciones temporales sin guardarlas como regla., Ejecuta acciones temporales sin guardarlas como regla., Ejecuta acciones temporales sin guardarlas como regla.
 
 ### Community 1 - "Community 1"
 Cohesion: 0.09
@@ -117,8 +122,8 @@ Cohesion: 0.05
 Nodes (42): getVoiceGender() - Voice Gender Detection, renderRules() - Rules Grid Renderer, showToast() - Undo Notification, config.py Configuration, Web Control Panel, control_panel_server.py, Event Orchestrator, Groq AI Client (+34 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.06
-Nodes (15): AIClient, Config, ControlPanelServer, ColoredFormatter, main(), setup_logging(), OverlayServer, Clase base para servidores Flask con SSE (Server-Sent Events).          Usa broa (+7 more)
+Cohesion: 0.15
+Nodes (6): Clase base para servidores Flask con SSE (Server-Sent Events).          Usa broa, Sobrescribir en subclases para definir rutas adicionales., Generador SSE con cola propia para cada cliente., Sirve archivos estáticos desde static_dir., Broadcast a todos los suscriptores activos., SseFlaskServer
 
 ### Community 6 - "Community 6"
 Cohesion: 0.15
@@ -129,8 +134,8 @@ Cohesion: 0.12
 Nodes (17): /api/playback_done Endpoint, /api/playback_started Endpoint, createAlert() - Overlay Alert, createMessage() - Chat Message Display, emojiExplosion() - Particle Animation, escapeHtml() - HTML Escaping, initLipSync() - AudioContext Setup, playSfx() - SFX Playback (+9 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.10
-Nodes (13): ResponsePipeline: cola de procesamiento 3-etapas.  Etapa 1 - Incoming: mensajes, Llamado cuando llega un mensaje de TikTok., Llamado cuando llega un mensaje de TikTok., Para comandos/bienvenidas que ya tienen texto (saltan IA)., Para comandos/bienvenidas que ya tienen texto (saltan IA)., Llamado cuando el overlay confirma que empezo a reproducir., Llamado cuando el overlay confirma que empezo a reproducir., Llamado cuando el overlay confirma que termino de reproducir. (+5 more)
+Cohesion: 0.09
+Nodes (14): ResponsePipeline: cola de procesamiento 3-etapas.  Etapa 1 - Incoming: mensajes, Llamado cuando llega un mensaje de TikTok., Llamado cuando llega un mensaje de TikTok., Para comandos/bienvenidas que ya tienen texto (saltan IA)., Para comandos/bienvenidas que ya tienen texto (saltan IA)., Llamado cuando el overlay confirma que empezo a reproducir., Llamado cuando el overlay confirma que empezo a reproducir., Llamado cuando el overlay confirma que termino de reproducir. (+6 more)
 
 ### Community 9 - "Community 9"
 Cohesion: 0.23
@@ -188,25 +193,33 @@ Nodes (3): Get list of post-processing effects and state, The `postProcessingEff
 Cohesion: 0.67
 Nodes (3): Options for pinning, Pin items to the model, Pinning to a specific position
 
+### Community 54 - "Community 54"
+Cohesion: 0.31
+Nodes (5): Config, ColoredFormatter, main(), setup_logging(), OverlayServer
+
+### Community 58 - "Community 58"
+Cohesion: 0.50
+Nodes (3): Extrae emotion/sfx de metadatos en respuesta AI (formato [emotion:happy][sfx:din, Extrae emotion/sfx de metadatos en respuesta AI (formato [emotion:happy][sfx:din, Extrae emotion/sfx de metadatos en respuesta AI (formato [emotion:happy][sfx:din
+
 ## Knowledge Gaps
 - **160 isolated node(s):** `name`, `version`, `description`, `start`, `test` (+155 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **29 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **32 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `EventOrchestrator` connect `Community 0` to `Community 8`, `Community 4`, `Community 13`?**
-  _High betweenness centrality (0.120) - this node is a cross-community bridge._
-- **Why does `ColoredFormatter` connect `Community 4` to `Community 0`, `Community 5`, `Community 10`, `Community 53`?**
-  _High betweenness centrality (0.037) - this node is a cross-community bridge._
-- **Why does `TTSClient` connect `Community 5` to `Community 4`?**
-  _High betweenness centrality (0.036) - this node is a cross-community bridge._
+- **Why does `EventOrchestrator` connect `Community 0` to `Community 8`, `Community 58`, `Community 13`, `Community 54`?**
+  _High betweenness centrality (0.127) - this node is a cross-community bridge._
+- **Why does `ResponsePipeline` connect `Community 8` to `Community 0`, `Community 13`?**
+  _High betweenness centrality (0.039) - this node is a cross-community bridge._
+- **Why does `ColoredFormatter` connect `Community 54` to `Community 0`, `Community 5`, `Community 10`, `Community 53`, `Community 55`, `Community 56`, `Community 57`?**
+  _High betweenness centrality (0.038) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `EventOrchestrator` (e.g. with `ResponsePipeline` and `PointsManager`) actually correct?**
   _`EventOrchestrator` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 7 inferred relationships involving `TikTok AI Streamer` (e.g. with `Viewer Leaderboard` and `Plugin System`) actually correct?**
   _`TikTok AI Streamer` has 7 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `Conecta el pipeline con los servicios disponibles.`, `Extrae emotion/sfx de metadatos en respuesta AI (formato [emotion:happy][sfx:din`, `Ejecuta acciones temporales sin guardarlas como regla.` to the rest of the system?**
-  _188 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **What connects `Conecta el pipeline con los servicios disponibles.`, `Genera TTS para leer el comentario con la voz configurada.`, `Extrae emotion/sfx de metadatos en respuesta AI (formato [emotion:happy][sfx:din` to the rest of the system?**
+  _193 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.0519219736087206 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05182072829131653 - nodes in this community are weakly interconnected._

@@ -195,7 +195,40 @@ class ResponsePipeline:
                 "incoming_log": [i.to_dict() for i in self._incoming_log[-20:]],
                 "generated_log": [i.to_dict() for i in self._generated_log[-20:]],
                 "playback_log": [i.to_dict() for i in self._playback_log[-20:]],
+                # Vista unificada para tabla
+                "table_items": self._build_table_view(),
             }
+
+    def _build_table_view(self):
+        """Construye una lista unificada de items para la tabla del pipeline."""
+        seen = set()
+        items = []
+
+        # Orden: activos primero, luego completados
+        if self._generating:
+            items.append(self._generating)
+            seen.add(self._generating.id)
+        if self._making_tts:
+            items.append(self._making_tts)
+            seen.add(self._making_tts.id)
+        if self._playing:
+            items.append(self._playing)
+            seen.add(self._playing.id)
+
+        for q in (self._incoming_queue, self._generated_queue, self._playback_queue):
+            for i in list(q.queue):
+                if i is not None and i.id not in seen:
+                    items.append(i)
+                    seen.add(i.id)
+
+        # Agregar completados recientes
+        for log in (self._playback_log[-10:], self._generated_log[-5:], self._incoming_log[-5:]):
+            for i in log:
+                if i.id not in seen:
+                    items.append(i)
+                    seen.add(i.id)
+
+        return [i.to_dict() for i in items[-50:]]
 
     def _notify(self):
         if self.on_change:

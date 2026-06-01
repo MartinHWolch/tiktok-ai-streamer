@@ -290,6 +290,32 @@ class UnifiedServer(SseFlaskServer):
         def pipeline_state():
             return jsonify(o.get_pipeline_state())
 
+        @self.app.route("/api/read_comments_config", methods=["GET"])
+        @self._require_auth
+        def read_comments_config():
+            return jsonify({
+                "enabled": self.orchestrator.read_comments_enabled,
+                "voice": self.orchestrator.comment_voice,
+                "speed": self.orchestrator.comment_speed,
+                "lang": self.orchestrator.comment_lang,
+                "voices": self.orchestrator.tts_client._kokoro_voices if self.orchestrator.tts_client and self.orchestrator.tts_client._kokoro else [],
+            })
+
+        @self.app.route("/api/read_comments_config", methods=["POST"])
+        @self._require_auth
+        def read_comments_config_post():
+            data = request.get_json(silent=True) or {}
+            if "enabled" in data:
+                self.orchestrator.read_comments_enabled = data["enabled"]
+            if "voice" in data:
+                self.orchestrator.comment_voice = data["voice"]
+            if "speed" in data:
+                self.orchestrator.comment_speed = float(data["speed"])
+            if "lang" in data:
+                self.orchestrator.comment_lang = data["lang"]
+            self.orchestrator._save_user_settings()
+            return jsonify({"success": True})
+
         @self.app.route("/api/test_pipeline", methods=["POST"])
         def test_pipeline():
             """Test endpoint para verificar el flujo completo del pipeline."""

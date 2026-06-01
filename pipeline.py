@@ -120,7 +120,7 @@ class ResponsePipeline:
     # --- Public API ---
 
     def receive_message(self, user, trigger, original_text):
-        """Llamado cuando llega un mensaje de TikTok."""
+        """Llamado cuando llega un mensaje de TikTok. Retorna el item creado."""
         item = ResponseItem(user=user, trigger=trigger, original_text=original_text)
         self._incoming_log.append(item)
         if len(self._incoming_log) > MAX_HISTORY:
@@ -130,6 +130,7 @@ class ResponsePipeline:
             self._notify()
         except queue.Full:
             logger.warning(f"Pipeline: cola incoming llena, descartando mensaje de {user}")
+        return item
 
     def enqueue_direct_tts(self, user, trigger, text, emotion="neutral", sfx=None):
         """Para comandos/bienvenidas que ya tienen texto (saltan IA)."""

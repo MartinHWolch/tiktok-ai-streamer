@@ -297,6 +297,8 @@ class UnifiedServer(SseFlaskServer):
                 "enabled": self.orchestrator.read_comments_enabled,
                 "voice": self.orchestrator.comment_voice,
                 "speed": self.orchestrator.comment_speed,
+                "pitch": self.orchestrator.comment_pitch,
+                "volume": self.orchestrator.comment_volume,
                 "lang": self.orchestrator.comment_lang,
                 "voices": self.orchestrator.tts_client._kokoro_voices if self.orchestrator.tts_client and self.orchestrator.tts_client._kokoro else [],
             })
@@ -311,6 +313,10 @@ class UnifiedServer(SseFlaskServer):
                 self.orchestrator.comment_voice = data["voice"]
             if "speed" in data:
                 self.orchestrator.comment_speed = float(data["speed"])
+            if "pitch" in data:
+                self.orchestrator.comment_pitch = int(data["pitch"])
+            if "volume" in data:
+                self.orchestrator.comment_volume = float(data["volume"])
             if "lang" in data:
                 self.orchestrator.comment_lang = data["lang"]
             self.orchestrator._save_user_settings()

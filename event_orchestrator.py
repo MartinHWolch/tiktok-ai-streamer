@@ -54,22 +54,12 @@ class EventOrchestrator:
         self.overlay_bg = "transparent"
         self.overlay_debug = False
         self._pending_tts_settings = {}
-        self._load_user_settings()
 
-        # Points system
-        self.points = PointsManager(os.path.dirname(os.path.abspath(__file__)))
-
-        # Welcome messages
+        # Welcome messages (defaults, seran sobreescritos por _load_user_settings)
         self.welcome_enabled = True
         self.welcome_template = "Bienvenido {user} al stream!"
 
-        # SFX sounds
-        self._sfx_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "sfx_config.json")
-        self.sfx_config = {}
-        self._sfx_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sfx")
-        self._load_sfx()
-
-        # Comment reading (lectura de comentarios con voz separada)
+        # Comment reading defaults (seran sobreescritos por _load_user_settings)
         self.read_comments_enabled = getattr(config, 'READ_COMMENTS_ENABLED', True)
         self.comment_voice = getattr(config, 'COMMENT_VOICE', '')
         self.comment_speed = getattr(config, 'COMMENT_SPEED', 1.0)
@@ -77,6 +67,21 @@ class EventOrchestrator:
         self.comment_volume = getattr(config, 'COMMENT_VOLUME', 1.0)
         self.comment_lang = getattr(config, 'COMMENT_LANG', 'es')
         self._comment_voice_lock = threading.Lock()
+
+        # Audio de comentario pendiente por publicar (item_id -> filename)
+        self._pending_comment_audio = {}
+        self._comment_audio_lock = threading.Lock()
+
+        self._load_user_settings()
+
+        # Points system
+        self.points = PointsManager(os.path.dirname(os.path.abspath(__file__)))
+
+        # SFX sounds
+        self._sfx_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "sfx_config.json")
+        self.sfx_config = {}
+        self._sfx_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sfx")
+        self._load_sfx()
 
         # Response pipeline (cola 2-etapas: gen -> TTS)
         self.pipeline = ResponsePipeline()
@@ -130,6 +135,13 @@ class EventOrchestrator:
         if self.tts_client and not p.tts_speak:
             def tts_gen(item):
                 try:
+                    # Publicar TTS de comentario pendiente ANTES de la respuesta IA
+                    with self._comment_audio_lock:
+                        comment_filename = self._pending_comment_audio.pop(item.id, None)
+                    if comment_filename:
+                        self.publish("tts_audio", {"url": f"/audio/{comment_filename}", "item_id": "comment", "comment": True})
+                        self.log(f"Comentario publicado secuencialmente para item {item.id[:8]}")
+
                     self.publish("tts_speak", {"text": item.text})
                     filename = self.tts_client.speak(item.text)
                     if filename:
@@ -220,6 +232,10 @@ class EventOrchestrator:
             self.comment_voice = settings["comment_voice"]
         if "comment_speed" in settings:
             self.comment_speed = settings["comment_speed"]
+        if "comment_pitch" in settings:
+            self.comment_pitch = settings["comment_pitch"]
+        if "comment_volume" in settings:
+            self.comment_volume = settings["comment_volume"]
         if "comment_lang" in settings:
             self.comment_lang = settings["comment_lang"]
 
@@ -283,6 +299,8 @@ class EventOrchestrator:
             "read_comments_enabled": self.read_comments_enabled,
             "comment_voice": self.comment_voice,
             "comment_speed": self.comment_speed,
+            "comment_pitch": self.comment_pitch,
+            "comment_volume": self.comment_volume,
             "comment_lang": self.comment_lang,
         }
         try:
@@ -447,26 +465,28 @@ class EventOrchestrator:
         
         self.publish("overlay_message", {"user": user, "text": text})
 
-        # Lectura de comentarios con voz configurable
+        # Encolar mensaje entrante para que la IA genere respuesta (primero, para obtener item_id)
+        item = self.pipeline.receive_message(user=user, trigger="chat", original_text=text)
+
+        # Lectura de comentarios: generar TTS sin publicar, se publicara secuencialmente antes de la respuesta IA
         if self.read_comments_enabled and self.tts_client and self.tts_client._kokoro:
-            self._speak_comment(text, user)
+            filename = self._speak_comment(text, user, publish=False)
+            if filename and item:
+                with self._comment_audio_lock:
+                    self._pending_comment_audio[item.id] = filename
 
-        # Etapa 1: encolar mensaje entrante para que la IA genere respuesta
-        self.pipeline.receive_message(user=user, trigger="chat", original_text=text)
-
-    def _speak_comment(self, text, user):
-        """Genera TTS para leer el comentario con la voz configurada."""
+    def _speak_comment(self, text, user, publish=True):
+        """Genera TTS para leer el comentario con la voz configurada.
+        Si publish=False, retorna el filename sin publicar el evento."""
         try:
             t = self.tts_client
             voice_to_use = self.comment_voice
             if not voice_to_use and t.voice_blend:
-                # Sin voz configurada pero hay voice blend: usar el blend para comentarios
                 voice_to_use = ""
             elif not voice_to_use:
-                # Sin voz configurada: usar la voz actual (voz IA) o saltar
                 voice_to_use = t.voice
                 if not voice_to_use:
-                    return
+                    return None
 
             with t._state_lock:
                 prev_voice = t.voice
@@ -486,8 +506,11 @@ class EventOrchestrator:
                 msg = text[:200]
                 filename = t.speak(msg)
                 if filename:
-                    self.publish("tts_audio", {"url": f"/audio/{filename}", "item_id": "comment", "comment": True})
-                    self.log(f"Comentario leido: {text[:40]}")
+                    if publish:
+                        self.publish("tts_audio", {"url": f"/audio/{filename}", "item_id": "comment", "comment": True})
+                        self.log(f"Comentario leido: {text[:40]}")
+                    return filename
+                return None
             finally:
                 with t._state_lock:
                     t.voice = prev_voice
@@ -498,6 +521,7 @@ class EventOrchestrator:
                     t.lang = prev_lang
         except Exception as e:
             logger.error(f"Error leyendo comentario: {e}")
+            return None
 
     def _parse_ai_metadata(self, reply):
         """Extrae emotion/sfx de metadatos en respuesta AI (formato [emotion:happy][sfx:ding])."""

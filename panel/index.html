@@ -375,7 +375,12 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="font-size:12px">Leer comentarios en voz alta</span><div class="sw on" id="sw-read-comments"></div></div>
           <div class="form-group kokoro-opt" id="comment-voice-group"><label>Voz para comentarios</label><select class="input-dark" id="comment-voice-select"></select></div>
           <div class="slider-row" id="comment-speed-group"><span class="slider-label">Velocidad</span><input type="range" id="comment-speed" min="0.5" max="2.0" step="0.1" value="1.0"><span class="slider-readout" id="comment-speed-val">1.0x</span></div>
+          <div class="slider-row kokoro-opt" id="comment-pitch-group"><span class="slider-label">Tono</span><input type="range" id="comment-pitch" min="-12" max="12" step="1" value="0"><span class="slider-readout" id="comment-pitch-val">0 st</span></div>
+          <div class="slider-row kokoro-opt" id="comment-volume-group"><span class="slider-label">Volumen</span><input type="range" id="comment-volume" min="0.1" max="3.0" step="0.1" value="1.0"><span class="slider-readout" id="comment-volume-val">1.0x</span></div>
+          <div class="form-group kokoro-opt" id="comment-lang-group"><label>Idioma</label><select class="input-dark" id="comment-lang"><option value="es">Espanol</option><option value="en-us">English (US)</option><option value="en-gb">English (UK)</option><option value="fr">Francais</option><option value="pt">Portugues</option><option value="it">Italiano</option><option value="de">Deutsch</option><option value="ja">日本語</option><option value="zh">中文</option><option value="ko">한국어</option></select></div>
+          <button class="btn btn-p btn-sm" id="btn-save-comments">Guardar Comentarios</button>
         </div>
+        <button class="btn btn-p" id="btn-save-voice">Guardar Configuracion de Voz</button>
         <div class="panel" style="margin-top:14px"><div class="panel-header"><span class="panel-title">Presets de Voz</span></div>
           <div style="display:flex;gap:6px;margin-bottom:8px"><input type="text" class="input-dark" id="preset-name" placeholder="Nombre del preset..."><button class="btn btn-p btn-sm" id="btn-save-preset">Guardar</button></div>
           <div style="display:flex;gap:6px"><select class="input-dark" id="preset-select"><option value="">-- Cargar preset --</option></select><button class="btn btn-sm" id="btn-load-preset">Cargar</button><button class="btn btn-d btn-sm" id="btn-delete-preset">Eliminar</button></div>
@@ -954,6 +959,10 @@ $('btn-test-tts').addEventListener('click', async function(){
   else addLogSilent('Error TTS - revisa logs del servidor');
 });
 
+$('btn-save-voice').addEventListener('click', function(){
+  addLogSilent('Config de voz guardada');
+});
+
 // Presets
 async function loadPresetList() {
   var r = await fetch('/api/tts_presets'); var p = await r.json();
@@ -1370,6 +1379,9 @@ function loadCommentConfig() {
       c.voices.forEach(function(v){ var o=document.createElement('option');o.value=v;o.textContent=v;if(v===c.voice)o.selected=true;sel.appendChild(o); });
     }
     if (c.speed!==undefined) { $('comment-speed').value=c.speed; $('comment-speed-val').textContent=c.speed.toFixed(1)+'x'; }
+    if (c.pitch!==undefined) { $('comment-pitch').value=c.pitch; $('comment-pitch-val').textContent=c.pitch+' st'; }
+    if (c.volume!==undefined) { $('comment-volume').value=c.volume; $('comment-volume-val').textContent=c.volume.toFixed(1)+'x'; }
+    if (c.lang!==undefined) { $('comment-lang').value=c.lang; }
   });
 }
 
@@ -1388,6 +1400,28 @@ $('comment-speed').addEventListener('input', function(){
 });
 $('comment-speed').addEventListener('change', function(){
   postJSON('/api/read_comments_config', {speed:parseFloat(this.value)});
+});
+
+$('comment-pitch').addEventListener('input', function(){
+  $('comment-pitch-val').textContent = this.value+' st';
+});
+$('comment-pitch').addEventListener('change', function(){
+  postJSON('/api/read_comments_config', {pitch:parseInt(this.value)});
+});
+
+$('comment-volume').addEventListener('input', function(){
+  $('comment-volume-val').textContent = parseFloat(this.value).toFixed(1)+'x';
+});
+$('comment-volume').addEventListener('change', function(){
+  postJSON('/api/read_comments_config', {volume:parseFloat(this.value)});
+});
+
+$('comment-lang').addEventListener('change', function(){
+  postJSON('/api/read_comments_config', {lang:this.value});
+});
+
+$('btn-save-comments').addEventListener('click', function(){
+  addLogSilent('Config de lectura de comentarios guardada');
 });
 
 document.addEventListener('DOMContentLoaded', init);

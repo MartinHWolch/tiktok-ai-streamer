@@ -45,6 +45,13 @@ class Config:
     TTS_PITCH = float(_get("tts_pitch", "TTS_PITCH", "0"))
     TTS_VOLUME = float(_get("tts_volume", "TTS_VOLUME", "1.0"))
     
+    READ_COMMENTS_ENABLED = str(_get("read_comments_enabled", "READ_COMMENTS_ENABLED", True)).lower() in ("true", "1", "yes")
+    COMMENT_VOICE = _get("comment_voice", "COMMENT_VOICE", "")
+    COMMENT_SPEED = float(_get("comment_speed", "COMMENT_SPEED", "1.0"))
+    COMMENT_PITCH = float(_get("comment_pitch", "COMMENT_PITCH", "0"))
+    COMMENT_VOLUME = float(_get("comment_volume", "COMMENT_VOLUME", "1.0"))
+    COMMENT_LANG = _get("comment_lang", "COMMENT_LANG", "es")
+    
     KOKORO_MODEL = os.getenv("KOKORO_MODEL", os.path.join(BASE_DIR, "models", "kokoro-v1.0.fp16.onnx"))
     KOKORO_MODEL_FP32 = os.getenv("KOKORO_MODEL_FP32", os.path.join(BASE_DIR, "models", "kokoro-v1.0.onnx"))
     KOKORO_VOICES = os.getenv("KOKORO_VOICES", os.path.join(BASE_DIR, "models", "voices-v1.0.bin"))

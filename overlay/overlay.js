@@ -85,6 +85,23 @@ ttsAudio.onpause = function() {
     }
 };
 
+// Evento onerror: audio fallo (404, corrupto, etc) - no trabar la cola
+ttsAudio.onerror = function() {
+    console.error("[Overlay] TTS onerror - audio fallo, item_id:", currentItemId, "code:", ttsAudio.error ? ttsAudio.error.code : '?');
+    stopLipSync();
+    ttsPlaying = false;
+    if (currentItemId) {
+        fetch('/api/playback_done', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({item_id: currentItemId, error: true})
+        }).catch(function(e){ console.warn("playback_done failed:", e); });
+    }
+    currentItemId = null;
+    if (ttsQueue.length > 0) {
+        setTimeout(processTtsQueue, 200);
+    }
+};
+
 function initLipSync() {
     if (!lipSyncCtx) {
         try {
@@ -95,11 +112,19 @@ function initLipSync() {
             lipSyncAnalyser.smoothingTimeConstant = 0.3;
             lipSyncAnalyser.minDecibels = -55;
             lipSyncAnalyser.maxDecibels = 0;
+        } catch(e) {
+            console.warn("[Overlay] LipSync AudioContext init failed:", e.message);
+        }
+    }
+    // Conectar MediaElementSource solo una vez por elemento audio
+    if (lipSyncCtx && !lipSyncSource) {
+        try {
             lipSyncSource = lipSyncCtx.createMediaElementSource(ttsAudio);
             lipSyncSource.connect(lipSyncAnalyser);
             lipSyncAnalyser.connect(lipSyncCtx.destination);
+            console.log("[Overlay] MediaElementSource conectado");
         } catch(e) {
-            console.warn("[Overlay] LipSync init failed (puede que ya este conectado):", e.message);
+            console.warn("[Overlay] LipSync source ya conectado:", e.message);
         }
     }
     // Asegurar que AudioContext este activo
@@ -213,8 +238,18 @@ function playTts(data) {
     if (!url) return;
     if (ttsQueue.length >= MAX_TTS_QUEUE) {
         var dropped = ttsQueue.length - MAX_TTS_QUEUE + 1;
+        var droppedItems = ttsQueue.slice(0, dropped);
         ttsQueue = ttsQueue.slice(dropped);
         console.log("[Overlay] Cola TTS llena, descartados", dropped, "items viejos");
+        // Notificar al backend para que el pipeline libere slots
+        droppedItems.forEach(function(item){
+            if (item.item_id) {
+                fetch('/api/playback_done', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({item_id: item.item_id, dropped: true})
+                }).catch(function(e){});
+            }
+        });
     }
     ttsQueue.push({url: url, item_id: itemId});
     processTtsQueue();

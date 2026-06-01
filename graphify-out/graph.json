@@ -88,7 +88,7 @@
       "source_file": "ai_client.py",
       "source_location": "L1",
       "id": "ai_client_py",
-      "community": 56,
+      "community": 4,
       "norm_label": "ai_client.py"
     },
     {
@@ -97,7 +97,7 @@
       "source_file": "ai_client.py",
       "source_location": "L57",
       "id": "tiktok_ai_streamer_ai_client_aiclient",
-      "community": 56,
+      "community": 4,
       "norm_label": "aiclient"
     },
     {
@@ -106,7 +106,7 @@
       "source_file": "ai_client.py",
       "source_location": "L58",
       "id": "tiktok_ai_streamer_ai_client_aiclient_init",
-      "community": 56,
+      "community": 4,
       "norm_label": ".__init__()"
     },
     {
@@ -115,7 +115,7 @@
       "source_file": "ai_client.py",
       "source_location": "L74",
       "id": "tiktok_ai_streamer_ai_client_aiclient_detect_intent",
-      "community": 56,
+      "community": 4,
       "norm_label": "._detect_intent()"
     },
     {
@@ -124,7 +124,7 @@
       "source_file": "ai_client.py",
       "source_location": "L90",
       "id": "tiktok_ai_streamer_ai_client_aiclient_fallback_reply",
-      "community": 56,
+      "community": 4,
       "norm_label": "._fallback_reply()"
     },
     {
@@ -133,7 +133,7 @@
       "source_file": "ai_client.py",
       "source_location": "L106",
       "id": "tiktok_ai_streamer_ai_client_aiclient_generate_reply",
-      "community": 56,
+      "community": 4,
       "norm_label": ".generate_reply()"
     },
     {
@@ -142,7 +142,7 @@
       "source_file": "config.py",
       "source_location": "L1",
       "id": "config_py",
-      "community": 59,
+      "community": 4,
       "norm_label": "config.py"
     },
     {
@@ -151,7 +151,7 @@
       "source_file": "config.py",
       "source_location": "L9",
       "id": "tiktok_ai_streamer_config_load_config_json",
-      "community": 59,
+      "community": 4,
       "norm_label": "_load_config_json()"
     },
     {
@@ -160,7 +160,7 @@
       "source_file": "config.py",
       "source_location": "L19",
       "id": "tiktok_ai_streamer_config_get",
-      "community": 59,
+      "community": 4,
       "norm_label": "_get()"
     },
     {
@@ -169,7 +169,7 @@
       "source_file": "config.py",
       "source_location": "L25",
       "id": "tiktok_ai_streamer_config_config",
-      "community": 54,
+      "community": 4,
       "norm_label": "config"
     },
     {
@@ -178,7 +178,7 @@
       "source_file": "control_panel_server.py",
       "source_location": "L1",
       "id": "control_panel_server_py",
-      "community": 57,
+      "community": 4,
       "norm_label": "control_panel_server.py"
     },
     {
@@ -187,7 +187,7 @@
       "source_file": "control_panel_server.py",
       "source_location": "L11",
       "id": "tiktok_ai_streamer_control_panel_server_controlpanelserver",
-      "community": 57,
+      "community": 4,
       "norm_label": "controlpanelserver"
     },
     {
@@ -196,7 +196,7 @@
       "source_file": "control_panel_server.py",
       "source_location": "L12",
       "id": "tiktok_ai_streamer_control_panel_server_controlpanelserver_init",
-      "community": 57,
+      "community": 4,
       "norm_label": ".__init__()"
     },
     {
@@ -205,7 +205,7 @@
       "source_file": "control_panel_server.py",
       "source_location": "L18",
       "id": "tiktok_ai_streamer_control_panel_server_controlpanelserver_require_auth",
-      "community": 57,
+      "community": 4,
       "norm_label": "._require_auth()"
     },
     {
@@ -214,7 +214,7 @@
       "source_file": "control_panel_server.py",
       "source_location": "L28",
       "id": "tiktok_ai_streamer_control_panel_server_controlpanelserver_setup_panel_routes",
-      "community": 57,
+      "community": 4,
       "norm_label": "._setup_panel_routes()"
     },
     {
@@ -223,7 +223,7 @@
       "source_file": "control_panel_server.py",
       "source_location": "L644",
       "id": "tiktok_ai_streamer_control_panel_server_controlpanelserver_run",
-      "community": 57,
+      "community": 4,
       "norm_label": ".run()"
     },
     {
@@ -257,16 +257,16 @@
       "label": ".set_ai_client()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L88",
+      "source_location": "L91",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_ai_client",
-      "community": 0,
+      "community": 56,
       "norm_label": ".set_ai_client()"
     },
     {
       "label": ".set_tts_client()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L92",
+      "source_location": "L95",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_tts_client",
       "community": 0,
       "norm_label": ".set_tts_client()"
@@ -275,16 +275,16 @@
       "label": ".set_vtube_client()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L101",
+      "source_location": "L104",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_vtube_client",
-      "community": 0,
+      "community": 56,
       "norm_label": ".set_vtube_client()"
     },
     {
       "label": ".set_tiktok_client()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L105",
+      "source_location": "L108",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_tiktok_client",
       "community": 0,
       "norm_label": ".set_tiktok_client()"
@@ -293,16 +293,16 @@
       "label": "._wire_pipeline()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L108",
+      "source_location": "L111",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_wire_pipeline",
-      "community": 0,
+      "community": 56,
       "norm_label": "._wire_pipeline()"
     },
     {
       "label": "._load_user_settings()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L185",
+      "source_location": "L206",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_load_user_settings",
       "community": 0,
       "norm_label": "._load_user_settings()"
@@ -311,7 +311,7 @@
       "label": "._apply_tts_settings()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L235",
+      "source_location": "L260",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_apply_tts_settings",
       "community": 0,
       "norm_label": "._apply_tts_settings()"
@@ -320,16 +320,16 @@
       "label": "._save_user_settings()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L260",
+      "source_location": "L285",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_save_user_settings",
-      "community": 0,
+      "community": 55,
       "norm_label": "._save_user_settings()"
     },
     {
       "label": ".set_overlay_config()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L294",
+      "source_location": "L330",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_overlay_config",
       "community": 0,
       "norm_label": ".set_overlay_config()"
@@ -338,7 +338,7 @@
       "label": "._load_sfx()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L302",
+      "source_location": "L338",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_load_sfx",
       "community": 0,
       "norm_label": "._load_sfx()"
@@ -347,16 +347,16 @@
       "label": "._save_sfx()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L314",
+      "source_location": "L350",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_save_sfx",
-      "community": 0,
+      "community": 62,
       "norm_label": "._save_sfx()"
     },
     {
       "label": ".get_sfx_config()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L322",
+      "source_location": "L358",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_get_sfx_config",
       "community": 0,
       "norm_label": ".get_sfx_config()"
@@ -365,25 +365,25 @@
       "label": ".set_sfx()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L325",
+      "source_location": "L361",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_sfx",
-      "community": 0,
+      "community": 62,
       "norm_label": ".set_sfx()"
     },
     {
       "label": ".remove_sfx()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L330",
+      "source_location": "L366",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_remove_sfx",
-      "community": 0,
+      "community": 62,
       "norm_label": ".remove_sfx()"
     },
     {
       "label": ".list_sfx_files()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L336",
+      "source_location": "L372",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_list_sfx_files",
       "community": 0,
       "norm_label": ".list_sfx_files()"
@@ -392,7 +392,7 @@
       "label": "._backup_on_startup()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L344",
+      "source_location": "L380",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_backup_on_startup",
       "community": 0,
       "norm_label": "._backup_on_startup()"
@@ -401,7 +401,7 @@
       "label": ".get_leaderboard()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L369",
+      "source_location": "L405",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_get_leaderboard",
       "community": 0,
       "norm_label": ".get_leaderboard()"
@@ -410,7 +410,7 @@
       "label": ".get_user_points()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L372",
+      "source_location": "L408",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_get_user_points",
       "community": 0,
       "norm_label": ".get_user_points()"
@@ -419,7 +419,7 @@
       "label": "._save_welcome_to_settings()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L375",
+      "source_location": "L411",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_save_welcome_to_settings",
       "community": 0,
       "norm_label": "._save_welcome_to_settings()"
@@ -428,16 +428,16 @@
       "label": ".set_welcome_config()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L379",
+      "source_location": "L415",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_welcome_config",
-      "community": 0,
+      "community": 55,
       "norm_label": ".set_welcome_config()"
     },
     {
       "label": ".register_listener()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L387",
+      "source_location": "L423",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_register_listener",
       "community": 0,
       "norm_label": ".register_listener()"
@@ -446,43 +446,43 @@
       "label": ".log()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L391",
+      "source_location": "L427",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_log",
-      "community": 0,
+      "community": 55,
       "norm_label": ".log()"
     },
     {
       "label": ".handle_tiktok_event()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L397",
+      "source_location": "L433",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_handle_tiktok_event",
-      "community": 0,
+      "community": 54,
       "norm_label": ".handle_tiktok_event()"
     },
     {
       "label": "._process_message()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L437",
+      "source_location": "L473",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_process_message",
-      "community": 0,
+      "community": 54,
       "norm_label": "._process_message()"
     },
     {
       "label": "._speak_comment()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L457",
+      "source_location": "L499",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_speak_comment",
-      "community": 0,
+      "community": 54,
       "norm_label": "._speak_comment()"
     },
     {
       "label": "._parse_ai_metadata()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L491",
+      "source_location": "L547",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_parse_ai_metadata",
       "community": 58,
       "norm_label": "._parse_ai_metadata()"
@@ -491,169 +491,151 @@
       "label": "._handle_command()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L504",
+      "source_location": "L560",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_handle_command",
-      "community": 0,
+      "community": 55,
       "norm_label": "._handle_command()"
     },
     {
       "label": "._process_gift()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L568",
+      "source_location": "L624",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_process_gift",
-      "community": 0,
+      "community": 54,
       "norm_label": "._process_gift()"
     },
     {
       "label": "._execute_actions()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L597",
+      "source_location": "L653",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_execute_actions",
-      "community": 0,
+      "community": 54,
       "norm_label": "._execute_actions()"
     },
     {
       "label": "._execute_rule_actions()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L627",
+      "source_location": "L683",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_execute_rule_actions",
-      "community": 0,
+      "community": 54,
       "norm_label": "._execute_rule_actions()"
     },
     {
       "label": ".test_actions()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L630",
+      "source_location": "L686",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_test_actions",
-      "community": 0,
+      "community": 57,
       "norm_label": ".test_actions()"
-    },
-    {
-      "label": "._is_cooldown()",
-      "file_type": "code",
-      "source_file": "event_orchestrator.py",
-      "source_location": "L635",
-      "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_is_cooldown",
-      "community": 0,
-      "norm_label": "._is_cooldown()"
-    },
-    {
-      "label": "._trigger_tts()",
-      "file_type": "code",
-      "source_file": "event_orchestrator.py",
-      "source_location": "L644",
-      "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_trigger_tts",
-      "community": 0,
-      "norm_label": "._trigger_tts()"
     },
     {
       "label": "._trigger_sfx()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L654",
+      "source_location": "L691",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_trigger_sfx",
-      "community": 0,
+      "community": 54,
       "norm_label": "._trigger_sfx()"
     },
     {
       "label": ".toggle_tts()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L659",
+      "source_location": "L696",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_toggle_tts",
-      "community": 0,
+      "community": 55,
       "norm_label": ".toggle_tts()"
     },
     {
       "label": ".toggle_ai()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L668",
+      "source_location": "L705",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_toggle_ai",
-      "community": 0,
+      "community": 55,
       "norm_label": ".toggle_ai()"
     },
     {
       "label": ".set_tts_engine()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L675",
+      "source_location": "L712",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_tts_engine",
-      "community": 0,
+      "community": 55,
       "norm_label": ".set_tts_engine()"
     },
     {
       "label": ".set_tts_voice()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L682",
+      "source_location": "L719",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_tts_voice",
-      "community": 0,
+      "community": 55,
       "norm_label": ".set_tts_voice()"
     },
     {
       "label": ".set_tts_voice_blend()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L690",
+      "source_location": "L727",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_tts_voice_blend",
-      "community": 0,
+      "community": 55,
       "norm_label": ".set_tts_voice_blend()"
     },
     {
       "label": ".set_tts_edge_voice()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L698",
+      "source_location": "L735",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_tts_edge_voice",
-      "community": 0,
+      "community": 55,
       "norm_label": ".set_tts_edge_voice()"
     },
     {
       "label": ".set_tts_speed()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L706",
+      "source_location": "L743",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_tts_speed",
-      "community": 0,
+      "community": 55,
       "norm_label": ".set_tts_speed()"
     },
     {
       "label": ".set_tts_lang()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L714",
+      "source_location": "L751",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_tts_lang",
-      "community": 0,
+      "community": 55,
       "norm_label": ".set_tts_lang()"
     },
     {
       "label": ".set_tts_pitch()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L722",
+      "source_location": "L759",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_tts_pitch",
-      "community": 0,
+      "community": 55,
       "norm_label": ".set_tts_pitch()"
     },
     {
       "label": ".set_tts_volume()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L730",
+      "source_location": "L767",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_tts_volume",
-      "community": 0,
+      "community": 55,
       "norm_label": ".set_tts_volume()"
     },
     {
       "label": ".set_kokoro_model()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L738",
+      "source_location": "L775",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_kokoro_model",
       "community": 0,
       "norm_label": ".set_kokoro_model()"
@@ -662,7 +644,7 @@
       "label": ".get_tts_status()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L747",
+      "source_location": "L784",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_get_tts_status",
       "community": 0,
       "norm_label": ".get_tts_status()"
@@ -671,7 +653,7 @@
       "label": ".get_pipeline_state()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L752",
+      "source_location": "L789",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_get_pipeline_state",
       "community": 0,
       "norm_label": ".get_pipeline_state()"
@@ -680,16 +662,16 @@
       "label": ".test_tts()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L755",
+      "source_location": "L792",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_test_tts",
-      "community": 0,
+      "community": 54,
       "norm_label": ".test_tts()"
     },
     {
       "label": ".get_tiktok_simulation()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L771",
+      "source_location": "L808",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_get_tiktok_simulation",
       "community": 0,
       "norm_label": ".get_tiktok_simulation()"
@@ -698,7 +680,7 @@
       "label": ".get_stats()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L776",
+      "source_location": "L813",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_get_stats",
       "community": 0,
       "norm_label": ".get_stats()"
@@ -707,16 +689,16 @@
       "label": ".toggle_tiktok()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L797",
+      "source_location": "L834",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_toggle_tiktok",
-      "community": 0,
+      "community": 55,
       "norm_label": ".toggle_tiktok()"
     },
     {
       "label": ".toggle_tiktok_simulation()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L803",
+      "source_location": "L840",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_toggle_tiktok_simulation",
       "community": 0,
       "norm_label": ".toggle_tiktok_simulation()"
@@ -725,7 +707,7 @@
       "label": ".set_simulation_speed()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L810",
+      "source_location": "L847",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_simulation_speed",
       "community": 0,
       "norm_label": ".set_simulation_speed()"
@@ -734,34 +716,34 @@
       "label": ".simulate_gift()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L815",
+      "source_location": "L852",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_simulate_gift",
-      "community": 0,
+      "community": 54,
       "norm_label": ".simulate_gift()"
     },
     {
       "label": ".test_message()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L824",
+      "source_location": "L861",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_test_message",
-      "community": 0,
+      "community": 54,
       "norm_label": ".test_message()"
     },
     {
       "label": ".publish()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L832",
+      "source_location": "L869",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_publish",
-      "community": 0,
+      "community": 54,
       "norm_label": ".publish()"
     },
     {
       "label": "._load_banned_words()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L843",
+      "source_location": "L880",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_load_banned_words",
       "community": 0,
       "norm_label": "._load_banned_words()"
@@ -770,52 +752,61 @@
       "label": "._save_banned_words()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L856",
+      "source_location": "L893",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_save_banned_words",
-      "community": 0,
+      "community": 60,
       "norm_label": "._save_banned_words()"
     },
     {
       "label": "._check_spam()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L863",
+      "source_location": "L900",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_check_spam",
-      "community": 0,
+      "community": 54,
       "norm_label": "._check_spam()"
+    },
+    {
+      "label": "._has_banned_word()",
+      "file_type": "code",
+      "source_file": "event_orchestrator.py",
+      "source_location": "L956",
+      "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_has_banned_word",
+      "community": 54,
+      "norm_label": "._has_banned_word()"
     },
     {
       "label": "._cleanup_spam_data()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L914",
+      "source_location": "L966",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_cleanup_spam_data",
-      "community": 0,
+      "community": 54,
       "norm_label": "._cleanup_spam_data()"
     },
     {
       "label": ".set_spam_enabled()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L925",
+      "source_location": "L977",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_spam_enabled",
-      "community": 0,
+      "community": 55,
       "norm_label": ".set_spam_enabled()"
     },
     {
       "label": ".set_spam_config()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L931",
+      "source_location": "L983",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_set_spam_config",
-      "community": 0,
+      "community": 55,
       "norm_label": ".set_spam_config()"
     },
     {
       "label": ".get_spam_config()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L942",
+      "source_location": "L994",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_get_spam_config",
       "community": 0,
       "norm_label": ".get_spam_config()"
@@ -824,25 +815,25 @@
       "label": ".add_banned_word()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L951",
+      "source_location": "L1003",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_add_banned_word",
-      "community": 0,
+      "community": 60,
       "norm_label": ".add_banned_word()"
     },
     {
       "label": ".remove_banned_word()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L960",
+      "source_location": "L1012",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_remove_banned_word",
-      "community": 0,
+      "community": 60,
       "norm_label": ".remove_banned_word()"
     },
     {
       "label": "._load_event_rules()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L970",
+      "source_location": "L1022",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_load_event_rules",
       "community": 0,
       "norm_label": "._load_event_rules()"
@@ -851,16 +842,16 @@
       "label": "._save_event_rules()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L982",
+      "source_location": "L1034",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_save_event_rules",
-      "community": 0,
+      "community": 59,
       "norm_label": "._save_event_rules()"
     },
     {
       "label": ".get_event_rules()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L989",
+      "source_location": "L1041",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_get_event_rules",
       "community": 0,
       "norm_label": ".get_event_rules()"
@@ -869,34 +860,34 @@
       "label": ".add_event_rule()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L992",
+      "source_location": "L1044",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_add_event_rule",
-      "community": 0,
+      "community": 59,
       "norm_label": ".add_event_rule()"
     },
     {
       "label": ".update_event_rule()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L1003",
+      "source_location": "L1055",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_update_event_rule",
-      "community": 0,
+      "community": 59,
       "norm_label": ".update_event_rule()"
     },
     {
       "label": ".delete_event_rule_by_index()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L1013",
+      "source_location": "L1065",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_delete_event_rule_by_index",
-      "community": 0,
+      "community": 59,
       "norm_label": ".delete_event_rule_by_index()"
     },
     {
       "label": "._load_presets()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L1023",
+      "source_location": "L1075",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_load_presets",
       "community": 0,
       "norm_label": "._load_presets()"
@@ -905,16 +896,16 @@
       "label": "._save_presets()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L1040",
+      "source_location": "L1092",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_save_presets",
-      "community": 0,
+      "community": 61,
       "norm_label": "._save_presets()"
     },
     {
       "label": ".list_presets()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L1047",
+      "source_location": "L1099",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_list_presets",
       "community": 0,
       "norm_label": ".list_presets()"
@@ -923,34 +914,34 @@
       "label": ".save_preset()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L1050",
+      "source_location": "L1102",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_save_preset",
-      "community": 0,
+      "community": 61,
       "norm_label": ".save_preset()"
     },
     {
       "label": ".load_preset()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L1066",
+      "source_location": "L1118",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_load_preset",
-      "community": 0,
+      "community": 55,
       "norm_label": ".load_preset()"
     },
     {
       "label": ".delete_preset()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L1086",
+      "source_location": "L1138",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_delete_preset",
-      "community": 0,
+      "community": 61,
       "norm_label": ".delete_preset()"
     },
     {
       "label": ".preview_voice()",
       "file_type": "code",
       "source_file": "event_orchestrator.py",
-      "source_location": "L1094",
+      "source_location": "L1146",
       "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_preview_voice",
       "community": 0,
       "norm_label": ".preview_voice()"
@@ -959,26 +950,26 @@
       "label": "Conecta el pipeline con los servicios disponibles.",
       "file_type": "rationale",
       "source_file": "event_orchestrator.py",
-      "source_location": "L109",
-      "id": "tiktok_ai_streamer_event_orchestrator_rationale_109",
-      "community": 0,
+      "source_location": "L112",
+      "id": "tiktok_ai_streamer_event_orchestrator_rationale_112",
+      "community": 56,
       "norm_label": "conecta el pipeline con los servicios disponibles."
     },
     {
-      "label": "Genera TTS para leer el comentario con la voz configurada.",
+      "label": "Genera TTS para leer el comentario con la voz configurada.         Si publish=Fa",
       "file_type": "rationale",
       "source_file": "event_orchestrator.py",
-      "source_location": "L458",
-      "id": "tiktok_ai_streamer_event_orchestrator_rationale_458",
-      "community": 0,
-      "norm_label": "genera tts para leer el comentario con la voz configurada."
+      "source_location": "L500",
+      "id": "tiktok_ai_streamer_event_orchestrator_rationale_500",
+      "community": 54,
+      "norm_label": "genera tts para leer el comentario con la voz configurada.         si publish=fa"
     },
     {
       "label": "Extrae emotion/sfx de metadatos en respuesta AI (formato [emotion:happy][sfx:din",
       "file_type": "rationale",
       "source_file": "event_orchestrator.py",
-      "source_location": "L492",
-      "id": "tiktok_ai_streamer_event_orchestrator_rationale_492",
+      "source_location": "L548",
+      "id": "tiktok_ai_streamer_event_orchestrator_rationale_548",
       "community": 58,
       "norm_label": "extrae emotion/sfx de metadatos en respuesta ai (formato [emotion:happy][sfx:din"
     },
@@ -986,10 +977,19 @@
       "label": "Ejecuta acciones temporales sin guardarlas como regla.",
       "file_type": "rationale",
       "source_file": "event_orchestrator.py",
-      "source_location": "L631",
-      "id": "tiktok_ai_streamer_event_orchestrator_rationale_631",
-      "community": 0,
+      "source_location": "L687",
+      "id": "tiktok_ai_streamer_event_orchestrator_rationale_687",
+      "community": 57,
       "norm_label": "ejecuta acciones temporales sin guardarlas como regla."
+    },
+    {
+      "label": "Chequea palabras baneadas usando regex con word boundaries (evita 'ass' en 'clas",
+      "file_type": "rationale",
+      "source_file": "event_orchestrator.py",
+      "source_location": "L957",
+      "id": "tiktok_ai_streamer_event_orchestrator_rationale_957",
+      "community": 54,
+      "norm_label": "chequea palabras baneadas usando regex con word boundaries (evita 'ass' en 'clas"
     },
     {
       "label": "main.py",
@@ -997,7 +997,7 @@
       "source_file": "main.py",
       "source_location": "L1",
       "id": "main_py",
-      "community": 54,
+      "community": 4,
       "norm_label": "main.py"
     },
     {
@@ -1006,7 +1006,7 @@
       "source_file": "main.py",
       "source_location": "L24",
       "id": "tiktok_ai_streamer_main_coloredformatter",
-      "community": 54,
+      "community": 4,
       "norm_label": "coloredformatter"
     },
     {
@@ -1015,7 +1015,7 @@
       "source_file": "main.py",
       "source_location": "L25",
       "id": "tiktok_ai_streamer_main_coloredformatter_format",
-      "community": 54,
+      "community": 4,
       "norm_label": ".format()"
     },
     {
@@ -1024,7 +1024,7 @@
       "source_file": "main.py",
       "source_location": "L89",
       "id": "tiktok_ai_streamer_main_setup_logging",
-      "community": 54,
+      "community": 4,
       "norm_label": "setup_logging()"
     },
     {
@@ -1033,7 +1033,7 @@
       "source_file": "main.py",
       "source_location": "L97",
       "id": "tiktok_ai_streamer_main_main",
-      "community": 54,
+      "community": 4,
       "norm_label": "main()"
     },
     {
@@ -1042,7 +1042,7 @@
       "source_file": "overlay_server.py",
       "source_location": "L1",
       "id": "overlay_server_py",
-      "community": 54,
+      "community": 4,
       "norm_label": "overlay_server.py"
     },
     {
@@ -1051,7 +1051,7 @@
       "source_file": "overlay_server.py",
       "source_location": "L8",
       "id": "tiktok_ai_streamer_overlay_server_overlayserver",
-      "community": 54,
+      "community": 4,
       "norm_label": "overlayserver"
     },
     {
@@ -1060,7 +1060,7 @@
       "source_file": "overlay_server.py",
       "source_location": "L9",
       "id": "tiktok_ai_streamer_overlay_server_overlayserver_init",
-      "community": 54,
+      "community": 4,
       "norm_label": ".__init__()"
     },
     {
@@ -1069,7 +1069,7 @@
       "source_file": "overlay_server.py",
       "source_location": "L14",
       "id": "tiktok_ai_streamer_overlay_server_overlayserver_setup_overlay_routes",
-      "community": 54,
+      "community": 4,
       "norm_label": "._setup_overlay_routes()"
     },
     {
@@ -1078,7 +1078,7 @@
       "source_file": "overlay_server.py",
       "source_location": "L68",
       "id": "tiktok_ai_streamer_overlay_server_overlayserver_run",
-      "community": 54,
+      "community": 4,
       "norm_label": ".run()"
     },
     {
@@ -1220,7 +1220,7 @@
       "label": ".start()",
       "file_type": "code",
       "source_file": "pipeline.py",
-      "source_location": "L103",
+      "source_location": "L104",
       "id": "tiktok_ai_streamer_pipeline_responsepipeline_start",
       "community": 8,
       "norm_label": ".start()"
@@ -1229,7 +1229,7 @@
       "label": ".stop()",
       "file_type": "code",
       "source_file": "pipeline.py",
-      "source_location": "L113",
+      "source_location": "L114",
       "id": "tiktok_ai_streamer_pipeline_responsepipeline_stop",
       "community": 8,
       "norm_label": ".stop()"
@@ -1238,7 +1238,7 @@
       "label": ".receive_message()",
       "file_type": "code",
       "source_file": "pipeline.py",
-      "source_location": "L122",
+      "source_location": "L123",
       "id": "tiktok_ai_streamer_pipeline_responsepipeline_receive_message",
       "community": 8,
       "norm_label": ".receive_message()"
@@ -1247,7 +1247,7 @@
       "label": ".enqueue_direct_tts()",
       "file_type": "code",
       "source_file": "pipeline.py",
-      "source_location": "L134",
+      "source_location": "L137",
       "id": "tiktok_ai_streamer_pipeline_responsepipeline_enqueue_direct_tts",
       "community": 8,
       "norm_label": ".enqueue_direct_tts()"
@@ -1256,7 +1256,7 @@
       "label": ".mark_playback_started()",
       "file_type": "code",
       "source_file": "pipeline.py",
-      "source_location": "L148",
+      "source_location": "L151",
       "id": "tiktok_ai_streamer_pipeline_responsepipeline_mark_playback_started",
       "community": 8,
       "norm_label": ".mark_playback_started()"
@@ -1265,7 +1265,7 @@
       "label": ".mark_playback_done()",
       "file_type": "code",
       "source_file": "pipeline.py",
-      "source_location": "L156",
+      "source_location": "L159",
       "id": "tiktok_ai_streamer_pipeline_responsepipeline_mark_playback_done",
       "community": 8,
       "norm_label": ".mark_playback_done()"
@@ -1274,7 +1274,7 @@
       "label": ".skip_current()",
       "file_type": "code",
       "source_file": "pipeline.py",
-      "source_location": "L167",
+      "source_location": "L170",
       "id": "tiktok_ai_streamer_pipeline_responsepipeline_skip_current",
       "community": 8,
       "norm_label": ".skip_current()"
@@ -1283,7 +1283,7 @@
       "label": ".get_state()",
       "file_type": "code",
       "source_file": "pipeline.py",
-      "source_location": "L177",
+      "source_location": "L180",
       "id": "tiktok_ai_streamer_pipeline_responsepipeline_get_state",
       "community": 8,
       "norm_label": ".get_state()"
@@ -1292,7 +1292,7 @@
       "label": "._build_table_view()",
       "file_type": "code",
       "source_file": "pipeline.py",
-      "source_location": "L202",
+      "source_location": "L205",
       "id": "tiktok_ai_streamer_pipeline_responsepipeline_build_table_view",
       "community": 8,
       "norm_label": "._build_table_view()"
@@ -1301,7 +1301,7 @@
       "label": "._notify()",
       "file_type": "code",
       "source_file": "pipeline.py",
-      "source_location": "L233",
+      "source_location": "L236",
       "id": "tiktok_ai_streamer_pipeline_responsepipeline_notify",
       "community": 8,
       "norm_label": "._notify()"
@@ -1310,7 +1310,7 @@
       "label": "._incoming_loop()",
       "file_type": "code",
       "source_file": "pipeline.py",
-      "source_location": "L242",
+      "source_location": "L245",
       "id": "tiktok_ai_streamer_pipeline_responsepipeline_incoming_loop",
       "community": 8,
       "norm_label": "._incoming_loop()"
@@ -1319,7 +1319,7 @@
       "label": "._tts_loop()",
       "file_type": "code",
       "source_file": "pipeline.py",
-      "source_location": "L303",
+      "source_location": "L312",
       "id": "tiktok_ai_streamer_pipeline_responsepipeline_tts_loop",
       "community": 8,
       "norm_label": "._tts_loop()"
@@ -1328,7 +1328,7 @@
       "label": "._process_tts_item()",
       "file_type": "code",
       "source_file": "pipeline.py",
-      "source_location": "L335",
+      "source_location": "L344",
       "id": "tiktok_ai_streamer_pipeline_responsepipeline_process_tts_item",
       "community": 8,
       "norm_label": "._process_tts_item()"
@@ -1361,20 +1361,20 @@
       "norm_label": "pipeline 3-etapas: incoming \u2192 generated \u2192 playback."
     },
     {
-      "label": "Llamado cuando llega un mensaje de TikTok.",
+      "label": "Llamado cuando llega un mensaje de TikTok. Retorna el item creado.",
       "file_type": "rationale",
       "source_file": "pipeline.py",
-      "source_location": "L123",
-      "id": "tiktok_ai_streamer_pipeline_rationale_123",
+      "source_location": "L124",
+      "id": "tiktok_ai_streamer_pipeline_rationale_124",
       "community": 8,
-      "norm_label": "llamado cuando llega un mensaje de tiktok."
+      "norm_label": "llamado cuando llega un mensaje de tiktok. retorna el item creado."
     },
     {
       "label": "Para comandos/bienvenidas que ya tienen texto (saltan IA).",
       "file_type": "rationale",
       "source_file": "pipeline.py",
-      "source_location": "L135",
-      "id": "tiktok_ai_streamer_pipeline_rationale_135",
+      "source_location": "L138",
+      "id": "tiktok_ai_streamer_pipeline_rationale_138",
       "community": 8,
       "norm_label": "para comandos/bienvenidas que ya tienen texto (saltan ia)."
     },
@@ -1382,8 +1382,8 @@
       "label": "Llamado cuando el overlay confirma que empezo a reproducir.",
       "file_type": "rationale",
       "source_file": "pipeline.py",
-      "source_location": "L149",
-      "id": "tiktok_ai_streamer_pipeline_rationale_149",
+      "source_location": "L152",
+      "id": "tiktok_ai_streamer_pipeline_rationale_152",
       "community": 8,
       "norm_label": "llamado cuando el overlay confirma que empezo a reproducir."
     },
@@ -1391,8 +1391,8 @@
       "label": "Llamado cuando el overlay confirma que termino de reproducir.",
       "file_type": "rationale",
       "source_file": "pipeline.py",
-      "source_location": "L157",
-      "id": "tiktok_ai_streamer_pipeline_rationale_157",
+      "source_location": "L160",
+      "id": "tiktok_ai_streamer_pipeline_rationale_160",
       "community": 8,
       "norm_label": "llamado cuando el overlay confirma que termino de reproducir."
     },
@@ -1400,8 +1400,8 @@
       "label": "Construye una lista unificada de items para la tabla del pipeline.",
       "file_type": "rationale",
       "source_file": "pipeline.py",
-      "source_location": "L203",
-      "id": "tiktok_ai_streamer_pipeline_rationale_203",
+      "source_location": "L206",
+      "id": "tiktok_ai_streamer_pipeline_rationale_206",
       "community": 8,
       "norm_label": "construye una lista unificada de items para la tabla del pipeline."
     },
@@ -1571,7 +1571,7 @@
       "label": ".start()",
       "file_type": "code",
       "source_file": "sse_server.py",
-      "source_location": "L83",
+      "source_location": "L93",
       "id": "tiktok_ai_streamer_sse_server_sseflaskserver_start",
       "community": 4,
       "norm_label": ".start()"
@@ -1580,7 +1580,7 @@
       "label": ".stop()",
       "file_type": "code",
       "source_file": "sse_server.py",
-      "source_location": "L86",
+      "source_location": "L96",
       "id": "tiktok_ai_streamer_sse_server_sseflaskserver_stop",
       "community": 4,
       "norm_label": ".stop()"
@@ -1589,7 +1589,7 @@
       "label": ".run()",
       "file_type": "code",
       "source_file": "sse_server.py",
-      "source_location": "L95",
+      "source_location": "L105",
       "id": "tiktok_ai_streamer_sse_server_sseflaskserver_run",
       "community": 4,
       "norm_label": ".run()"
@@ -1631,13 +1631,13 @@
       "norm_label": "sirve archivos estaticos desde static_dir."
     },
     {
-      "label": "Broadcast a todos los suscriptores activos.",
+      "label": "Broadcast a todos los suscriptores activos (no bloquea con suscriptores lentos).",
       "file_type": "rationale",
       "source_file": "sse_server.py",
       "source_location": "L67",
       "id": "tiktok_ai_streamer_sse_server_rationale_67",
       "community": 4,
-      "norm_label": "broadcast a todos los suscriptores activos."
+      "norm_label": "broadcast a todos los suscriptores activos (no bloquea con suscriptores lentos)."
     },
     {
       "label": "tiktok_client.py",
@@ -1724,7 +1724,7 @@
       "label": "._emit_random_event()",
       "file_type": "code",
       "source_file": "tiktok_client.py",
-      "source_location": "L97",
+      "source_location": "L98",
       "id": "tiktok_ai_streamer_tiktok_client_tiktokclient_emit_random_event",
       "community": 53,
       "norm_label": "._emit_random_event()"
@@ -1733,7 +1733,7 @@
       "label": "._start_real()",
       "file_type": "code",
       "source_file": "tiktok_client.py",
-      "source_location": "L119",
+      "source_location": "L120",
       "id": "tiktok_ai_streamer_tiktok_client_tiktokclient_start_real",
       "community": 53,
       "norm_label": "._start_real()"
@@ -1742,7 +1742,7 @@
       "label": "._run_real_loop()",
       "file_type": "code",
       "source_file": "tiktok_client.py",
-      "source_location": "L129",
+      "source_location": "L130",
       "id": "tiktok_ai_streamer_tiktok_client_tiktokclient_run_real_loop",
       "community": 53,
       "norm_label": "._run_real_loop()"
@@ -1751,7 +1751,7 @@
       "label": "._stop_real()",
       "file_type": "code",
       "source_file": "tiktok_client.py",
-      "source_location": "L205",
+      "source_location": "L206",
       "id": "tiktok_ai_streamer_tiktok_client_tiktokclient_stop_real",
       "community": 53,
       "norm_label": "._stop_real()"
@@ -1823,7 +1823,7 @@
       "label": ".speak()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L121",
+      "source_location": "L125",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_speak",
       "community": 5,
       "norm_label": ".speak()"
@@ -1832,7 +1832,7 @@
       "label": "._speak_kokoro()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L143",
+      "source_location": "L156",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_speak_kokoro",
       "community": 5,
       "norm_label": "._speak_kokoro()"
@@ -1841,7 +1841,7 @@
       "label": "._speak_piper()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L182",
+      "source_location": "L195",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_speak_piper",
       "community": 5,
       "norm_label": "._speak_piper()"
@@ -1850,7 +1850,7 @@
       "label": "._speak_gtts()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L198",
+      "source_location": "L211",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_speak_gtts",
       "community": 5,
       "norm_label": "._speak_gtts()"
@@ -1859,7 +1859,7 @@
       "label": "._speak_edge()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L212",
+      "source_location": "L225",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_speak_edge",
       "community": 5,
       "norm_label": "._speak_edge()"
@@ -1868,7 +1868,7 @@
       "label": "._apply_effects()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L238",
+      "source_location": "L257",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_apply_effects",
       "community": 5,
       "norm_label": "._apply_effects()"
@@ -1877,7 +1877,7 @@
       "label": "._cleanup_old_audio()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L259",
+      "source_location": "L278",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_cleanup_old_audio",
       "community": 5,
       "norm_label": "._cleanup_old_audio()"
@@ -1886,7 +1886,7 @@
       "label": ".set_enabled()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L295",
+      "source_location": "L317",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_set_enabled",
       "community": 5,
       "norm_label": ".set_enabled()"
@@ -1895,7 +1895,7 @@
       "label": ".reset_cooldown()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L299",
+      "source_location": "L321",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_reset_cooldown",
       "community": 5,
       "norm_label": ".reset_cooldown()"
@@ -1904,7 +1904,7 @@
       "label": ".set_engine()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L303",
+      "source_location": "L325",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_set_engine",
       "community": 5,
       "norm_label": ".set_engine()"
@@ -1913,7 +1913,7 @@
       "label": ".set_voice()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L311",
+      "source_location": "L333",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_set_voice",
       "community": 5,
       "norm_label": ".set_voice()"
@@ -1922,7 +1922,7 @@
       "label": ".set_voice_blend()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L317",
+      "source_location": "L339",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_set_voice_blend",
       "community": 5,
       "norm_label": ".set_voice_blend()"
@@ -1931,7 +1931,7 @@
       "label": ".set_edge_voice()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L322",
+      "source_location": "L344",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_set_edge_voice",
       "community": 5,
       "norm_label": ".set_edge_voice()"
@@ -1940,7 +1940,7 @@
       "label": ".set_speed()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L327",
+      "source_location": "L349",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_set_speed",
       "community": 5,
       "norm_label": ".set_speed()"
@@ -1949,7 +1949,7 @@
       "label": ".set_pitch()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L335",
+      "source_location": "L357",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_set_pitch",
       "community": 5,
       "norm_label": ".set_pitch()"
@@ -1958,7 +1958,7 @@
       "label": ".set_volume()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L343",
+      "source_location": "L365",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_set_volume",
       "community": 5,
       "norm_label": ".set_volume()"
@@ -1967,7 +1967,7 @@
       "label": ".set_kokoro_model()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L351",
+      "source_location": "L373",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_set_kokoro_model",
       "community": 5,
       "norm_label": ".set_kokoro_model()"
@@ -1976,7 +1976,7 @@
       "label": ".set_lang()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L381",
+      "source_location": "L403",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_set_lang",
       "community": 5,
       "norm_label": ".set_lang()"
@@ -1985,19 +1985,10 @@
       "label": ".get_status()",
       "file_type": "code",
       "source_file": "tts_client.py",
-      "source_location": "L393",
+      "source_location": "L415",
       "id": "tiktok_ai_streamer_tts_client_ttsclient_get_status",
       "community": 5,
       "norm_label": ".get_status()"
-    },
-    {
-      "label": ".handle_event()",
-      "file_type": "code",
-      "source_file": "tts_client.py",
-      "source_location": "L411",
-      "id": "tiktok_ai_streamer_tts_client_ttsclient_handle_event",
-      "community": 5,
-      "norm_label": ".handle_event()"
     },
     {
       "label": "Parsea 'jf_tebukuro*0.8 + ef_dora*0.2' a un voice blend numpy array.",
@@ -2014,7 +2005,7 @@
       "source_file": "unified_server.py",
       "source_location": "L1",
       "id": "unified_server_py",
-      "community": 55,
+      "community": 4,
       "norm_label": "unified_server.py"
     },
     {
@@ -2023,7 +2014,7 @@
       "source_file": "unified_server.py",
       "source_location": "L12",
       "id": "tiktok_ai_streamer_unified_server_unifiedserver",
-      "community": 55,
+      "community": 4,
       "norm_label": "unifiedserver"
     },
     {
@@ -2032,7 +2023,7 @@
       "source_file": "unified_server.py",
       "source_location": "L18",
       "id": "tiktok_ai_streamer_unified_server_unifiedserver_init",
-      "community": 55,
+      "community": 4,
       "norm_label": ".__init__()"
     },
     {
@@ -2041,7 +2032,7 @@
       "source_file": "unified_server.py",
       "source_location": "L27",
       "id": "tiktok_ai_streamer_unified_server_unifiedserver_require_auth",
-      "community": 55,
+      "community": 4,
       "norm_label": "._require_auth()"
     },
     {
@@ -2050,16 +2041,16 @@
       "source_file": "unified_server.py",
       "source_location": "L37",
       "id": "tiktok_ai_streamer_unified_server_unifiedserver_setup_routes",
-      "community": 55,
+      "community": 4,
       "norm_label": "._setup_routes()"
     },
     {
       "label": ".run()",
       "file_type": "code",
       "source_file": "unified_server.py",
-      "source_location": "L874",
+      "source_location": "L917",
       "id": "tiktok_ai_streamer_unified_server_unifiedserver_run",
-      "community": 55,
+      "community": 4,
       "norm_label": ".run()"
     },
     {
@@ -2068,7 +2059,7 @@
       "source_file": "unified_server.py",
       "source_location": "L13",
       "id": "tiktok_ai_streamer_unified_server_rationale_13",
-      "community": 55,
+      "community": 4,
       "norm_label": "servidor flask unificado que sirve overlay (obs), panel de control,     api rest"
     },
     {
@@ -2381,7 +2372,7 @@
       "label": "initLipSync()",
       "file_type": "code",
       "source_file": "overlay/overlay.js",
-      "source_location": "L88",
+      "source_location": "L105",
       "id": "overlay_overlay_initlipsync",
       "community": 6,
       "norm_label": "initlipsync()"
@@ -2390,7 +2381,7 @@
       "label": "startLipSync()",
       "file_type": "code",
       "source_file": "overlay/overlay.js",
-      "source_location": "L115",
+      "source_location": "L140",
       "id": "overlay_overlay_startlipsync",
       "community": 6,
       "norm_label": "startlipsync()"
@@ -2399,7 +2390,7 @@
       "label": "stopLipSync()",
       "file_type": "code",
       "source_file": "overlay/overlay.js",
-      "source_location": "L173",
+      "source_location": "L198",
       "id": "overlay_overlay_stoplipsync",
       "community": 6,
       "norm_label": "stoplipsync()"
@@ -2408,7 +2399,7 @@
       "label": "createAlert()",
       "file_type": "code",
       "source_file": "overlay/overlay.js",
-      "source_location": "L182",
+      "source_location": "L207",
       "id": "overlay_overlay_createalert",
       "community": 6,
       "norm_label": "createalert()"
@@ -2417,7 +2408,7 @@
       "label": "createMessage()",
       "file_type": "code",
       "source_file": "overlay/overlay.js",
-      "source_location": "L190",
+      "source_location": "L215",
       "id": "overlay_overlay_createmessage",
       "community": 6,
       "norm_label": "createmessage()"
@@ -2426,7 +2417,7 @@
       "label": "showTts()",
       "file_type": "code",
       "source_file": "overlay/overlay.js",
-      "source_location": "L200",
+      "source_location": "L225",
       "id": "overlay_overlay_showtts",
       "community": 6,
       "norm_label": "showtts()"
@@ -2435,7 +2426,7 @@
       "label": "playTts()",
       "file_type": "code",
       "source_file": "overlay/overlay.js",
-      "source_location": "L210",
+      "source_location": "L235",
       "id": "overlay_overlay_playtts",
       "community": 6,
       "norm_label": "playtts()"
@@ -2444,7 +2435,7 @@
       "label": "skipTts()",
       "file_type": "code",
       "source_file": "overlay/overlay.js",
-      "source_location": "L223",
+      "source_location": "L258",
       "id": "overlay_overlay_skiptts",
       "community": 6,
       "norm_label": "skiptts()"
@@ -2453,7 +2444,7 @@
       "label": "hasNonAscii()",
       "file_type": "code",
       "source_file": "overlay/overlay.js",
-      "source_location": "L231",
+      "source_location": "L266",
       "id": "overlay_overlay_hasnonascii",
       "community": 6,
       "norm_label": "hasnonascii()"
@@ -2462,7 +2453,7 @@
       "label": "emojiExplosion()",
       "file_type": "code",
       "source_file": "overlay/overlay.js",
-      "source_location": "L238",
+      "source_location": "L273",
       "id": "overlay_overlay_emojiexplosion",
       "community": 6,
       "norm_label": "emojiexplosion()"
@@ -2471,7 +2462,7 @@
       "label": "escapeHtml()",
       "file_type": "code",
       "source_file": "overlay/overlay.js",
-      "source_location": "L343",
+      "source_location": "L378",
       "id": "overlay_overlay_escapehtml",
       "community": 6,
       "norm_label": "escapehtml()"
@@ -2480,7 +2471,7 @@
       "label": "sseOnMessage()",
       "file_type": "code",
       "source_file": "overlay/overlay.js",
-      "source_location": "L354",
+      "source_location": "L389",
       "id": "overlay_overlay_sseonmessage",
       "community": 6,
       "norm_label": "sseonmessage()"
@@ -2489,7 +2480,7 @@
       "label": "ensureDebugLog()",
       "file_type": "code",
       "source_file": "overlay/overlay.js",
-      "source_location": "L418",
+      "source_location": "L453",
       "id": "overlay_overlay_ensuredebuglog",
       "community": 6,
       "norm_label": "ensuredebuglog()"
@@ -2498,7 +2489,7 @@
       "label": "logDebug()",
       "file_type": "code",
       "source_file": "overlay/overlay.js",
-      "source_location": "L427",
+      "source_location": "L462",
       "id": "overlay_overlay_logdebug",
       "community": 6,
       "norm_label": "logdebug()"
@@ -2507,16 +2498,25 @@
       "label": "sseOnError()",
       "file_type": "code",
       "source_file": "overlay/overlay.js",
-      "source_location": "L437",
+      "source_location": "L472",
       "id": "overlay_overlay_sseonerror",
       "community": 6,
       "norm_label": "sseonerror()"
     },
     {
+      "label": "unlockAudio()",
+      "file_type": "code",
+      "source_file": "overlay/overlay.js",
+      "source_location": "L483",
+      "id": "overlay_overlay_unlockaudio",
+      "community": 6,
+      "norm_label": "unlockaudio()"
+    },
+    {
       "label": "evtSource",
       "file_type": "code",
       "source_file": "overlay/overlay.js",
-      "source_location": "L478",
+      "source_location": "L550",
       "id": "overlay_overlay_evtsource",
       "community": 6,
       "norm_label": "evtsource"
@@ -4160,11 +4160,119 @@
       "norm_label": "graphify.md"
     },
     {
+      "label": "._is_cooldown()",
+      "file_type": "code",
+      "source_file": "event_orchestrator.py",
+      "source_location": "L635",
+      "community": 0,
+      "norm_label": "._is_cooldown()",
+      "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_is_cooldown"
+    },
+    {
+      "label": "._trigger_tts()",
+      "file_type": "code",
+      "source_file": "event_orchestrator.py",
+      "source_location": "L644",
+      "community": 54,
+      "norm_label": "._trigger_tts()",
+      "id": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_trigger_tts"
+    },
+    {
+      "label": "Conecta el pipeline con los servicios disponibles.",
+      "file_type": "rationale",
+      "source_file": "event_orchestrator.py",
+      "source_location": "L109",
+      "community": 56,
+      "norm_label": "conecta el pipeline con los servicios disponibles.",
+      "id": "tiktok_ai_streamer_event_orchestrator_rationale_109"
+    },
+    {
+      "label": "Genera TTS para leer el comentario con la voz configurada.",
+      "file_type": "rationale",
+      "source_file": "event_orchestrator.py",
+      "source_location": "L458",
+      "community": 54,
+      "norm_label": "genera tts para leer el comentario con la voz configurada.",
+      "id": "tiktok_ai_streamer_event_orchestrator_rationale_458"
+    },
+    {
+      "label": "Extrae emotion/sfx de metadatos en respuesta AI (formato [emotion:happy][sfx:din",
+      "file_type": "rationale",
+      "source_file": "event_orchestrator.py",
+      "source_location": "L492",
+      "community": 58,
+      "norm_label": "extrae emotion/sfx de metadatos en respuesta ai (formato [emotion:happy][sfx:din",
+      "id": "tiktok_ai_streamer_event_orchestrator_rationale_492"
+    },
+    {
+      "label": "Ejecuta acciones temporales sin guardarlas como regla.",
+      "file_type": "rationale",
+      "source_file": "event_orchestrator.py",
+      "source_location": "L631",
+      "community": 57,
+      "norm_label": "ejecuta acciones temporales sin guardarlas como regla.",
+      "id": "tiktok_ai_streamer_event_orchestrator_rationale_631"
+    },
+    {
+      "label": "Llamado cuando llega un mensaje de TikTok.",
+      "file_type": "rationale",
+      "source_file": "pipeline.py",
+      "source_location": "L123",
+      "community": 8,
+      "norm_label": "llamado cuando llega un mensaje de tiktok.",
+      "id": "tiktok_ai_streamer_pipeline_rationale_123"
+    },
+    {
+      "label": "Para comandos/bienvenidas que ya tienen texto (saltan IA).",
+      "file_type": "rationale",
+      "source_file": "pipeline.py",
+      "source_location": "L135",
+      "community": 8,
+      "norm_label": "para comandos/bienvenidas que ya tienen texto (saltan ia).",
+      "id": "tiktok_ai_streamer_pipeline_rationale_135"
+    },
+    {
+      "label": "Llamado cuando el overlay confirma que empezo a reproducir.",
+      "file_type": "rationale",
+      "source_file": "pipeline.py",
+      "source_location": "L149",
+      "community": 8,
+      "norm_label": "llamado cuando el overlay confirma que empezo a reproducir.",
+      "id": "tiktok_ai_streamer_pipeline_rationale_149"
+    },
+    {
+      "label": "Llamado cuando el overlay confirma que termino de reproducir.",
+      "file_type": "rationale",
+      "source_file": "pipeline.py",
+      "source_location": "L157",
+      "community": 8,
+      "norm_label": "llamado cuando el overlay confirma que termino de reproducir.",
+      "id": "tiktok_ai_streamer_pipeline_rationale_157"
+    },
+    {
+      "label": "Construye una lista unificada de items para la tabla del pipeline.",
+      "file_type": "rationale",
+      "source_file": "pipeline.py",
+      "source_location": "L203",
+      "community": 8,
+      "norm_label": "construye una lista unificada de items para la tabla del pipeline.",
+      "id": "tiktok_ai_streamer_pipeline_rationale_203"
+    },
+    {
+      "label": ".handle_event()",
+      "file_type": "code",
+      "source_file": "tts_client.py",
+      "source_location": "L411",
+      "community": 5,
+      "norm_label": ".handle_event()",
+      "id": "tiktok_ai_streamer_tts_client_ttsclient_handle_event"
+    },
+    {
       "label": "Conecta el pipeline con los servicios disponibles.",
       "file_type": "rationale",
       "source_file": "event_orchestrator.py",
       "source_location": "L100",
-      "community": 0,
+      "community": 56,
       "norm_label": "conecta el pipeline con los servicios disponibles.",
       "id": "tiktok_ai_streamer_event_orchestrator_rationale_100"
     },
@@ -4182,7 +4290,7 @@
       "file_type": "rationale",
       "source_file": "event_orchestrator.py",
       "source_location": "L572",
-      "community": 0,
+      "community": 57,
       "norm_label": "ejecuta acciones temporales sin guardarlas como regla.",
       "id": "tiktok_ai_streamer_event_orchestrator_rationale_572"
     },
@@ -4200,7 +4308,7 @@
       "file_type": "rationale",
       "source_file": "event_orchestrator.py",
       "source_location": "L568",
-      "community": 0,
+      "community": 57,
       "norm_label": "ejecuta acciones temporales sin guardarlas como regla.",
       "id": "tiktok_ai_streamer_event_orchestrator_rationale_568"
     },
@@ -6313,6 +6421,16 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "event_orchestrator.py",
+      "source_location": "L956",
+      "weight": 1.0,
+      "source": "tiktok_ai_streamer_event_orchestrator_eventorchestrator",
+      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_has_banned_word",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "event_orchestrator.py",
       "source_location": "L14",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -6775,9 +6893,9 @@
       "source_file": "event_orchestrator.py",
       "source_location": "L457",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_event_orchestrator_eventorchestrator",
-      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_speak_comment",
-      "confidence_score": 1.0
+      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_speak_comment"
     },
     {
       "relation": "method",
@@ -7078,7 +7196,17 @@
       "source_file": "event_orchestrator.py",
       "source_location": "L109",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_event_orchestrator_rationale_109",
+      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_wire_pipeline"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "event_orchestrator.py",
+      "source_location": "L112",
+      "weight": 1.0,
+      "source": "tiktok_ai_streamer_event_orchestrator_rationale_112",
       "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_wire_pipeline",
       "confidence_score": 1.0
     },
@@ -7461,6 +7589,17 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "event_orchestrator.py",
+      "source_location": "L962",
+      "weight": 1.0,
+      "source": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_has_banned_word",
+      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_log",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "event_orchestrator.py",
       "source_location": "L1017",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -7639,9 +7778,9 @@
       "source_file": "event_orchestrator.py",
       "source_location": "L479",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_speak_comment",
-      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_log",
-      "confidence_score": 1.0
+      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_log"
     },
     {
       "relation": "calls",
@@ -7826,9 +7965,9 @@
       "source_file": "event_orchestrator.py",
       "source_location": "L452",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_process_message",
-      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_speak_comment",
-      "confidence_score": 1.0
+      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_speak_comment"
     },
     {
       "relation": "calls",
@@ -7837,9 +7976,9 @@
       "source_file": "event_orchestrator.py",
       "source_location": "L478",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_speak_comment",
-      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_publish",
-      "confidence_score": 1.0
+      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_publish"
     },
     {
       "relation": "rationale_for",
@@ -7847,7 +7986,17 @@
       "source_file": "event_orchestrator.py",
       "source_location": "L458",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_event_orchestrator_rationale_458",
+      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_speak_comment"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "event_orchestrator.py",
+      "source_location": "L500",
+      "weight": 1.0,
+      "source": "tiktok_ai_streamer_event_orchestrator_rationale_500",
       "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_speak_comment",
       "confidence_score": 1.0
     },
@@ -7877,7 +8026,17 @@
       "source_file": "event_orchestrator.py",
       "source_location": "L492",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_event_orchestrator_rationale_492",
+      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_parse_ai_metadata"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "event_orchestrator.py",
+      "source_location": "L548",
+      "weight": 1.0,
+      "source": "tiktok_ai_streamer_event_orchestrator_rationale_548",
       "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_parse_ai_metadata",
       "confidence_score": 1.0
     },
@@ -8006,20 +8165,19 @@
       "source_file": "event_orchestrator.py",
       "source_location": "L631",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_event_orchestrator_rationale_631",
-      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_test_actions",
-      "confidence_score": 1.0
+      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_test_actions"
     },
     {
-      "relation": "calls",
-      "context": "call",
+      "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "event_orchestrator.py",
-      "source_location": "L586",
+      "source_location": "L687",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_trigger_tts",
-      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_publish"
+      "source": "tiktok_ai_streamer_event_orchestrator_rationale_687",
+      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_test_actions",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -8070,6 +8228,17 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "event_orchestrator.py",
+      "source_location": "L586",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_trigger_tts",
+      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_publish"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "event_orchestrator.py",
       "source_location": "L890",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -8097,6 +8266,27 @@
       "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_check_spam",
       "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_cleanup_spam_data"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "event_orchestrator.py",
+      "source_location": "L905",
+      "weight": 1.0,
+      "source": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_check_spam",
+      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_has_banned_word",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "event_orchestrator.py",
+      "source_location": "L957",
+      "weight": 1.0,
+      "source": "tiktok_ai_streamer_event_orchestrator_rationale_957",
+      "target": "tiktok_ai_streamer_event_orchestrator_eventorchestrator_has_banned_word",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -8616,9 +8806,9 @@
       "source_file": "pipeline.py",
       "source_location": "L231",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_pipeline_responsepipeline_build_table_view",
-      "target": "tiktok_ai_streamer_pipeline_responseitem_to_dict",
-      "confidence_score": 1.0
+      "target": "tiktok_ai_streamer_pipeline_responseitem_to_dict"
     },
     {
       "relation": "calls",
@@ -8647,9 +8837,9 @@
       "source_file": "pipeline.py",
       "source_location": "L202",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_pipeline_responsepipeline",
-      "target": "tiktok_ai_streamer_pipeline_responsepipeline_build_table_view",
-      "confidence_score": 1.0
+      "target": "tiktok_ai_streamer_pipeline_responsepipeline_build_table_view"
     },
     {
       "relation": "method",
@@ -8727,9 +8917,9 @@
       "source_file": "pipeline.py",
       "source_location": "L335",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_pipeline_responsepipeline",
-      "target": "tiktok_ai_streamer_pipeline_responsepipeline_process_tts_item",
-      "confidence_score": 1.0
+      "target": "tiktok_ai_streamer_pipeline_responsepipeline_process_tts_item"
     },
     {
       "relation": "method",
@@ -8802,6 +8992,16 @@
       "target": "tiktok_ai_streamer_pipeline_responsepipeline_receive_message"
     },
     {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pipeline.py",
+      "source_location": "L124",
+      "weight": 1.0,
+      "source": "tiktok_ai_streamer_pipeline_rationale_124",
+      "target": "tiktok_ai_streamer_pipeline_responsepipeline_receive_message",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -8831,6 +9031,16 @@
       "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_pipeline_rationale_135",
       "target": "tiktok_ai_streamer_pipeline_responsepipeline_enqueue_direct_tts"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pipeline.py",
+      "source_location": "L138",
+      "weight": 1.0,
+      "source": "tiktok_ai_streamer_pipeline_rationale_138",
+      "target": "tiktok_ai_streamer_pipeline_responsepipeline_enqueue_direct_tts",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -8864,6 +9074,16 @@
       "target": "tiktok_ai_streamer_pipeline_responsepipeline_mark_playback_started"
     },
     {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pipeline.py",
+      "source_location": "L152",
+      "weight": 1.0,
+      "source": "tiktok_ai_streamer_pipeline_rationale_152",
+      "target": "tiktok_ai_streamer_pipeline_responsepipeline_mark_playback_started",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -8895,6 +9115,16 @@
       "target": "tiktok_ai_streamer_pipeline_responsepipeline_mark_playback_done"
     },
     {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pipeline.py",
+      "source_location": "L160",
+      "weight": 1.0,
+      "source": "tiktok_ai_streamer_pipeline_rationale_160",
+      "target": "tiktok_ai_streamer_pipeline_responsepipeline_mark_playback_done",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -8923,9 +9153,9 @@
       "source_file": "pipeline.py",
       "source_location": "L199",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_pipeline_responsepipeline_get_state",
-      "target": "tiktok_ai_streamer_pipeline_responsepipeline_build_table_view",
-      "confidence_score": 1.0
+      "target": "tiktok_ai_streamer_pipeline_responsepipeline_build_table_view"
     },
     {
       "relation": "rationale_for",
@@ -8933,7 +9163,17 @@
       "source_file": "pipeline.py",
       "source_location": "L203",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_pipeline_rationale_203",
+      "target": "tiktok_ai_streamer_pipeline_responsepipeline_build_table_view"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pipeline.py",
+      "source_location": "L206",
+      "weight": 1.0,
+      "source": "tiktok_ai_streamer_pipeline_rationale_206",
       "target": "tiktok_ai_streamer_pipeline_responsepipeline_build_table_view",
       "confidence_score": 1.0
     },
@@ -8955,9 +9195,9 @@
       "source_file": "pipeline.py",
       "source_location": "L339",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_pipeline_responsepipeline_process_tts_item",
-      "target": "tiktok_ai_streamer_pipeline_responsepipeline_notify",
-      "confidence_score": 1.0
+      "target": "tiktok_ai_streamer_pipeline_responsepipeline_notify"
     },
     {
       "relation": "calls",
@@ -8977,9 +9217,9 @@
       "source_file": "pipeline.py",
       "source_location": "L322",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tiktok_ai_streamer_pipeline_responsepipeline_tts_loop",
-      "target": "tiktok_ai_streamer_pipeline_responsepipeline_process_tts_item",
-      "confidence_score": 1.0
+      "target": "tiktok_ai_streamer_pipeline_responsepipeline_process_tts_item"
     },
     {
       "relation": "contains",
@@ -10660,6 +10900,16 @@
       "target": "overlay_overlay_ttstext"
     },
     {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "overlay/overlay.js",
+      "source_location": "L483",
+      "weight": 1.0,
+      "source": "overlay_overlay_js",
+      "target": "overlay_overlay_unlockaudio",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -10691,6 +10941,17 @@
       "confidence_score": 1.0,
       "source": "overlay_overlay_processttsqueue",
       "target": "overlay_overlay_initlipsync"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "overlay/overlay.js",
+      "source_location": "L516",
+      "weight": 1.0,
+      "source": "overlay_overlay_unlockaudio",
+      "target": "overlay_overlay_processttsqueue",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -14786,5 +15047,5 @@
       "source_file": "panel/panel.js"
     }
   ],
-  "built_at_commit": "1411fb315f927fc3c1cc0eac1a54ba28846c35fc"
+  "built_at_commit": "b3f2b46175924c4c675e6a28efaecc17344ede35"
 }

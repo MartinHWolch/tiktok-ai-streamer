@@ -256,6 +256,7 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance
         <div class="st-badge on" id="badge-tts"><span class="st-dot"></span>TTS</div>
         <div class="st-badge on" id="badge-ai"><span class="st-dot"></span>IA</div>
         <div class="st-badge on" id="badge-tiktok"><span class="st-dot"></span>TikTok</div>
+        <div class="st-badge on" id="badge-sse"><span class="st-dot"></span>SSE</div>
         <button class="btn btn-p btn-sm" id="btn-top-action">Cambiar a Real</button>
       </div>
     </header>
@@ -512,15 +513,23 @@ function connectSSE() {
         case 'overlay_alert': handleOverlayAlert(p.data); break;
         case 'pipeline_state': G.pipelineState = p.data; console.log('[Panel SSE] Pipeline state actualizado. Gen queue:', (p.data.gen_queue||[]).length, 'TTS queue:', (p.data.tts_queue||[]).length, 'Playing:', !!p.data.playing); renderPipelineQueue(); renderPipelineSteps(); renderPipelineFull(); break;
         case 'tts_speak': updateAvatarState('talking'); break;
-        case 'tts_audio': updateAvatarState('idle'); break;
+        case 'tts_audio':
+          updateAvatarState('idle');
+          if (p.data && p.data.comment) addLogSilent('[TTS Comentario] ' + (p.data.url||''));
+          else if (p.data && p.data.url) addLogSilent('[TTS Respuesta] ' + (p.data.url||''));
+          break;
         case 'overlay_config': break;
         default: console.log('[Panel SSE] Tipo desconocido:', p.type);
       }
     } catch(err) { console.error('[Panel SSE] Parse error:', err, 'raw data:', e.data ? e.data.slice(0,200) : '(empty)'); }
   };
+  evtSource.onopen = function() {
+    updateBadge($('badge-sse'), true);
+  };
   evtSource.onerror = function() {
     console.warn('[Panel SSE] Error/reconnect. readyState='+evtSource.readyState);
     sseReadyState = evtSource.readyState;
+    updateBadge($('badge-sse'), false);
     setTimeout(connectSSE, 3000);
   };
 }
@@ -813,6 +822,12 @@ $('badge-tiktok').addEventListener('click', async function(){
 /* ===============================================================
    MODE TOGGLE
    =============================================================== */
+// Wire topbar action button to same simulation toggle
+$('btn-top-action').addEventListener('click', async function(){
+  var r = await postJSON('/api/toggle_simulation');
+  if (r) { updateModeUI(r.simulation); G.isSim = r.simulation; refreshStats(); }
+});
+
 $('btn-toggle-sim').addEventListener('click', async function(){
   setSpinner(this, true);
   var r = await postJSON('/api/toggle_simulation'); setSpinner(this, false);
@@ -959,8 +974,10 @@ $('btn-test-tts').addEventListener('click', async function(){
   else addLogSilent('Error TTS - revisa logs del servidor');
 });
 
-$('btn-save-voice').addEventListener('click', function(){
-  addLogSilent('Config de voz guardada');
+$('btn-save-voice').addEventListener('click', async function(){
+  var r = await postJSON('/api/save_settings', {});
+  if (r && r.success) addLogSilent('Config de voz guardada en user_settings.json');
+  else addLogSilent('Error al guardar config');
 });
 
 // Presets
@@ -1008,7 +1025,16 @@ $('btn-delete-preset').addEventListener('click', async function(){
    AI CONFIG
    =============================================================== */
 $('ai-temp').addEventListener('input', function(){ $('ai-temp-val').textContent=parseFloat(this.value).toFixed(1); });
-$('btn-save-ai').addEventListener('click', function(){ addLogSilent('Config IA guardada (requiere reinicio)'); });
+$('btn-save-ai').addEventListener('click', async function(){
+  var r = await postJSON('/api/set_ai_config', {
+    model: $('ai-model').value,
+    temperature: parseFloat($('ai-temp').value),
+    max_tokens: parseInt($('ai-max-tokens').value),
+    system_prompt: $('ai-system-prompt').value
+  });
+  if (r && r.success) addLogSilent('Config IA guardada');
+  else addLogSilent('Error al guardar config IA');
+});
 
 /* ===============================================================
    OVERLAY CONFIG
@@ -1420,8 +1446,10 @@ $('comment-lang').addEventListener('change', function(){
   postJSON('/api/read_comments_config', {lang:this.value});
 });
 
-$('btn-save-comments').addEventListener('click', function(){
-  addLogSilent('Config de lectura de comentarios guardada');
+$('btn-save-comments').addEventListener('click', async function(){
+  var r = await postJSON('/api/save_settings', {});
+  if (r && r.success) addLogSilent('Config de lectura de comentarios guardada');
+  else addLogSilent('Error al guardar config');
 });
 
 document.addEventListener('DOMContentLoaded', init);

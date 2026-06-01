@@ -108,12 +108,16 @@ class TTSClient:
             logger.error(f"Error parseando voice blend '{blend_str}': {e}")
             return None
     
-    def _get_kokoro_voice(self):
-        with self._state_lock:
-            blend = self.voice_blend
-            voice = self.voice
-        if blend:
-            result = self._parse_voice_blend(blend)
+    def _get_kokoro_voice(self, voice=None, voice_blend=None):
+        # Si se pasan parametros (snapshot thread-safe), usarlos; sino leer de self
+        if voice is None:
+            with self._state_lock:
+                voice = self.voice
+        if voice_blend is None:
+            with self._state_lock:
+                voice_blend = self.voice_blend
+        if voice_blend:
+            result = self._parse_voice_blend(voice_blend)
             if result is not None:
                 return result
         return voice
@@ -126,26 +130,35 @@ class TTSClient:
         with self._cooldown_lock:
             self._last_speak = time.time()
         
+        # Capturar TODO el estado bajo lock para evitar race conditions
         with self._state_lock:
             engine = self.engine
             kokoro = self._kokoro
             piper = self._piper
+            voice = self.voice
+            voice_blend = self.voice_blend
+            speed = self.speed
+            pitch = self.pitch
+            volume = self.volume
+            lang = self.lang
+            edge_voice = self.edge_voice
+            kokoro_model = self.kokoro_model
         
         if engine == "kokoro" and kokoro:
-            return self._speak_kokoro(text)
+            return self._speak_kokoro(text, voice, voice_blend, speed, pitch, volume, lang, kokoro_model)
         elif engine == "piper" and piper:
-            return self._speak_piper(text)
+            return self._speak_piper(text, lang)
         elif engine == "edge":
-            return self._speak_edge(text)
+            return self._speak_edge(text, edge_voice, speed, pitch, volume, lang)
         else:
-            return self._speak_gtts(text)
+            return self._speak_gtts(text, lang)
     
-    def _speak_kokoro(self, text):
+    def _speak_kokoro(self, text, voice, voice_blend, speed, pitch, volume, lang, kokoro_model):
         try:
             import numpy as np
             import soundfile as sf
             
-            voice = self._get_kokoro_voice()
+            voice = self._get_kokoro_voice(voice, voice_blend)
             
             # Phonemize si tenemos G2P
             if self._kokoro_g2p:
@@ -156,30 +169,30 @@ class TTSClient:
                     else:
                         phonemes = g2p_result
                     samples, sample_rate = self._kokoro.create(
-                        phonemes, voice=voice, speed=self.speed, lang=self.lang, is_phonemes=True
+                        phonemes, voice=voice, speed=speed, lang=lang, is_phonemes=True
                     )
                 except Exception as e:
                     logger.warning(f"Falló phonemize, intentando texto directo: {e}")
                     samples, sample_rate = self._kokoro.create(
-                        text, voice=voice, speed=self.speed, lang=self.lang
+                        text, voice=voice, speed=speed, lang=lang
                     )
             else:
                 samples, sample_rate = self._kokoro.create(
-                    text, voice=voice, speed=self.speed, lang=self.lang
+                    text, voice=voice, speed=speed, lang=lang
                 )
             
             filename = f"tts_{int(time.time())}_{uuid.uuid4().hex}.wav"
             filepath = os.path.join(self.config.AUDIO_DIR, filename)
-            samples = self._apply_effects(samples, sample_rate)
+            samples = self._apply_effects(samples, sample_rate, pitch, volume)
             sf.write(filepath, samples, sample_rate)
             logger.info(f"Kokoro TTS generado: {filepath}")
             self._cleanup_old_audio()
             return filename
         except Exception as e:
             logger.error(f"Error Kokoro TTS: {e}")
-            return self._speak_gtts(text)
+            return self._speak_gtts(text, lang)
     
-    def _speak_piper(self, text):
+    def _speak_piper(self, text, lang):
         try:
             filename = f"tts_{int(time.time())}_{uuid.uuid4().hex}.wav"
             filepath = os.path.join(self.config.AUDIO_DIR, filename)
@@ -193,14 +206,14 @@ class TTSClient:
             return filename
         except Exception as e:
             logger.error(f"Error Piper TTS: {e}")
-            return self._speak_gtts(text)
+            return self._speak_gtts(text, lang)
     
-    def _speak_gtts(self, text):
+    def _speak_gtts(self, text, lang):
         try:
             from gtts import gTTS
             filename = f"tts_{int(time.time())}_{uuid.uuid4().hex}.mp3"
             filepath = os.path.join(self.config.AUDIO_DIR, filename)
-            tts = gTTS(text=text, lang=self.lang)
+            tts = gTTS(text=text, lang=lang)
             tts.save(filepath)
             logger.info(f"gTTS generado: {filepath}")
             self._cleanup_old_audio()
@@ -209,47 +222,53 @@ class TTSClient:
             logger.error(f"Error gTTS: {e}")
             return None
     
-    def _speak_edge(self, text):
+    def _speak_edge(self, text, edge_voice, speed, pitch, volume, lang):
         try:
             import edge_tts, asyncio
             filename = f"tts_{int(time.time())}_{uuid.uuid4().hex}.mp3"
             filepath = os.path.join(self.config.AUDIO_DIR, filename)
 
-            # Convertir sliders a formato SSML de Edge
-            rate = f"{(self.speed - 1.0) * 100:+.0f}%"
-            pitch_hz = f"{int(self.pitch * 5):+d}Hz"
-            volume_pct = f"{(self.volume - 1.0) * 100:+.0f}%"
+            # Convertir sliders a formato SSML de Edge (solo enviar si no son defaults)
+            rate = f"{(speed - 1.0) * 100:+.0f}%" if speed != 1.0 else None
+            pitch_val = f"{int(pitch * 5):+d}Hz" if pitch != 0 else None
+            volume_pct = f"{(volume - 1.0) * 100:+.0f}%" if volume != 1.0 else None
 
             async def _gen():
-                comm = edge_tts.Communicate(
-                    text, self.edge_voice,
-                    rate=rate, pitch=pitch_hz, volume=volume_pct
-                )
+                kwargs = {"voice": edge_voice}
+                if rate: kwargs["rate"] = rate
+                if pitch_val: kwargs["pitch"] = pitch_val
+                if volume_pct: kwargs["volume"] = volume_pct
+                comm = edge_tts.Communicate(text, **kwargs)
                 await comm.save(filepath)
 
-            asyncio.run(_gen())
-            logger.info(f"Edge TTS generado: {filepath} (rate={rate}, pitch={pitch_hz}, vol={volume_pct})")
+            # Usar nuevo event loop para evitar crash si ya hay uno corriendo en el thread
+            loop = asyncio.new_event_loop()
+            try:
+                loop.run_until_complete(_gen())
+            finally:
+                loop.close()
+            logger.info(f"Edge TTS generado: {filepath} (rate={rate}, pitch={pitch_val}, vol={volume_pct})")
             self._cleanup_old_audio()
             return filename
         except Exception as e:
             logger.error(f"Error Edge TTS: {e}")
-            return self._speak_gtts(text)
+            return self._speak_gtts(text, lang)
 
-    def _apply_effects(self, samples, sample_rate):
-        if self.pitch == 0 and self.volume == 1.0:
+    def _apply_effects(self, samples, sample_rate, pitch, volume):
+        if pitch == 0 and volume == 1.0:
             return samples
         try:
             import numpy as np
             arr = np.array(samples, dtype=np.float32)
             # Pitch shift real sin cambiar velocidad (librosa)
-            if self.pitch != 0:
+            if pitch != 0:
                 import librosa
                 arr = librosa.effects.pitch_shift(
-                    y=arr, sr=sample_rate, n_steps=float(self.pitch)
+                    y=arr, sr=sample_rate, n_steps=float(pitch)
                 )
             # Volumen
-            if self.volume != 1.0:
-                arr = arr * self.volume
+            if volume != 1.0:
+                arr = arr * volume
                 arr = np.clip(arr, -1.0, 1.0)
             return arr
         except Exception as e:
@@ -259,7 +278,7 @@ class TTSClient:
     def _cleanup_old_audio(self):
         with self._cleanup_lock:
             now = time.time()
-            max_age = 3600
+            max_age = 7200  # 2 horas (antes 1h, para evitar borrar audios en cola larga)
             max_files = 100
             deleted = 0
             try:
@@ -278,10 +297,13 @@ class TTSClient:
                                 files.append((mtime, fpath))
                     except Exception:
                         pass
-                # Limite de cantidad: mantener solo los 100 más recientes
+                # Limite de cantidad: mantener solo los 100 más recientes,
+                # pero nunca borrar archivos generados hace menos de 5 min (pueden estar en cola de reproduccion)
                 if len(files) > max_files:
                     files.sort(key=lambda x: x[0])
-                    for _, fpath in files[:len(files) - max_files]:
+                    for mtime, fpath in files[:len(files) - max_files]:
+                        if (now - mtime) < 300:  # < 5 min: protegido
+                            continue
                         try:
                             os.remove(fpath)
                             deleted += 1
@@ -391,23 +413,22 @@ class TTSClient:
                 logger.warning(f"No se pudo re-inicializar G2P: {e}")
     
     def get_status(self):
-        model_type = "fp16" if "fp16" in self.kokoro_model else ("fp32" if "v1.0.onnx" in self.kokoro_model else "custom")
-        return {
-            "enabled": self.enabled,
-            "engine": self.engine,
-            "voice": self.voice,
-            "voice_blend": self.voice_blend,
-            "speed": self.speed,
-            "lang": self.lang,
-            "pitch": self.pitch,
-            "volume": self.volume,
-            "kokoro_model": model_type,
-            "kokoro_available": self._kokoro is not None,
-            "piper_available": self._piper is not None,
-            "kokoro_voices": self._kokoro_voices if self._kokoro else [],
-            "edge_voice": self.edge_voice,
-        }
+        with self._state_lock:
+            model_type = "fp16" if "fp16" in self.kokoro_model else ("fp32" if "v1.0.onnx" in self.kokoro_model else "custom")
+            return {
+                "enabled": self.enabled,
+                "engine": self.engine,
+                "voice": self.voice,
+                "voice_blend": self.voice_blend,
+                "speed": self.speed,
+                "lang": self.lang,
+                "pitch": self.pitch,
+                "volume": self.volume,
+                "kokoro_model": model_type,
+                "kokoro_available": self._kokoro is not None,
+                "piper_available": self._piper is not None,
+                "kokoro_voices": self._kokoro_voices if self._kokoro else [],
+                "edge_voice": self.edge_voice,
+            }
     
-    def handle_event(self, event_type, data):
-        if event_type == "tts_speak":
-            self.speak(data.get("text", ""))
+

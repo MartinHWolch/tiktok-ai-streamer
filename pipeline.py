@@ -91,6 +91,7 @@ class ResponsePipeline:
         self.ai_generate = None     # fn(text, user) -> dict|str|None
         self.tts_speak = None       # fn(text) -> filename|None
         self.on_change = None       # fn(pipeline) notifica al panel
+        self.on_item_done = None    # fn(item) llamado cuando un item alcanza estado terminal (done/error)
         self.dispatch_sfx = None
         self.dispatch_emotion = None
         self.mouth_open_fn = None   # fn() abre boca avatar
@@ -129,7 +130,8 @@ class ResponsePipeline:
             self._incoming_queue.put_nowait(item)
             self._notify()
         except queue.Full:
-            logger.warning(f"Pipeline: cola incoming llena, descartando mensaje de {user}")
+            logger.error(f"Pipeline: cola incoming llena, descartando mensaje de {user}")
+            self._notify()
         return item
 
     def enqueue_direct_tts(self, user, trigger, text, emotion="neutral", sfx=None):
@@ -290,11 +292,17 @@ class ResponsePipeline:
                 else:
                     item.status = "done"
                     self._notify()
+                    if self.on_item_done:
+                        try: self.on_item_done(item)
+                        except Exception as e: logger.error(f"on_item_done error: {e}")
             except Exception as e:
                 logger.error(f"Pipeline gen error: {e}")
                 item.error = str(e)[:200]
                 item.status = "error"
                 self._notify()
+                if self.on_item_done:
+                    try: self.on_item_done(item)
+                    except Exception as e: logger.error(f"on_item_done error: {e}")
             finally:
                 with self._lock:
                     self._generating = None
@@ -302,7 +310,7 @@ class ResponsePipeline:
     # --- Etapa 2: Generar TTS y pasar a playback ---
 
     def _tts_loop(self):
-        TTS_MIN_GAP = 1.5
+        TTS_MIN_GAP = 0.5
         logger.info("Pipeline TTS loop started")
 
         while self._running:
@@ -350,10 +358,9 @@ class ResponsePipeline:
 
             if item.audio_file:
                 item.status = "playback_queued"
-                self._playback_queue.put(item)
                 with self._lock:
-                    if self._playing is None or self._playing.status in ("done", "error", "skipped"):
-                        self._playing = item
+                    # Siempre track el item mas reciente publicado; el overlay maneja su propia cola
+                    self._playing = item
                     self._making_tts = None
                 self._notify()
             else:
@@ -361,6 +368,9 @@ class ResponsePipeline:
                 with self._lock:
                     self._making_tts = None
                 self._notify()
+                if self.on_item_done:
+                    try: self.on_item_done(item)
+                    except Exception as e: logger.error(f"on_item_done error: {e}")
         except Exception as e:
             logger.error(f"Pipeline TTS error: {e}", exc_info=True)
             item.error = str(e)[:200]
@@ -368,3 +378,6 @@ class ResponsePipeline:
             with self._lock:
                 self._making_tts = None
             self._notify()
+            if self.on_item_done:
+                try: self.on_item_done(item)
+                except Exception as e: logger.error(f"on_item_done error: {e}")

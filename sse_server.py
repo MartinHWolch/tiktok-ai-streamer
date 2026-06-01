@@ -64,21 +64,31 @@ class SseFlaskServer:
         return "Not found", 404
 
     def handle_event(self, event_type, data):
-        """Broadcast a todos los suscriptores activos."""
+        """Broadcast a todos los suscriptores activos (no bloquea con suscriptores lentos)."""
         msg = {"type": event_type, "data": data}
+        # Snapshot de suscriptores bajo lock para no bloquear publicaciones concurrentes
         with self._subscribers_lock:
-            dead = []
-            for client_q in self._subscribers:
-                try:
-                    client_q.put_nowait(msg)
-                except queue.Full:
-                    dead.append(client_q)
-            # Limpiar colas bloqueadas
-            for d in dead:
-                try:
-                    self._subscribers.remove(d)
-                except ValueError:
-                    pass
+            subscribers_snapshot = list(self._subscribers)
+        
+        dead = []
+        for client_q in subscribers_snapshot:
+            try:
+                client_q.put_nowait(msg)
+            except queue.Full:
+                dead.append(client_q)
+        # Limpiar colas bloqueadas fuera del lock
+        if dead:
+            with self._subscribers_lock:
+                for d in dead:
+                    if d in self._subscribers:
+                        try:
+                            d.put_nowait(self._shutdown_sentinel)
+                        except Exception:
+                            pass
+                        try:
+                            self._subscribers.remove(d)
+                        except ValueError:
+                            pass
 
     def start(self):
         self._running = True

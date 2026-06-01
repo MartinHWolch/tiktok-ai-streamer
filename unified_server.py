@@ -104,6 +104,7 @@ class UnifiedServer(SseFlaskServer):
         # ------------------------------------------------------------------
 
         @self.app.route("/api/playback_started", methods=["POST"])
+        @self._require_auth
         def playback_started():
             data = request.get_json(silent=True) or {}
             item_id = data.get("item_id", "")
@@ -112,6 +113,7 @@ class UnifiedServer(SseFlaskServer):
             return jsonify({"success": True})
 
         @self.app.route("/api/playback_done", methods=["POST"])
+        @self._require_auth
         def playback_done():
             data = request.get_json(silent=True) or {}
             item_id = data.get("item_id", "")
@@ -120,6 +122,7 @@ class UnifiedServer(SseFlaskServer):
             return jsonify({"success": True})
 
         @self.app.route("/api/vtube_mouth", methods=["POST"])
+        @self._require_auth
         def vtube_mouth():
             data = request.get_json(silent=True) or {}
             open_val = float(data.get("open", 0))
@@ -322,7 +325,40 @@ class UnifiedServer(SseFlaskServer):
             self.orchestrator._save_user_settings()
             return jsonify({"success": True})
 
+        @self.app.route("/api/save_settings", methods=["POST"])
+        @self._require_auth
+        def save_settings():
+            """Fuerza guardar todas las configuraciones actuales a user_settings.json."""
+            self.orchestrator._save_user_settings()
+            self.orchestrator.log("Config guardada manualmente")
+            return jsonify({"success": True, "message": "Configuracion guardada"})
+
+        @self.app.route("/api/set_ai_config", methods=["POST"])
+        @self._require_auth
+        def set_ai_config():
+            """Actualiza configuracion de IA (modelo, temperatura, max tokens, system prompt)."""
+            data = request.get_json(silent=True) or {}
+            cfg = self.orchestrator.config
+            changed = False
+            if "model" in data:
+                cfg.GROQ_MODEL = data["model"]
+                changed = True
+            if "temperature" in data:
+                cfg.AI_TEMPERATURE = float(data["temperature"])
+                changed = True
+            if "max_tokens" in data:
+                cfg.AI_MAX_TOKENS = int(data["max_tokens"])
+                changed = True
+            if "system_prompt" in data:
+                cfg.AI_SYSTEM_PROMPT = data["system_prompt"]
+                changed = True
+            if changed:
+                self.orchestrator._save_user_settings()
+                self.orchestrator.log("Config IA actualizada")
+            return jsonify({"success": True, "changed": changed})
+
         @self.app.route("/api/test_pipeline", methods=["POST"])
+        @self._require_auth
         def test_pipeline():
             """Test endpoint para verificar el flujo completo del pipeline."""
             data = request.get_json() or {}
@@ -366,6 +402,7 @@ class UnifiedServer(SseFlaskServer):
             })
 
         @self.app.route("/api/pipeline_debug", methods=["GET"])
+        @self._require_auth
         def pipeline_debug():
             """Endpoint de debug para ver el estado detallado del pipeline."""
             state = o.pipeline.get_state()

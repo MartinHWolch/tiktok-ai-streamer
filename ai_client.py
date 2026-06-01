@@ -123,7 +123,8 @@ class AIClient:
                     }
                 ],
                 max_tokens=self.config.AI_MAX_TOKENS,
-                temperature=self.config.AI_TEMPERATURE
+                temperature=self.config.AI_TEMPERATURE,
+                timeout=20.0
             )
             reply = response.choices[0].message.content.strip()
             if not reply:

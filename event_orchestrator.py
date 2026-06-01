@@ -21,13 +21,11 @@ class EventOrchestrator:
         self.tts_client = None
         self.vtube_client = None
         self.tiktok_client = None
-        self._cooldowns = {}
-        self._cooldown_lock = threading.Lock()
-        self.logs = deque(maxlen=config.LOG_MAX_LINES)
-        self._presets_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tts_presets.json")
         self._presets = {}
+        self._presets_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tts_presets.json")
         self._start_time = time.time()
         self._stats = {"messages": 0, "gifts": 0, "likes": 0, "joins": 0, "ai_replies": 0, "tts_played": 0}
+        self.logs = []
         self._load_presets()
 
         # Anti-spam
@@ -187,6 +185,17 @@ class EventOrchestrator:
                 self.publish("pipeline_state", pipeline.get_state())
             p.on_change = _on_change
 
+        # Cleanup de comentarios huerfanos: si el item falla sin pasar por TTS,
+        # publicar el audio del comentario pendiente para que no quede huerfano
+        if not p.on_item_done:
+            def _on_item_done(item):
+                with self._comment_audio_lock:
+                    comment_filename = self._pending_comment_audio.pop(item.id, None)
+                if comment_filename:
+                    self.publish("tts_audio", {"url": f"/audio/{comment_filename}", "item_id": "comment", "comment": True})
+                    self.log(f"Comentario huerfano publicado para item {item.id[:8]} (status={item.status})")
+            p.on_item_done = _on_item_done
+
         # Sync flags
         p.ai_enabled = self.ai_enabled
         p.tts_enabled = self.tts_enabled
@@ -304,8 +313,17 @@ class EventOrchestrator:
             "comment_lang": self.comment_lang,
         }
         try:
-            with open(self._user_settings_path, "w", encoding="utf-8") as f:
-                json.dump(settings, f, indent=2, ensure_ascii=False)
+            import tempfile, os
+            # Escritura atómica: escribir a archivo temporal, luego renombrar
+            dir_path = os.path.dirname(self._user_settings_path)
+            fd, tmp_path = tempfile.mkstemp(dir=dir_path, suffix=".tmp")
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    json.dump(settings, f, indent=2, ensure_ascii=False)
+                os.replace(tmp_path, self._user_settings_path)
+            except Exception:
+                os.unlink(tmp_path)
+                raise
         except Exception as e:
             logger.error(f"Error guardando user settings: {e}")
 
@@ -465,15 +483,18 @@ class EventOrchestrator:
         
         self.publish("overlay_message", {"user": user, "text": text})
 
-        # Encolar mensaje entrante para que la IA genere respuesta (primero, para obtener item_id)
+        # Lectura de comentarios: generar TTS primero (sin publicar), luego encolar mensaje para IA
+        comment_filename = None
+        if self.read_comments_enabled and self.tts_client:
+            comment_filename = self._speak_comment(text, user, publish=False)
+
+        # Encolar mensaje entrante para que la IA genere respuesta
         item = self.pipeline.receive_message(user=user, trigger="chat", original_text=text)
 
-        # Lectura de comentarios: generar TTS sin publicar, se publicara secuencialmente antes de la respuesta IA
-        if self.read_comments_enabled and self.tts_client and self.tts_client._kokoro:
-            filename = self._speak_comment(text, user, publish=False)
-            if filename and item:
-                with self._comment_audio_lock:
-                    self._pending_comment_audio[item.id] = filename
+        # Asociar audio de comentario al item del pipeline para publicacion secuencial
+        if comment_filename and item:
+            with self._comment_audio_lock:
+                self._pending_comment_audio[item.id] = comment_filename
 
     def _speak_comment(self, text, user, publish=True):
         """Genera TTS para leer el comentario con la voz configurada.
@@ -666,25 +687,6 @@ class EventOrchestrator:
         """Ejecuta acciones temporales sin guardarlas como regla."""
         self.log(f"Test actions: {len(actions)} acciones para {user}")
         self._execute_actions(actions, user, gift_name, diamond_value)
-
-    def _is_cooldown(self, key):
-        now = time.time()
-        with self._cooldown_lock:
-            if key in self._cooldowns:
-                if now - self._cooldowns[key] < self.config.TTS_COOLDOWN:
-                    return True
-            self._cooldowns[key] = now
-        return False
-
-    def _trigger_tts(self, text):
-        if not self.tts_enabled or not self.tts_client:
-            return
-        
-        self._stats["tts_played"] += 1
-        self.publish("tts_speak", {"text": text})
-        filename = self.tts_client.speak(text)
-        if filename:
-            self.publish("tts_audio", {"url": f"/audio/{filename}"})
 
     def _trigger_sfx(self, event_type):
         sfx_file = self.sfx_config.get(event_type)
@@ -900,11 +902,8 @@ class EventOrchestrator:
         is_simulation = self.tiktok_client and getattr(self.tiktok_client, "simulation_enabled", True)
         if is_simulation:
             if self.banned_words:
-                text_lower = text.lower()
-                for word in self.banned_words:
-                    if word.lower() in text_lower:
-                        self.log(f"SPAM bloqueado ({user}): palabra baneada '{word}'")
-                        return True
+                if self._has_banned_word(text):
+                    return True
             return False
 
         if not self.spam_enabled:
@@ -914,13 +913,10 @@ class EventOrchestrator:
         user_lower = user.lower()
 
         with self._spam_lock:
-            # Banned words
+            # Banned words (regex con word boundaries para evitar falsos positivos tipo 'ass' en 'classic')
             if self.banned_words:
-                text_lower = text.lower()
-                for word in self.banned_words:
-                    if word.lower() in text_lower:
-                        self.log(f"SPAM bloqueado ({user}): palabra baneada '{word}'")
-                        return True
+                if self._has_banned_word(text):
+                    return True
 
             # Periodic cleanup
             if now - self._last_spam_cleanup > 300:
@@ -955,6 +951,16 @@ class EventOrchestrator:
                     del self._user_timestamps[key]
                     self._user_messages.pop(key, None)
 
+        return False
+
+    def _has_banned_word(self, text):
+        """Chequea palabras baneadas usando regex con word boundaries (evita 'ass' en 'classic')."""
+        import re
+        text_lower = text.lower()
+        for word in self.banned_words:
+            if re.search(r'\b' + re.escape(word.lower()) + r'\b', text_lower):
+                self.log(f"SPAM bloqueado: palabra baneada '{word}'")
+                return True
         return False
 
     def _cleanup_spam_data(self, now):

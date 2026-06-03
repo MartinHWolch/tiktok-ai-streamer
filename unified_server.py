@@ -103,8 +103,10 @@ class UnifiedServer(SseFlaskServer):
         # Playback API (overlay)
         # ------------------------------------------------------------------
 
+        # NOTA: estos endpoints los llama el overlay (OBS) que no tiene el token de panel,
+        # por eso NO deben requerir auth. Si se protegen, el pipeline nunca recibe la
+        # confirmacion de reproduccion y los items quedan colgados en estado "playing".
         @self.app.route("/api/playback_started", methods=["POST"])
-        @self._require_auth
         def playback_started():
             data = request.get_json(silent=True) or {}
             item_id = data.get("item_id", "")
@@ -113,7 +115,6 @@ class UnifiedServer(SseFlaskServer):
             return jsonify({"success": True})
 
         @self.app.route("/api/playback_done", methods=["POST"])
-        @self._require_auth
         def playback_done():
             data = request.get_json(silent=True) or {}
             item_id = data.get("item_id", "")
@@ -122,7 +123,6 @@ class UnifiedServer(SseFlaskServer):
             return jsonify({"success": True})
 
         @self.app.route("/api/vtube_mouth", methods=["POST"])
-        @self._require_auth
         def vtube_mouth():
             data = request.get_json(silent=True) or {}
             open_val = float(data.get("open", 0))

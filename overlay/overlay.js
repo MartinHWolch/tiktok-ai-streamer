@@ -7,6 +7,7 @@ var ttsAudio = new Audio();
 ttsAudio.volume = 1.0;
 var ttsQueue = [];
 var ttsPlaying = false;
+var audioUnlocked = false; // true despues del primer click del usuario
 var MAX_TTS_QUEUE = 5; // max items en cola, descartar viejos si se llena
 
 // Lip sync: AudioContext + Analyser para mover boca del avatar
@@ -27,31 +28,93 @@ function playSfx(file) {
     });
 }
 
+var _ttsRetries = {}; // track retries per URL to avoid infinite loops
+var _lastPlayedUrl = null; // anti-duplicado: ultima URL reproducida
+var _lastEndedSrc = null; // anti-duplicado onended
+
 function processTtsQueue() {
-    if (ttsPlaying || ttsQueue.length === 0) return;
+    if (ttsQueue.length === 0) return;
+    if (!audioUnlocked) {
+        updateStatus("COLA", ttsQueue.length + " (esperando unlock)");
+        return;
+    }
+    if (ttsPlaying) return;
+
     ttsPlaying = true;
-    var next = ttsQueue.shift();
+    var next = ttsQueue[0]; // peek
     var url = next.url;
-    currentItemId = next.item_id || null;
-    console.log("[Overlay] TTS play URL:", url, "item_id:", currentItemId, "(cola:", ttsQueue.length, ")");
-    ttsAudio.src = url;
-    ttsAudio.currentTime = 0;
-    // Setup AudioContext antes de play (sin iniciar lip sync todavia)
-    initLipSync();
-    ttsAudio.play().then(function() {
-        console.log("[Overlay] TTS play() aceptado");
-    }).catch(function(err) {
-        console.warn("[Overlay] TTS autoplay bloqueado:", err.name, err.message);
+    var itemId = next.item_id || null;
+    currentItemId = itemId;
+
+    var retries = _ttsRetries[url] || 0;
+    if (retries >= 2) {
+        // Item fallo 2 veces: descartar y pasar al siguiente
+        console.warn("[AUDIT] Descartando item fallido tras " + retries + " intentos:", url);
+        ttsQueue.shift();
+        _ttsRetries[url] = 0;
+        updateStatus("COLA", ttsQueue.length + " (skip)");
         ttsPlaying = false;
         currentItemId = null;
-        processTtsQueue();
-    });
+        if (ttsQueue.length > 0) setTimeout(processTtsQueue, 100);
+        return;
+    }
+    _ttsRetries[url] = retries + 1;
+
+    updateStatus("COLA", ttsQueue.length + " (playing)");
+    console.log("[AUDIT] TTS play intento #" + _ttsRetries[url] + ":", url, "item_id:", itemId, "(cola:", ttsQueue.length, ")");
+
+    // Anti-duplicado: si esta URL ya se reprodujo, descartar
+    if (url === _lastPlayedUrl) {
+        console.warn("[AUDIT] URL duplicada en reproduccion, descartando:", url);
+        ttsQueue.shift();
+        _ttsRetries[url] = 0;
+        updateStatus("COLA", ttsQueue.length + " (dedup)");
+        ttsPlaying = false;
+        currentItemId = null;
+        if (ttsQueue.length > 0) setTimeout(processTtsQueue, 100);
+        return;
+    }
+
+    try {
+        ttsAudio.src = url;
+        ttsAudio.currentTime = 0;
+        ttsAudio.load();
+        initLipSync();
+    } catch(setupErr) {
+        console.error("[AUDIT] Error setup audio:", setupErr.message);
+        updateStatus("COLA", "ERR:" + (setupErr.message || "").slice(0, 20));
+        ttsQueue.shift();
+        _ttsRetries[url] = 0;
+        ttsPlaying = false;
+        currentItemId = null;
+        if (ttsQueue.length > 0) setTimeout(processTtsQueue, 100);
+        return;
+    }
+
+    var playPromise = ttsAudio.play();
+    if (playPromise !== undefined) {
+        playPromise.then(function() {
+            console.log("[AUDIT] TTS play() resolved — audio sonando");
+        }).catch(function(err) {
+            console.warn("[AUDIT] TTS play() rejected:", err.name, err.message);
+            updateStatus("COLA", ttsQueue.length + " (err:" + (err.name || "?").slice(0, 10) + ")");
+            ttsPlaying = false;
+            currentItemId = null;
+            // Reintentar automaticamente (con limite de retries arriba)
+            if (ttsQueue.length > 0) setTimeout(processTtsQueue, 300);
+        });
+    } else {
+        console.log("[AUDIT] TTS play() returned undefined — navegador antiguo");
+        // Asumir que funciona; onplaying o onended se encargan del resto
+    }
 }
 
-// Evento onplaying: audio REALMENTE empezo a sonar (sincronizado)
+// Timeout de seguridad: si onplaying no se dispara en 10s, liberar
 ttsAudio.onplaying = function() {
-    console.log("[Overlay] TTS onplaying - audio sonando, item_id:", currentItemId);
+    console.log("[AUDIT] TTS onplaying - audio sonando item_id:", currentItemId);
+    _lastPlayedUrl = ttsAudio.src; // registrar para anti-duplicado
     startLipSync();
+    if (_ttsSafetyTimeout) { clearTimeout(_ttsSafetyTimeout); _ttsSafetyTimeout = null; }
     if (currentItemId) {
         fetch('/api/playback_started', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -59,11 +122,23 @@ ttsAudio.onplaying = function() {
         }).catch(function(e){ console.warn("playback_started failed:", e); });
     }
 };
+var _ttsSafetyTimeout = null;
 
 // Evento onended: audio termino
 ttsAudio.onended = function() {
-    console.log("[Overlay] TTS onended - audio termino, item_id:", currentItemId);
+    // Anti-duplicado: prevenir onended doble
+    if (_lastEndedSrc === ttsAudio.src) {
+        console.warn("[AUDIT] onended duplicado ignorado:", ttsAudio.src.split("/").pop());
+        return;
+    }
+    _lastEndedSrc = ttsAudio.src;
+    console.log("[AUDIT] TTS onended - audio termino, item_id:", currentItemId);
     stopLipSync();
+    if (_ttsSafetyTimeout) { clearTimeout(_ttsSafetyTimeout); _ttsSafetyTimeout = null; }
+    // Shift item (si no se hizo en play().then por alguna razon)
+    if (ttsQueue.length > 0 && ttsQueue[0].url === ttsAudio.src) {
+        ttsQueue.shift();
+    }
     ttsPlaying = false;
     if (currentItemId) {
         fetch('/api/playback_done', {
@@ -72,6 +147,7 @@ ttsAudio.onended = function() {
         }).catch(function(e){ console.warn("playback_done failed:", e); });
     }
     currentItemId = null;
+    updateStatus("COLA", ttsQueue.length);
     if (ttsQueue.length > 0) {
         setTimeout(processTtsQueue, 200);
     }
@@ -87,8 +163,14 @@ ttsAudio.onpause = function() {
 
 // Evento onerror: audio fallo (404, corrupto, etc) - no trabar la cola
 ttsAudio.onerror = function() {
-    console.error("[Overlay] TTS onerror - audio fallo, item_id:", currentItemId, "code:", ttsAudio.error ? ttsAudio.error.code : '?');
+    var code = ttsAudio.error ? ttsAudio.error.code : '?';
+    console.error("[AUDIT] TTS onerror - audio fallo, item_id:", currentItemId, "code:", code);
     stopLipSync();
+    updateStatus("COLA", ttsQueue.length + " (err:" + code + ")");
+    // Descartar item fallido
+    if (ttsQueue.length > 0 && ttsQueue[0].url === ttsAudio.src) {
+        ttsQueue.shift();
+    }
     ttsPlaying = false;
     if (currentItemId) {
         fetch('/api/playback_done', {
@@ -107,33 +189,49 @@ function initLipSync() {
         try {
             lipSyncCtx = new (window.AudioContext || window.webkitAudioContext)();
             console.log("[Overlay] AudioContext created, state:", lipSyncCtx.state);
+        } catch(e) {
+            console.warn("[Overlay] LipSync AudioContext init failed:", e.message);
+            return;
+        }
+    }
+    // Crear analyser siempre que no exista
+    if (!lipSyncAnalyser) {
+        try {
             lipSyncAnalyser = lipSyncCtx.createAnalyser();
             lipSyncAnalyser.fftSize = 128;
             lipSyncAnalyser.smoothingTimeConstant = 0.3;
             lipSyncAnalyser.minDecibels = -55;
             lipSyncAnalyser.maxDecibels = 0;
         } catch(e) {
-            console.warn("[Overlay] LipSync AudioContext init failed:", e.message);
+            console.warn("[Overlay] Analyser init failed:", e.message);
         }
     }
-    // Conectar MediaElementSource solo una vez por elemento audio
-    if (lipSyncCtx && !lipSyncSource) {
-        try {
-            lipSyncSource = lipSyncCtx.createMediaElementSource(ttsAudio);
-            lipSyncSource.connect(lipSyncAnalyser);
-            lipSyncAnalyser.connect(lipSyncCtx.destination);
-            console.log("[Overlay] MediaElementSource conectado");
-        } catch(e) {
-            console.warn("[Overlay] LipSync source ya conectado:", e.message);
+    // Conectar o reconectar la cadena de audio
+    if (lipSyncCtx && lipSyncAnalyser) {
+        // Asegurar que AudioContext este corriendo
+        if (lipSyncCtx.state === 'suspended') {
+            lipSyncCtx.resume();
         }
-    }
-    // Asegurar que AudioContext este activo
-    if (lipSyncCtx && lipSyncCtx.state === 'suspended') {
-        lipSyncCtx.resume().then(function() {
-            console.log("[Overlay] AudioContext resumed, state:", lipSyncCtx.state);
-        }).catch(function(e) {
-            console.warn("[Overlay] AudioContext resume failed:", e.message);
-        });
+        if (!lipSyncSource) {
+            try {
+                lipSyncSource = lipSyncCtx.createMediaElementSource(ttsAudio);
+                console.log("[AUDIT] MediaElementSource creado");
+            } catch(e) {
+                console.warn("[AUDIT] createMediaElementSource fallo:", e.message);
+            }
+        }
+        // (Re)conectar la cadena: source → analyser → destination
+        if (lipSyncSource) {
+            try {
+                lipSyncSource.disconnect();
+                lipSyncSource.connect(lipSyncAnalyser);
+                lipSyncAnalyser.disconnect();
+                lipSyncAnalyser.connect(lipSyncCtx.destination);
+                console.log("[AUDIT] Cadena audio: source → analyser → destination OK");
+            } catch(e) {
+                console.warn("[AUDIT] Cadena audio fallo:", e.message);
+            }
+        }
     }
 }
 
@@ -236,6 +334,19 @@ function playTts(data) {
     var url = typeof data === 'string' ? data : (data.url || '');
     var itemId = typeof data === 'object' ? (data.item_id || '') : '';
     if (!url) return;
+    console.log("[AUDIT] playTts: url=" + url + " item_id=" + itemId + " unlocked=" + audioUnlocked + " cola=" + ttsQueue.length);
+    updateStatus("LAST", url.split("/").pop().substring(0, 20) + "...");
+    // Dedup: si esta URL ya esta en la cola o reproduciendose, ignorar
+    if (ttsAudio.src && ttsAudio.src.endsWith(url.split("/").pop())) {
+        console.log("[AUDIT] playTts: URL duplicada (en reproduccion), ignorando:", url);
+        return;
+    }
+    for (var i = 0; i < ttsQueue.length; i++) {
+        if (ttsQueue[i].url === url) {
+            console.log("[AUDIT] playTts: URL duplicada (en cola pos " + i + "), ignorando:", url);
+            return;
+        }
+    }
     if (ttsQueue.length >= MAX_TTS_QUEUE) {
         var dropped = ttsQueue.length - MAX_TTS_QUEUE + 1;
         var droppedItems = ttsQueue.slice(0, dropped);
@@ -252,6 +363,7 @@ function playTts(data) {
         });
     }
     ttsQueue.push({url: url, item_id: itemId});
+    updateStatus("COLA", ttsQueue.length);
     processTtsQueue();
 }
 
@@ -410,7 +522,7 @@ function sseOnMessage(e) {
             console.log("[Overlay] TTS speak text:", data.text);
             showTts(data.text);
         } else if (type === "tts_audio") {
-            console.log("[Overlay] TTS audio URL:", data.url, "item_id:", data.item_id);
+            console.log("[AUDIT] SSE tts_audio: url=" + data.url + " item_id=" + data.item_id + " comment=" + (data.comment || false));
             playTts(data);
         } else if (type === "tts_skip") {
             console.log("[Overlay] TTS skip");
@@ -470,19 +582,34 @@ function logDebug(msg) {
 }
 
 function sseOnError() {
-    console.error("SSE desconectado, reintentando en 3s...");
+    console.error("[AUDIT] SSE desconectado, reintentando en 3s...");
+    updateStatus("SSE", "ERROR");
     evtSource.close();
     setTimeout(function() {
         evtSource = new EventSource("/stream");
+        evtSource.onopen = function() { updateStatus("SSE", "OK"); console.log("[AUDIT] SSE reconectado"); };
         evtSource.onmessage = sseOnMessage;
         evtSource.onerror = sseOnError;
     }, 3000);
 }
 
+// Status bar para debug visual
+function updateStatus(label, value) {
+    var el = document.getElementById(
+        label === "SSE" ? "sse-status" :
+        label === "AUDIO" ? "audio-status" :
+        label === "COLA" ? "queue-status" :
+        label === "LAST" ? "last-event" : null
+    );
+    if (el) el.textContent = label + ": " + value;
+}
+
 // Desbloquear AudioContext en el primer click/touch (politica del navegador)
 function unlockAudio() {
     var overlay = document.getElementById('click-to-start');
-    
+    audioUnlocked = true;
+    updateStatus("AUDIO", "OK");
+
     // Crear/resumir AudioContext
     try {
         if (!lipSyncCtx) {
@@ -493,14 +620,20 @@ function unlockAudio() {
                 console.log("[Overlay] AudioContext unlocked by user gesture");
             });
         }
-        // Reproducir sonido silencioso para desbloquear play()
-        var buffer = lipSyncCtx.createBuffer(1, 1, 22050);
-        var source = lipSyncCtx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(lipSyncCtx.destination);
-        source.start(0);
-        source.onended = function() {
-            console.log("[Overlay] Audio desbloqueado correctamente");
+        // Inicializar cadena de lip sync AHORA (antes causaba audio mudo)
+        initLipSync();
+        // Reproducir un beep audible de prueba para confirmar que audio funciona
+        var testBuffer = lipSyncCtx.createBuffer(1, lipSyncCtx.sampleRate * 0.2, lipSyncCtx.sampleRate);
+        var data = testBuffer.getChannelData(0);
+        for (var i = 0; i < data.length; i++) {
+            data[i] = Math.sin(2 * Math.PI * 440 * i / lipSyncCtx.sampleRate) * 0.3;
+        }
+        var testSource = lipSyncCtx.createBufferSource();
+        testSource.buffer = testBuffer;
+        testSource.connect(lipSyncCtx.destination);
+        testSource.start(0);
+        testSource.onended = function() {
+            console.log("[AUDIT] Test beep completado — audio OK");
         };
     } catch(e) {
         console.warn("[Overlay] Audio unlock failed:", e.message);
@@ -518,15 +651,31 @@ function unlockAudio() {
 }
 
 document.addEventListener('click', function unlockAudioLegacy() {
+    if (!audioUnlocked) {
+        audioUnlocked = true;
+        updateStatus("AUDIO", "OK (fallback)");
+        console.log("[AUDIT] Audio unlocked via click fallback");
+    }
     if (lipSyncCtx && lipSyncCtx.state === 'suspended') {
         lipSyncCtx.resume().then(function() {
             console.log("[Overlay] AudioContext unlocked by user gesture");
         });
     }
+    if (ttsQueue.length > 0 && !ttsPlaying) {
+        processTtsQueue();
+    }
 }, { once: true });
 document.addEventListener('touchstart', function unlockAudioTouch() {
+    if (!audioUnlocked) {
+        audioUnlocked = true;
+        updateStatus("AUDIO", "OK (touch)");
+        console.log("[AUDIT] Audio unlocked via touch");
+    }
     if (lipSyncCtx && lipSyncCtx.state === 'suspended') {
         lipSyncCtx.resume();
+    }
+    if (ttsQueue.length > 0 && !ttsPlaying) {
+        processTtsQueue();
     }
 }, { once: true });
 
@@ -547,6 +696,12 @@ document.addEventListener('touchstart', function unlockAudioTouch() {
     }, 2000);
 })();
 
-const evtSource = new EventSource("/stream");
+var evtSource = new EventSource("/stream");
 evtSource.onmessage = sseOnMessage;
 evtSource.onerror = sseOnError;
+evtSource.onopen = function() {
+    console.log("[AUDIT] SSE conexion abierta");
+    updateStatus("SSE", "OK");
+};
+console.log("[AUDIT] SSE conectado a /stream");
+updateStatus("SSE", "conectando...");

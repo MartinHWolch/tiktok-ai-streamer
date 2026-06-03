@@ -73,7 +73,7 @@ class ResponsePipeline:
         # Item actual en cada etapa
         self._generating = None   # item siendo procesado por IA
         self._making_tts = None   # item siendo procesado por TTS
-        self._playing = None      # item siendo reproducido
+        self._playback = {}       # item_id -> item (multiples items en cola/reproduccion del overlay)
 
         # Historiales para auditoria
         self._incoming_log = []    # todos los mensajes recibidos
@@ -151,45 +151,57 @@ class ResponsePipeline:
     def mark_playback_started(self, item_id):
         """Llamado cuando el overlay confirma que empezo a reproducir."""
         with self._lock:
-            if self._playing and self._playing.id == item_id:
-                self._playing.played_at = time.time()
-                self._playing.status = "playing"
+            item = self._playback.get(item_id)
+            if item:
+                item.played_at = time.time()
+                item.status = "playing"
                 self._notify()
 
     def mark_playback_done(self, item_id):
         """Llamado cuando el overlay confirma que termino de reproducir."""
+        done_item = None
         with self._lock:
-            if self._playing and self._playing.id == item_id:
-                self._playing.status = "done"
-                self._playback_log.append(self._playing)
+            item = self._playback.pop(item_id, None)
+            if item:
+                item.status = "done"
+                self._playback_log.append(item)
                 if len(self._playback_log) > MAX_HISTORY:
                     self._playback_log = self._playback_log[-MAX_HISTORY:]
-                self._playing = None
+                done_item = item
                 self._notify()
+        if done_item and self.on_item_done:
+            try:
+                self.on_item_done(done_item)
+            except Exception as e:
+                logger.error(f"on_item_done error: {e}")
 
     def skip_current(self):
         with self._lock:
-            if self._playing:
-                self._playing.status = "skipped"
-                self._playback_log.append(self._playing)
-                if len(self._playback_log) > MAX_HISTORY:
-                    self._playback_log = self._playback_log[-MAX_HISTORY:]
-                self._playing = None
-                self._notify()
+            if not self._playback:
+                return
+            for item in list(self._playback.values()):
+                item.status = "skipped"
+                self._playback_log.append(item)
+            if len(self._playback_log) > MAX_HISTORY:
+                self._playback_log = self._playback_log[-MAX_HISTORY:]
+            self._playback.clear()
+            self._notify()
 
     def get_state(self):
         with self._lock:
             incoming_q = [i.to_dict() for i in list(self._incoming_queue.queue) if i is not None]
             generated_q = [i.to_dict() for i in list(self._generated_queue.queue) if i is not None]
             playback_q = [i.to_dict() for i in list(self._playback_queue.queue) if i is not None]
+            playback_items = [i.to_dict() for i in self._playback.values()]
+            playing = playback_items[-1] if playback_items else None
             return {
                 # Colas activas (nuevas 3 etapas)
                 "incoming_queue": incoming_q,
                 "generating": self._generating.to_dict() if self._generating else None,
                 "generated_queue": generated_q,
                 "making_tts": self._making_tts.to_dict() if self._making_tts else None,
-                "playback_queue": playback_q,
-                "playing": self._playing.to_dict() if self._playing else None,
+                "playback_queue": playback_q + playback_items,
+                "playing": playing,
                 # Backwards compatibility para panel viejo
                 "gen_queue": incoming_q + ([self._generating.to_dict()] if self._generating else []),
                 "tts_queue": generated_q + ([self._making_tts.to_dict()] if self._making_tts else []),
@@ -214,9 +226,10 @@ class ResponsePipeline:
         if self._making_tts:
             items.append(self._making_tts)
             seen.add(self._making_tts.id)
-        if self._playing:
-            items.append(self._playing)
-            seen.add(self._playing.id)
+        for item in self._playback.values():
+            if item.id not in seen:
+                items.append(item)
+                seen.add(item.id)
 
         for q in (self._incoming_queue, self._generated_queue, self._playback_queue):
             for i in list(q.queue):
@@ -337,9 +350,36 @@ class ResponsePipeline:
                 except:
                     pass
 
+            self._reap_stale_playback()
             time.sleep(TTS_MIN_GAP)
 
         logger.info("Pipeline TTS loop stopped")
+
+    def _reap_stale_playback(self):
+        """Libera items de playback que el overlay nunca confirmo (navegador cerrado,
+        autoplay bloqueado, etc.) para que el dict no crezca indefinidamente."""
+        PLAYBACK_TIMEOUT = 300  # 5 min
+        now = time.time()
+        stale = []
+        with self._lock:
+            for item_id, item in list(self._playback.items()):
+                ref = item.played_at or item.tts_at or item.generated_at or item.received_at
+                if ref and (now - ref) > PLAYBACK_TIMEOUT:
+                    item.status = "timeout"
+                    self._playback_log.append(item)
+                    self._playback.pop(item_id, None)
+                    stale.append(item)
+            if stale:
+                if len(self._playback_log) > MAX_HISTORY:
+                    self._playback_log = self._playback_log[-MAX_HISTORY:]
+                self._notify()
+        for item in stale:
+            logger.warning(f"Pipeline: item {item.id[:8]} de playback expirado sin confirmacion del overlay")
+            if self.on_item_done:
+                try:
+                    self.on_item_done(item)
+                except Exception as e:
+                    logger.error(f"on_item_done error: {e}")
 
     def _process_tts_item(self, item):
         with self._lock:
@@ -359,8 +399,9 @@ class ResponsePipeline:
             if item.audio_file:
                 item.status = "playback_queued"
                 with self._lock:
-                    # Siempre track el item mas reciente publicado; el overlay maneja su propia cola
-                    self._playing = item
+                    # Trackear el item por id para que mark_playback_done/started lo encuentre.
+                    # El overlay maneja su propia cola; aqui puede haber varios items en vuelo.
+                    self._playback[item.id] = item
                     self._making_tts = None
                 self._notify()
             else:

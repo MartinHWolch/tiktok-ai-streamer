@@ -122,14 +122,19 @@ class TTSClient:
                 return result
         return voice
     
-    def speak(self, text):
+    def speak(self, text, overrides=None):
         if not self.enabled:
             logger.info("TTS está deshabilitado.")
             return None
-        
+
+        text = (text or "").strip()
+        if not text:
+            logger.info("TTS: texto vacio, omitiendo generacion.")
+            return None
+
         with self._cooldown_lock:
             self._last_speak = time.time()
-        
+
         # Capturar TODO el estado bajo lock para evitar race conditions
         with self._state_lock:
             engine = self.engine
@@ -143,7 +148,25 @@ class TTSClient:
             lang = self.lang
             edge_voice = self.edge_voice
             kokoro_model = self.kokoro_model
-        
+
+        # Overrides explicitos (ej. lectura de comentarios con voz distinta).
+        # Se aplican sobre el snapshot local SIN mutar el estado compartido,
+        # evitando race conditions con respuestas IA generadas en paralelo.
+        if overrides:
+            if overrides.get("voice"):
+                voice = overrides["voice"]
+                voice_blend = ""
+            if "voice_blend" in overrides and overrides["voice_blend"] is not None:
+                voice_blend = overrides["voice_blend"]
+            if overrides.get("speed") is not None:
+                speed = overrides["speed"]
+            if overrides.get("pitch") is not None:
+                pitch = overrides["pitch"]
+            if overrides.get("volume") is not None:
+                volume = overrides["volume"]
+            if overrides.get("lang"):
+                lang = overrides["lang"]
+
         if engine == "kokoro" and kokoro:
             return self._speak_kokoro(text, voice, voice_blend, speed, pitch, volume, lang, kokoro_model)
         elif engine == "piper" and piper:
@@ -180,7 +203,13 @@ class TTSClient:
                 samples, sample_rate = self._kokoro.create(
                     text, voice=voice, speed=speed, lang=lang
                 )
-            
+
+            # Validar que se generaron samples utiles; un WAV vacio dispara onerror
+            # en el overlay y traba la cola de reproduccion.
+            if samples is None or np.asarray(samples).size == 0:
+                logger.warning(f"Kokoro genero audio vacio para: '{text[:40]}', usando gTTS")
+                return self._speak_gtts(text, lang)
+
             filename = f"tts_{int(time.time())}_{uuid.uuid4().hex}.wav"
             filepath = os.path.join(self.config.AUDIO_DIR, filename)
             samples = self._apply_effects(samples, sample_rate, pitch, volume)
@@ -259,16 +288,23 @@ class TTSClient:
             return samples
         try:
             import numpy as np
-            arr = np.array(samples, dtype=np.float32)
+            arr = np.asarray(samples, dtype=np.float32)
+            if arr.size == 0:
+                return samples
             # Pitch shift real sin cambiar velocidad (librosa)
             if pitch != 0:
-                import librosa
-                arr = librosa.effects.pitch_shift(
-                    y=arr, sr=sample_rate, n_steps=float(pitch)
-                )
+                try:
+                    import librosa
+                    arr = librosa.effects.pitch_shift(
+                        y=arr, sr=sample_rate, n_steps=float(pitch)
+                    )
+                except ImportError:
+                    logger.warning("librosa no instalado: pitch shift omitido")
+                except Exception as e:
+                    logger.warning(f"Pitch shift fallo, omitido: {e}")
             # Volumen
             if volume != 1.0:
-                arr = arr * volume
+                arr = arr * float(volume)
                 arr = np.clip(arr, -1.0, 1.0)
             return arr
         except Exception as e:

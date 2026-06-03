@@ -498,48 +498,45 @@ class EventOrchestrator:
 
     def _speak_comment(self, text, user, publish=True):
         """Genera TTS para leer el comentario con la voz configurada.
-        Si publish=False, retorna el filename sin publicar el evento."""
+        Si publish=False, retorna el filename sin publicar el evento.
+        Usa overrides explicitos (thread-safe) en vez de mutar el estado compartido del TTS."""
         try:
             t = self.tts_client
+            with t._state_lock:
+                cur_voice = t.voice
+                cur_blend = t.voice_blend
+
             voice_to_use = self.comment_voice
-            if not voice_to_use and t.voice_blend:
-                voice_to_use = ""
-            elif not voice_to_use:
-                voice_to_use = t.voice
+            blend_override = None
+            if voice_to_use:
+                # Voz explicita para comentarios
+                blend_override = ""
+            elif cur_blend:
+                # Sin voz especifica pero hay blend activo: usar el blend actual
+                voice_to_use = None
+                blend_override = cur_blend
+            else:
+                voice_to_use = cur_voice
                 if not voice_to_use:
                     return None
 
-            with t._state_lock:
-                prev_voice = t.voice
-                prev_blend = t.voice_blend
-                prev_speed = t.speed
-                prev_pitch = t.pitch
-                prev_volume = t.volume
-                prev_lang = t.lang
-                if voice_to_use:
-                    t.voice = voice_to_use
-                    t.voice_blend = ""
-                t.speed = self.comment_speed
-                t.pitch = self.comment_pitch
-                t.volume = self.comment_volume
-                t.lang = self.comment_lang
-            try:
-                msg = text[:200]
-                filename = t.speak(msg)
-                if filename:
-                    if publish:
-                        self.publish("tts_audio", {"url": f"/audio/{filename}", "item_id": "comment", "comment": True})
-                        self.log(f"Comentario leido: {text[:40]}")
-                    return filename
-                return None
-            finally:
-                with t._state_lock:
-                    t.voice = prev_voice
-                    t.voice_blend = prev_blend
-                    t.speed = prev_speed
-                    t.pitch = prev_pitch
-                    t.volume = prev_volume
-                    t.lang = prev_lang
+            overrides = {
+                "voice": voice_to_use,
+                "voice_blend": blend_override,
+                "speed": self.comment_speed,
+                "pitch": self.comment_pitch,
+                "volume": self.comment_volume,
+                "lang": self.comment_lang,
+            }
+
+            msg = text[:200]
+            filename = t.speak(msg, overrides=overrides)
+            if filename:
+                if publish:
+                    self.publish("tts_audio", {"url": f"/audio/{filename}", "item_id": "comment", "comment": True})
+                    self.log(f"Comentario leido: {text[:40]}")
+                return filename
+            return None
         except Exception as e:
             logger.error(f"Error leyendo comentario: {e}")
             return None
@@ -1146,20 +1143,11 @@ class EventOrchestrator:
     def preview_voice(self, voice_name):
         if not self.tts_client or not self.tts_client._kokoro:
             return None
-        with self.tts_client._state_lock:
-            prev_voice = self.tts_client.voice
-            prev_blend = self.tts_client.voice_blend
-            self.tts_client.voice = voice_name
-            self.tts_client.voice_blend = ""
         try:
-            filename = self.tts_client._speak_kokoro(
-                "Hola, esta es una demostracion de esta voz."
+            return self.tts_client.speak(
+                "Hola, esta es una demostracion de esta voz.",
+                overrides={"voice": voice_name, "voice_blend": ""},
             )
-            return filename
         except Exception as e:
             logger.error(f"Error preview voz: {e}")
             return None
-        finally:
-            with self.tts_client._state_lock:
-                self.tts_client.voice = prev_voice
-                self.tts_client.voice_blend = prev_blend

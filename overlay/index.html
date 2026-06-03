@@ -20,6 +20,12 @@
         <div id="tts-text"></div>
         <div id="emoji-layer"></div>
     </div>
+    <div id="status-bar" style="position:fixed;bottom:0;left:0;right:0;min-height:24px;display:flex;align-items:center;gap:12px;padding:2px 10px;font-family:monospace;font-size:11px;color:#0f0;background:rgba(0,0,0,0.75);z-index:99998;flex-wrap:wrap">
+        <span id="sse-status">SSE: ...</span>
+        <span id="audio-status">AUDIO: ...</span>
+        <span id="queue-status">COLA: 0</span>
+        <span id="last-event">LAST: -</span>
+    </div>
     <script src="overlay.js"></script>
 </body>
 </html>

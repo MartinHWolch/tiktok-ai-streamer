@@ -66,10 +66,6 @@ class EventOrchestrator:
         self.comment_lang = getattr(config, 'COMMENT_LANG', 'es')
         self._comment_voice_lock = threading.Lock()
 
-        # Audio de comentario pendiente por publicar (item_id -> filename)
-        self._pending_comment_audio = {}
-        self._comment_audio_lock = threading.Lock()
-
         self._load_user_settings()
 
         # Points system
@@ -129,21 +125,14 @@ class EventOrchestrator:
                     return None
             p.ai_generate = ai_gen
 
-        # TTS callback: generar audio
+        # TTS callback: generar audio de respuesta IA
         if self.tts_client and not p.tts_speak:
             def tts_gen(item):
                 try:
-                    # Publicar TTS de comentario pendiente ANTES de la respuesta IA
-                    with self._comment_audio_lock:
-                        comment_filename = self._pending_comment_audio.pop(item.id, None)
-                    if comment_filename:
-                        self.publish("tts_audio", {"url": f"/audio/{comment_filename}", "item_id": "comment", "comment": True})
-                        self.log(f"Comentario publicado secuencialmente para item {item.id[:8]}")
-
                     self.publish("tts_speak", {"text": item.text})
                     filename = self.tts_client.speak(item.text)
                     if filename:
-                        self.publish("tts_audio", {"url": f"/audio/{filename}", "item_id": item.id})
+                        self.publish("tts_audio", {"url": f"/audio/{filename}", "item_id": item.id, "source": "streamer"})
                         logger.info(f"Pipeline TTS: {filename}")
                     else:
                         logger.warning("Pipeline TTS: speak() devolvio None")
@@ -184,17 +173,6 @@ class EventOrchestrator:
             def _on_change(pipeline):
                 self.publish("pipeline_state", pipeline.get_state())
             p.on_change = _on_change
-
-        # Cleanup de comentarios huerfanos: si el item falla sin pasar por TTS,
-        # publicar el audio del comentario pendiente para que no quede huerfano
-        if not p.on_item_done:
-            def _on_item_done(item):
-                with self._comment_audio_lock:
-                    comment_filename = self._pending_comment_audio.pop(item.id, None)
-                if comment_filename:
-                    self.publish("tts_audio", {"url": f"/audio/{comment_filename}", "item_id": "comment", "comment": True})
-                    self.log(f"Comentario huerfano publicado para item {item.id[:8]} (status={item.status})")
-            p.on_item_done = _on_item_done
 
         # Sync flags
         p.ai_enabled = self.ai_enabled
@@ -483,23 +461,15 @@ class EventOrchestrator:
         
         self.publish("overlay_message", {"user": user, "text": text})
 
-        # Lectura de comentarios: generar TTS primero (sin publicar), luego encolar mensaje para IA
-        comment_filename = None
+        # Lectura de comentarios: generar y publicar TTS inmediatamente (narrador)
         if self.read_comments_enabled and self.tts_client:
-            comment_filename = self._speak_comment(text, user, publish=False)
+            self._speak_comment(text, user, publish=True)
 
         # Encolar mensaje entrante para que la IA genere respuesta
-        item = self.pipeline.receive_message(user=user, trigger="chat", original_text=text)
-
-        # Asociar audio de comentario al item del pipeline para publicacion secuencial
-        if comment_filename and item:
-            with self._comment_audio_lock:
-                self._pending_comment_audio[item.id] = comment_filename
+        self.pipeline.receive_message(user=user, trigger="chat", original_text=text)
 
     def _speak_comment(self, text, user, publish=True):
-        """Genera TTS para leer el comentario con la voz configurada.
-        Si publish=False, retorna el filename sin publicar el evento.
-        Usa overrides explicitos (thread-safe) en vez de mutar el estado compartido del TTS."""
+        """Genera TTS para leer el comentario con la voz del narrador."""
         try:
             t = self.tts_client
             with t._state_lock:
@@ -509,10 +479,8 @@ class EventOrchestrator:
             voice_to_use = self.comment_voice
             blend_override = None
             if voice_to_use:
-                # Voz explicita para comentarios
                 blend_override = ""
             elif cur_blend:
-                # Sin voz especifica pero hay blend activo: usar el blend actual
                 voice_to_use = None
                 blend_override = cur_blend
             else:
@@ -529,11 +497,10 @@ class EventOrchestrator:
                 "lang": self.comment_lang,
             }
 
-            msg = text[:200]
-            filename = t.speak(msg, overrides=overrides)
+            filename = t.speak(text[:200], overrides=overrides)
             if filename:
                 if publish:
-                    self.publish("tts_audio", {"url": f"/audio/{filename}", "item_id": "comment", "comment": True})
+                    self.publish("tts_audio", {"url": f"/audio/{filename}", "item_id": "comment", "source": "narrator"})
                     self.log(f"Comentario leido: {text[:40]}")
                 return filename
             return None
@@ -798,7 +765,7 @@ class EventOrchestrator:
         finally:
             self.tts_client._last_speak = saved
         if filename:
-            self.publish("tts_audio", {"url": f"/audio/{filename}"})
+            self.publish("tts_audio", {"url": f"/audio/{filename}", "source": "test"})
             self.log(f"TTS de prueba generado: {filename}")
         return filename
 

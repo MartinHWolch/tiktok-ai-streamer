@@ -65,20 +65,16 @@ class ResponsePipeline:
     """Pipeline 3-etapas: incoming → generated → playback."""
 
     def __init__(self):
-        # 3 colas
         self._incoming_queue = queue.Queue(maxsize=MAX_QUEUE_SIZE)
         self._generated_queue = queue.Queue(maxsize=MAX_QUEUE_SIZE)
-        self._playback_queue = queue.Queue(maxsize=MAX_QUEUE_SIZE)
 
-        # Item actual en cada etapa
-        self._generating = None   # item siendo procesado por IA
-        self._making_tts = None   # item siendo procesado por TTS
-        self._playback = {}       # item_id -> item (multiples items en cola/reproduccion del overlay)
+        self._generating = None
+        self._making_tts = None
+        self._playback = {}
 
-        # Historiales para auditoria
-        self._incoming_log = []    # todos los mensajes recibidos
-        self._generated_log = []   # respuestas generadas por IA
-        self._playback_log = []    # items que se reprodujeron o estan en playback
+        self._incoming_log = []
+        self._generated_log = []
+        self._playback_log = []
 
         self._lock = threading.Lock()
         self._running = False
@@ -87,17 +83,15 @@ class ResponsePipeline:
 
         self._playback_done = threading.Event()
 
-        # Callbacks
-        self.ai_generate = None     # fn(text, user) -> dict|str|None
-        self.tts_speak = None       # fn(text) -> filename|None
-        self.on_change = None       # fn(pipeline) notifica al panel
-        self.on_item_done = None    # fn(item) llamado cuando un item alcanza estado terminal (done/error)
+        self.ai_generate = None
+        self.tts_speak = None
+        self.on_change = None
+        self.on_item_done = None
         self.dispatch_sfx = None
         self.dispatch_emotion = None
-        self.mouth_open_fn = None   # fn() abre boca avatar
-        self.mouth_close_fn = None  # fn() cierra boca avatar
+        self.mouth_open_fn = None
+        self.mouth_close_fn = None
 
-        # Flags de habilitación (seteados por el orquestador)
         self.ai_enabled = True
         self.tts_enabled = True
 
@@ -114,7 +108,7 @@ class ResponsePipeline:
     def stop(self):
         self._running = False
         self._playback_done.set()
-        for q in (self._incoming_queue, self._generated_queue, self._playback_queue):
+        for q in (self._incoming_queue, self._generated_queue):
             try: q.put_nowait(None)
             except queue.Full: pass
 
@@ -191,35 +185,28 @@ class ResponsePipeline:
         with self._lock:
             incoming_q = [i.to_dict() for i in list(self._incoming_queue.queue) if i is not None]
             generated_q = [i.to_dict() for i in list(self._generated_queue.queue) if i is not None]
-            playback_q = [i.to_dict() for i in list(self._playback_queue.queue) if i is not None]
             playback_items = [i.to_dict() for i in self._playback.values()]
             playing = playback_items[-1] if playback_items else None
             return {
-                # Colas activas (nuevas 3 etapas)
                 "incoming_queue": incoming_q,
                 "generating": self._generating.to_dict() if self._generating else None,
                 "generated_queue": generated_q,
                 "making_tts": self._making_tts.to_dict() if self._making_tts else None,
-                "playback_queue": playback_q + playback_items,
+                "playback_queue": playback_items,
                 "playing": playing,
-                # Backwards compatibility para panel viejo
                 "gen_queue": incoming_q + ([self._generating.to_dict()] if self._generating else []),
                 "tts_queue": generated_q + ([self._making_tts.to_dict()] if self._making_tts else []),
                 "history": [i.to_dict() for i in self._playback_log[-20:]],
-                # Historiales
                 "incoming_log": [i.to_dict() for i in self._incoming_log[-20:]],
                 "generated_log": [i.to_dict() for i in self._generated_log[-20:]],
                 "playback_log": [i.to_dict() for i in self._playback_log[-20:]],
-                # Vista unificada para tabla
                 "table_items": self._build_table_view(),
             }
 
     def _build_table_view(self):
-        """Construye una lista unificada de items para la tabla del pipeline."""
         seen = set()
         items = []
 
-        # Orden: activos primero, luego completados
         if self._generating:
             items.append(self._generating)
             seen.add(self._generating.id)
@@ -231,13 +218,12 @@ class ResponsePipeline:
                 items.append(item)
                 seen.add(item.id)
 
-        for q in (self._incoming_queue, self._generated_queue, self._playback_queue):
+        for q in (self._incoming_queue, self._generated_queue):
             for i in list(q.queue):
                 if i is not None and i.id not in seen:
                     items.append(i)
                     seen.add(i.id)
 
-        # Agregar completados recientes
         for log in (self._playback_log[-10:], self._generated_log[-5:], self._incoming_log[-5:]):
             for i in log:
                 if i.id not in seen:
